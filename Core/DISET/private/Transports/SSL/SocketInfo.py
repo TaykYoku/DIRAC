@@ -56,10 +56,10 @@ class SocketInfo:
     if not self.infoDict[ 'clientMode' ]:
       certList.insert( 0, self.sslSocket.get_peer_certificate() )
     peerChain = X509Chain( certList = certList )
-    isProxyChain = peerChain.isProxy()['Value']
+    isProxyChain = peerChain.isProxy().get('Value')
     isLimitedProxyChain = peerChain.isLimitedProxy()['Value']
     if isProxyChain:
-      if peerChain.isPUSP()['Value']:
+      if peerChain.isPUSP().get('Value'):
         identitySubject = peerChain.getCertInChain( -2 )['Value'].getSubjectNameObject()[ 'Value' ]
       else:
         identitySubject = peerChain.getIssuerCert()['Value'].getSubjectNameObject()[ 'Value' ]
