@@ -387,7 +387,7 @@ class ProxyDB(DB):
     if not proxyProvider:
       result = Registry.getProxyProvidersForDN(userDN)
       if result['OK']:
-        proxyProvider = result['Value'][0] 
+        proxyProvider = result['Value'][0] or 'Certificate' 
 
     # Get remaining secs
     retVal = chain.getRemainingSecs()
