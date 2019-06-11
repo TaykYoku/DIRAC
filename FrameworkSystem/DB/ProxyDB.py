@@ -93,7 +93,7 @@ class ProxyDB(DB):
     if 'ProxyDB_CleanProxies' not in tablesInDB:
       tablesD['ProxyDB_CleanProxies'] = {'Fields': {'UserName': 'VARCHAR(64) NOT NULL',
                                                     'UserDN': 'VARCHAR(255) NOT NULL',
-                                                    'ProxyProvider': 'VARCHAR(64) NOT NULL',
+                                                    'ProxyProvider': 'VARCHAR(64) NOT NULL DEFAULT "Certificate"',
                                                     'Pem': 'BLOB',
                                                     'ExpirationTime': 'DATETIME',
                                                     },
@@ -387,7 +387,7 @@ class ProxyDB(DB):
     if not proxyProvider:
       result = Registry.getProxyProvidersForDN(userDN)
       if result['OK']:
-        proxyProvider = result['Value'][0] or 'Certificate' 
+        proxyProvider = result['Value'][0] 
 
     # Get remaining secs
     retVal = chain.getRemainingSecs()
