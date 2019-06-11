@@ -1101,61 +1101,65 @@ class ProxyDB(DB):
       cmd = "UPDATE `ProxyDB_Proxies` SET PersistentFlag='%s' WHERE UserDN=%s AND UserGroup=%s" % (sqlFlag,
                                                                                                    sUserDN,
                                                                                                    sUserGroup)
-
     retVal = self._update(cmd)
     if not retVal['OK']:
       return retVal
     return S_OK()
 
-  # FIXME: need to add clean DB search
   def getProxiesContent(self, selDict, sortList, start=0, limit=0):
     """ Get the contents of the db, parameters are a filter to the db
     """
-    fields = ("UserName", "UserDN", "UserGroup", "ExpirationTime", "PersistentFlag")
-    cmd = "SELECT %s FROM `ProxyDB_Proxies`" % ", ".join(fields)
-    sqlWhere = ["Pem is not NULL"]
-    for field in selDict:
-      if field not in fields:
-        continue
-      fVal = selDict[field]
-      if isinstance(fVal, (dict, tuple, list)):
-        sqlWhere.append("%s in (%s)" % (field, ", ".join([self._escapeString(str(value))['Value'] for value in fVal])))
-      else:
-        sqlWhere.append("%s = %s" % (field, self._escapeString(str(fVal))['Value']))
-    sqlOrder = []
-    if sortList:
-      for sort in sortList:
-        if len(sort) == 1:
-          sort = (sort, "DESC")
-        elif len(sort) > 2:
-          return S_ERROR("Invalid sort %s" % sort)
-        if sort[0] not in fields:
-          return S_ERROR("Invalid sorting field %s" % sort[0])
-        if sort[1].upper() not in ("ASC", "DESC"):
-          return S_ERROR("Invalid sorting order %s" % sort[1])
-        sqlOrder.append("%s %s" % (sort[0], sort[1]))
-    if sqlWhere:
-      cmd = "%s WHERE %s" % (cmd, " AND ".join(sqlWhere))
-    if sqlOrder:
-      cmd = "%s ORDER BY %s" % (cmd, ", ".join(sqlOrder))
-    if limit:
-      try:
-        start = int(start)
-        limit = int(limit)
-      except ValueError:
-        return S_ERROR("start and limit have to be integers")
-      cmd += " LIMIT %d,%d" % (start, limit)
-    retVal = self._query(cmd)
-    if not retVal['OK']:
-      return retVal
     data = []
-    for record in retVal['Value']:
-      record = list(record)
-      if record[4] == 'True':
-        record[4] = True
-      else:
-        record[4] = False
-      data.append(record)
+    sqlWhere = ["Pem is not NULL"]
+    for table, fields in [('ProxyDB_CleanProxies', ("UserName", "UserDN", "ExpirationTime")),
+                          ('ProxyDB_Proxies', ("UserName", "UserDN", "UserGroup", "ExpirationTime", "PersistentFlag"))]:
+      cmd = "SELECT %s FROM `%s`" % (", ".join(fields), table)
+      for field in selDict:
+        if field not in fields:
+          continue
+        fVal = selDict[field]
+        if isinstance(fVal, (dict, tuple, list)):
+          sqlWhere.append("%s in (%s)" % (field, ", ".join([self._escapeString(str(value))['Value'] for value in fVal])))
+        else:
+          sqlWhere.append("%s = %s" % (field, self._escapeString(str(fVal))['Value']))
+      sqlOrder = []
+      if sortList:
+        for sort in sortList:
+          if len(sort) == 1:
+            sort = (sort, "DESC")
+          elif len(sort) > 2:
+            return S_ERROR("Invalid sort %s" % sort)
+          if sort[0] not in fields:
+            if table == 'ProxyDB_CleanProxies' and sort[0] in ['UserGroup', 'PersistentFlag']:
+              continue
+            return S_ERROR("Invalid sorting field %s" % sort[0])
+          if sort[1].upper() not in ("ASC", "DESC"):
+            return S_ERROR("Invalid sorting order %s" % sort[1])
+          sqlOrder.append("%s %s" % (sort[0], sort[1]))
+      if sqlWhere:
+        cmd = "%s WHERE %s" % (cmd, " AND ".join(sqlWhere))
+      if sqlOrder:
+        cmd = "%s ORDER BY %s" % (cmd, ", ".join(sqlOrder))
+      if limit:
+        try:
+          start = int(start)
+          limit = int(limit)
+        except ValueError:
+          return S_ERROR("start and limit have to be integers")
+        cmd += " LIMIT %d,%d" % (start, limit)
+      retVal = self._query(cmd)
+      if not retVal['OK']:
+        return retVal
+      for record in retVal['Value']:
+        record = list(record)
+        if table == 'ProxyDB_CleanProxies':
+          record.insert(2, '')
+          record.insert(4, False)
+        if record[4] == 'True':
+          record[4] = True
+        else:
+          record[4] = False
+        data.append(record)
     totalRecords = len(data)
     cmd = "SELECT COUNT( UserGroup ) FROM `ProxyDB_Proxies`"
     if sqlWhere:
