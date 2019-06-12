@@ -40,8 +40,8 @@ echo "================"
 echo "======  Get admin credentionals"
 diracCredentials
 echo "================"
-echo "dirac-admin-get-proxy adminusername dirac-admin"
-dirac-admin-get-proxy adminusername dirac-admin
+echo "dirac-admin-get-proxy adminusername dirac-admin -v 4:00"
+dirac-admin-get-proxy adminusername dirac-admin -v 4:00
 if [ $? -ne 0 ]
 then
    echo
