@@ -93,7 +93,7 @@ class ProxyDB(DB):
     if 'ProxyDB_CleanProxies' not in tablesInDB:
       tablesD['ProxyDB_CleanProxies'] = {'Fields': {'UserName': 'VARCHAR(64) NOT NULL',
                                                     'UserDN': 'VARCHAR(255) NOT NULL',
-                                                    'ProxyProvider': 'VARCHAR(64) NOT NULL DEFAULT "Certificate"',
+                                                    'ProxyProvider': 'VARCHAR(64) DEFAULT "Certificate"',
                                                     'Pem': 'BLOB',
                                                     'ExpirationTime': 'DATETIME',
                                                     },
@@ -749,6 +749,8 @@ class ProxyDB(DB):
 
         :return: S_OK(dict)/S_ERROR() -- dict with remaining seconds, proxy as a string and as a chain
     """
+    if not proxyProvider:
+      return S_ERROR('No proxy providers found for "%s" user DN' % userDN)
     gLogger.info('Getting proxy from proxyProvider', '(for "%s" DN by "%s")' % (userDN, proxyProvider))
     result = ProxyProviderFactory().getProxyProvider(proxyProvider)
     if not result['OK']:
@@ -785,9 +787,8 @@ class ProxyDB(DB):
     if isPUSPdn(userDN):
       result = S_OK(['PUSP'])
     if result['OK']:
-      PPList = result['Value']
-      for proxyProvider in PPList:
-        result = self.__getPemAndTimeLeft(userDN, userGroup, proxyProvider=proxyProvider)
+      for proxyProvider in result['Value']:
+        result = self.__getPemAndTimeLeft(userDN, userGroup, proxyProvider=proxyProvider or 'Certificate')
         if result['OK'] and (not requiredLifeTime or result['Value'][1] > requiredLifeTime):
           return result
         result = self.__generateProxyFromProxyProvider(userDN, proxyProvider)
@@ -825,36 +826,36 @@ class ProxyDB(DB):
       return S_OK((chain, timeLeft))
 
     # Standard proxy is requested
+    errMsg = "Can't get proxy%s: " % (requiredLifeTime and ' for %s seconds' % requiredLifeTime or '')
     retVal = self.__getPemAndTimeLeft(userDN, userGroup)
     if not retVal['OK']:
-      errMsg = '%s and ' % retVal['Message']
+      errMsg += '%s, try to use proxy provider' %retVal['Message']
       retVal = self.__getProxyFromProxyProviders(userDN, userGroup, requiredLifeTime=requiredLifeTime)
     elif requiredLifeTime:
       if retVal['Value'][1] < requiredLifeTime and not self.__useMyProxy:
-        errMsg = 'the time left in the proxy from repository is less than required and '
+        errMsg += 'the time left in the proxy from repository is less than required'
+        errMsg += ', try to use proxy provider'
         retVal = self.__getProxyFromProxyProviders(userDN, userGroup, requiredLifeTime=requiredLifeTime)
-    if retVal['OK']:
-      pemData = retVal['Value'][0]
-      timeLeft = retVal['Value'][1]
-      chain = X509Chain()
-      retVal = chain.loadProxyFromString(pemData)
-      if retVal['OK']:
-        if requiredLifeTime:
-          if timeLeft < requiredLifeTime:
-            if not self.__useMyProxy:
-              retVal = self.renewFromMyProxy(userDN, userGroup, lifeTime=requiredLifeTime, chain=chain)
-              if retVal['OK']:
-                chain = retVal['Value']
-            else:
-              retVal['Message'] = "the proxy lifetime from MyProxy is less than required"
-    return S_ERROR("Can't get a proxy%s %s " % (requiredLifeTime and ' for %s seconds:' % requiredLifeTime or ':',
-                                               '%s%s' % (errMsg or '', retVal['Message'])))
+    if not retVal['OK']:
+      return S_ERROR("%s; %s" % (errMsg, retVal['Message']))
+    pemData = retVal['Value'][0]
+    timeLeft = retVal['Value'][1]
+    chain = X509Chain()
+    result = chain.loadProxyFromString(pemData)
+    if not retVal['OK']:
+      return S_ERROR("%s; %s" % (errMsg, retVal['Message']))
+    if self.__useMyProxy:
+      if requiredLifeTime:
+        if timeLeft < requiredLifeTime:
+          retVal = self.renewFromMyProxy(userDN, userGroup, lifeTime=requiredLifeTime, chain=chain)
+          if not retVal['OK']:
+            return S_ERROR("%s; the proxy lifetime from MyProxy is less than required." % errMsg)
+          chain = retVal['Value']
 
     # Proxy is invalid for some reason, let's delete it
     if not chain.isValidProxy()['Value']:
       self.deleteProxy(userDN, userGroup)
       return S_ERROR("%s@%s has no proxy registered" % (userDN, userGroup))
-
     return S_OK((chain, timeLeft))
 
   def __getVOMSAttribute(self, userGroup, requiredVOMSAttribute=False):
