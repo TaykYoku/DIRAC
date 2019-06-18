@@ -81,9 +81,9 @@ fi
 echo
 
 echo "===================================================================================="
-echo "===  dirac-admin-get-proxy adminusername dirac_admin -v 4:00 (now this will fail...)"
+echo "===  dirac-admin-get-proxy adminusername no_exist -v 4:00 (now this will fail...)"
 echo
-dirac-admin-get-proxy adminusername dirac_admin -v 4:00
+dirac-admin-get-proxy adminusername no_exist -v 4:00
 if [ $? -eq 0 ]
 then
    exit $?
