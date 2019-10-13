@@ -33,7 +33,7 @@ from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.Time import fromString
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getFTS3ServerDict
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations as opHelper
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.DataManagementSystem.private import FTS3Utilities
@@ -139,11 +139,12 @@ class FTS3Agent(AgentModule):
     log.debug("Getting context for %s" % (idTuple, ))
 
     if not contextes.exists(idTuple, 2700):
-      res = getDNForUsername(username)
-      if not res['OK']:
-        return res
-      # We take the first DN returned
-      userDN = res['Value'][0]
+      result = getDNForUsernameInGroup(username, group)
+      if not result['OK']:
+        return result
+      userDN = result['Value']
+      if not userDN:
+        return S_ERROR('No user DN found for %s@%s' % (username, group))
 
       log.debug("UserDN %s" % userDN)
 
