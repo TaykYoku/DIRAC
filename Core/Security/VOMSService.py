@@ -72,7 +72,7 @@ class VOMSService(object):
       return S_ERROR(DErrno.EVOMS, "No nickname defined")
     return S_OK(nickname)
 
-  def getUsers(self):
+  def getUsers(self, proxyPath=None):
     """ Get all the users of the VOMS VO with their detailed information
 
     :return: user dictionary keyed by the user DN
@@ -81,7 +81,7 @@ class VOMSService(object):
     if not self.urls:
       return S_ERROR(DErrno.ENOAUTH, "No VOMS server defined")
 
-    userProxy = getProxyLocation()
+    userProxy = proxyPath or getProxyLocation()
     caPath = getCAsLocation()
     rawUserList = []
     result = None
