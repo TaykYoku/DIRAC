@@ -26,15 +26,17 @@ def getShifterProxy(shifterType, fileName=False):
   userName = opsHelper.getValue(cfgPath('Shifter', shifterType, 'User'), '')
   if not userName:
     return S_ERROR("No shifter User defined for %s" % shifterType)
-  result = Registry.getDNForUsername(userName)
-  if not result['OK']:
-    return result
-  userDN = result['Value'][0]
-  result = Registry.findDefaultGroupForDN(userDN)
+  result = Registry.findDefaultGroupForUser(userName)
   if not result['OK']:
     return result
   defaultGroup = result['Value']
   userGroup = opsHelper.getValue(cfgPath('Shifter', shifterType, 'Group'), defaultGroup)
+  result = Registry.getDNForUsernameInGroup(username, group)
+  if not result['OK']:
+    return result
+  userDN = result['Value']
+  if not userDN:
+    return S_ERROR('No user DN found for shifter %s@%s' % (username, group))
   vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
   if vomsAttr:
     gLogger.info("Getting VOMS [%s] proxy for shifter %s@%s (%s)" % (vomsAttr, userName,
