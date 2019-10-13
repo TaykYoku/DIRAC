@@ -1,3 +1,4 @@
+
 """ Module that holds DISET Authorization class for services
 """
 
@@ -34,9 +35,7 @@ def sessionInitialize(credDict):
     credDict[KW_GROUP] = "visitor"
     return False
   credDict[KW_USERNAME] = result['Value']
-
-  # Check/get group
-  return groupInitialize(credDict)
+  return True
 
 def certificateInitialize(credDict):
   """ Discover the username associated to the certificate DN. It will check if the selected group is valid.
@@ -57,7 +56,6 @@ def certificateInitialize(credDict):
       credDict[KW_GROUP] = "visitor"
       return False
     credDict[KW_USERNAME] = result['Value']
-    credDict[KW_PROPERTIES] = Registry.getPropertiesForHost(credDict[KW_USERNAME], [])
     return True
 
   # Search user
@@ -67,9 +65,7 @@ def certificateInitialize(credDict):
     credDict[KW_GROUP] = "visitor"
     return False
   credDict[KW_USERNAME] = result['Value']
-
-  # Check/get group
-  return groupInitialize(credDict)
+  return True
 
 def groupInitialize(credDict):
   """ Check/get default group
@@ -79,13 +75,7 @@ def groupInitialize(credDict):
       :return: boolean -- specifying whether the username was found
   """
   # Find/check group
-  result = Registry.getGroupsForUser(credDict[KW_USERNAME])
-  if not result['OK']:
-    credDict[KW_USERNAME] = "anonymous"
-    credDict[KW_GROUP] = "visitor"
-    return False
-  groups = result['Value']
-  
+  credDict[KW_PROPERTIES] = []
   if not credDict.get(KW_GROUP):
     result = Registry.findDefaultGroupForUser(credDict[KW_USERNAME])
     if not result['OK']:
@@ -94,7 +84,16 @@ def groupInitialize(credDict):
       return False
     credDict[KW_GROUP] = result['Value']
 
-  if credDict[KW_GROUP] not in groups:
+  if credDict[KW_GROUP] == KW_HOSTS_GROUP:
+    credDict[KW_PROPERTIES] = Registry.getPropertiesForHost(credDict[KW_USERNAME], [])
+    return True
+
+  result = Registry.getGroupsForUser(credDict[KW_USERNAME])
+  if not result['OK']:
+    credDict[KW_USERNAME] = "anonymous"
+    credDict[KW_GROUP] = "visitor"
+    return False
+  if credDict[KW_GROUP] not in result['Value']:
     credDict[KW_GROUP] = "visitor"
     return False
 
@@ -179,8 +178,9 @@ class AuthManager(object):
         credDict[KW_USERNAME] = "anonymous"
         credDict[KW_GROUP] = "visitor"
         authorized = False
+    
     # Search group
-    if not credDict.get(KW_GROUP):
+    if authorized:
       authorized = groupInitialize(credDict)
 
     # Authed query
@@ -189,16 +189,20 @@ class AuthManager(object):
     # Authorize check
     if allowAll or authorized:
       # Properties check
-      if allowGroup:
+      if not self.matchProperties(credDict,
+                                  list(set(requiredProperties) - set(['Any', 'All', 'authenticated']))):
+        self.__authLogger.warn("Client is not authorized\nValid properties: %s\nClient: %s" %
+                               (requiredProperties, credDict))
+        return False
+      # Groups check
+      elif not allowGroup:
+        self.__authLogger.warn("Client is not authorized\nValid groups: %s\nClient: %s" %
+                               (validGroups, credDict))
+        return False
+      else:
         if not authorized:
           self.__authLogger.debug("Accepted request from unsecure transport")
         return True
-      elif not matchProperties:
-        self.__authLogger.warn("Client is not authorized\nValid properties: %s\nClient: %s" %
-                              (requiredProperties, credDict))
-      else:
-        self.__authLogger.warn("Client is not authorized\nValid groups: %s\nClient: %s" %
-                              (validGroups, credDict))
     else:
       self.__authLogger.debug("User is invalid or does not belong to the group it's saying")
     return False
