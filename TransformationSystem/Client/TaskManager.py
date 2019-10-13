@@ -27,7 +27,7 @@ from DIRAC.WorkloadManagementSystem.Client.WMSClient import WMSClient
 from DIRAC.WorkloadManagementSystem.Client.JobMonitoringClient import JobMonitoringClient
 from DIRAC.TransformationSystem.Client.TransformationClient import TransformationClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
 from DIRAC.TransformationSystem.Agent.TransformationAgentsUtilities import TransformationAgentsUtilities
 
 COMPONENT_NAME = 'TaskManager'
@@ -157,10 +157,7 @@ class RequestTasks(TaskBase):
       ownerGroup = proxyInfo['group']
 
     if not ownerDN:
-      res = getDNForUsername(owner)
-      if not res['OK']:
-        return res
-      ownerDN = res['Value'][0]
+      ownerDN = getDNForUsernameInGroup(owner, ownerGroup).get('Value') or ''
 
     try:
       transJson = json.loads(transBody)
@@ -498,10 +495,7 @@ class WorkflowTasks(TaskBase):
       ownerGroup = proxyInfo['group']
 
     if not ownerDN:
-      res = getDNForUsername(owner)
-      if not res['OK']:
-        return res
-      ownerDN = res['Value'][0]
+      ownerDN = getDNForUsernameInGroup(owner, ownerGroup).get('Value') or ''
 
     if bulkSubmissionFlag:
       return self.__prepareTasksBulk(transBody, taskDict, owner, ownerGroup, ownerDN)
