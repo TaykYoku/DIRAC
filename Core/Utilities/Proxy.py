@@ -40,7 +40,7 @@ import os
 from DIRAC import gConfig, gLogger, S_ERROR, S_OK
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient     import gProxyManager
 from DIRAC.ConfigurationSystem.Client.ConfigurationData  import gConfigurationData
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry   import getVOMSAttributeForGroup, getDNForUsername
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry   import getVOMSAttributeForGroup, getDNForUsernameInGroup
 from DIRAC.Core.Utilities.LockRing                       import LockRing
 
 __RCSID__ = "$Id$"
@@ -222,13 +222,14 @@ def _putProxy(userDN=None, userName=None, userGroup=None, vomsFlag=None, proxyFi
   :returns: Tuple of originalUserProxy, useServerCertificate, executionLock
   """
   # Setup user proxy
-  if userDN:
-    userDNs = [userDN]
-  else:
-    result = getDNForUsername(userName)
+  userDNs = userDN
+  if not userDNs:
+    result = getDNForUsernameInGroup(userName, userGroup)
     if not result['OK']:
       return result
-    userDNs = result['Value']  # a same user may have more than one DN
+    if not result['Value']
+      return S_ERROR('No user DN found for %s@%s' % (userName, userGroup))
+    userDNs = [result['Value']]
 
   vomsAttr = ''
   if vomsFlag:
