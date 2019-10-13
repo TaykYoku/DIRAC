@@ -48,14 +48,14 @@ if userName in Registry.getAllUsers():
     if userName != proxyProps['username'] and userName != proxyProps['issuer']:
       gLogger.notice("You can only query info about yourself!")
       sys.exit(1)
-  result = Registry.getDNForUsername(userName)
+  result = Registry.getDNsForUsername(userName)
   if not result['OK']:
     gLogger.notice("Oops %s" % result['Message'])
-  dnList = result['Value']
-  if not dnList:
+    sys.exit(1)
+  if not result['Value']:
     gLogger.notice("User %s has no DN defined!" % userName)
     sys.exit(1)
-  userDNs = dnList
+  userDNs = result['Value']
 else:
   userDNs = [userName]
 
