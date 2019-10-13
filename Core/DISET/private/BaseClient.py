@@ -14,7 +14,7 @@ from DIRAC.Core.Utilities import List, Network
 from DIRAC.Core.Utilities.ReturnValues import S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.PathFinder import getServiceURL, getServiceFailoverURL
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import skipCACheck
 from DIRAC.Core.DISET.private.TransportPool import getGlobalTransportPool
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
