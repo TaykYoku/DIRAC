@@ -81,25 +81,13 @@ userDN = str(args[0])
 userName = False
 if userDN.find("/") != 0:
   userName = userDN
-  retVal = Registry.getDNForUsername(userName)
-  if not retVal['OK']:
-    gLogger.notice("Cannot discover DN for username %s\n\t%s" % (userName, retVal['Message']))
+  result = Registry.getDNForUsernameInGroup(userName, userGroup)
+  if not result['OK']:
+    return result
+  userDN = result['Value']
+  if not userDN:
+    gLogger.notice("Cannot discover DN for %s@%s" % (userName, userGroup))
     DIRAC.exit(2)
-  DNList = retVal['Value']
-  if len(DNList) > 1:
-    gLogger.notice("Username %s has more than one DN registered" % userName)
-    ind = 0
-    for dn in DNList:
-      gLogger.notice("%d %s" % (ind, dn))
-      ind += 1
-    inp = raw_input("Which DN do you want to download? [default 0] ")
-    if not inp:
-      inp = 0
-    else:
-      inp = int(inp)
-    userDN = DNList[inp]
-  else:
-    userDN = DNList[0]
 
 if not params.proxyPath:
   if not userName:
