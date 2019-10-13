@@ -28,7 +28,7 @@ from hashlib import md5
 from DIRAC.Core.Utilities.ReturnValues import S_ERROR, S_OK
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.Core.Utilities import DEncode
-
+from DIRAC.Core.DISET.AuthManager import certificateInitialize
 
 class BaseTransport(object):
   """ Invokes DEncode for marshaling/unmarshaling of data calls in transit
@@ -116,7 +116,9 @@ class BaseTransport(object):
 
       Before the handshake, dictionnary is empty
     """
-    return self.peerCredentials
+    credDict = self.peerCredentials.copy()
+    certificateInitialize(credDict)
+    return credDict
 
   def setExtraCredentials(self, group):
     self.peerCredentials['extraCredentials'] = group
