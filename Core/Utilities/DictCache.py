@@ -202,6 +202,24 @@ class DictCache(object):
       return keys
     finally:
       self.lock.release()
+  
+  def getDict(self, validSeconds=0):
+    """ Get dictionary for all contents
+
+        :param int validSeconds: valid time in seconds
+
+        :return: dict
+    """
+    self.lock.acquire()
+    try:
+      resDict = {}
+      limitTime = datetime.datetime.now() + datetime.timedelta(seconds=validSeconds)
+      for cKey in self.__cache:
+        if self.__cache[cKey]['expirationTime'] > limitTime:
+          resDict[cKey] = self.__cache[cKey]['value']
+      return resDict
+    finally:
+      self.lock.release()
 
   def purgeExpired(self, expiredInSeconds=0):
     """
