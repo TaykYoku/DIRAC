@@ -1,4 +1,3 @@
-
 """ Module that holds DISET Authorization class for services
 """
 
