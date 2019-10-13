@@ -3,7 +3,7 @@
 import six
 import errno
 
-from DIRAC import S_OK, S_ERROR, gLogger
+from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
@@ -504,7 +504,7 @@ def getDNsForUsername(username, active=False):  # FIXME: active?
     try:
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
     except ImportError:
-      gLogger.warn('Session manager not found.')
+      pass
   try:
     result = gSessionManager.getIdPsCache(getIDsForUsername(username))
     if not result['OK']:
@@ -606,7 +606,7 @@ def getProxyProviderForDN(userDN):
     try:
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
     except ImportError:
-      gLogger.warn('Session manager not found.')
+      pass
   username = getUsernameForDN(userDN)
   try:
     result = gSessionManager.getIdPsCache(getIDsForUsername(username))
