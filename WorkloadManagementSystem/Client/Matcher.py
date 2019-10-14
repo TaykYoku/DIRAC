@@ -333,6 +333,9 @@ class Matcher(object):
           result = Registry.getGroupsForDN(resourceDict['OwnerDN'])
           if not result['OK']:
             raise RuntimeError(result['Message'])
+          groups = result['Value']
+          if not groups:
+            raise RuntimeError('No groups found for %s' % resourceDict['OwnerDN'])
           if credDict['group'] not in result['Value']:
             # DN is not in the same group! bad boy.
             self.log.warn("You cannot request jobs from this DN, as it does not belong to your group!",
