@@ -5,22 +5,149 @@
 __RCSID__ = "$Id$"
 
 from past.builtins import long
+
+import os
 import six
-from DIRAC import gLogger, S_OK, S_ERROR
+import pickle
+import pprint
+
+from DIRAC import gLogger, S_OK, S_ERROR, rootPath, gConfig
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
 from DIRAC.Core.Security import Properties
+from DIRAC.Core.Security.ProxyFile import writeChainToProxyFile
+from DIRAC.Core.Security.VOMSService import VOMSService
+from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 
 
 class ProxyManagerHandler(RequestHandler):
 
+  __notify = NotificationClient()
+  __VOMSesUsersCache = DictCache()
   __maxExtraLifeFactor = 1.5
   __proxyDB = None
 
   @classmethod
+  def saveVOCacheToFile(cls, vo, infoDict):
+    """ Save cache to file
+
+        :param basestring vo: VO name
+        :param dict infoDict: dictionary with information about users
+    """
+    if not os.path.exists(cls.__workDir):
+      os.makedirs(cls.__workDir)
+    with open(os.path.join(cls.__workDir, vo + '.pkl'), 'wb+') as f:
+      pickle.dump(infoDict, f, pickle.HIGHEST_PROTOCOL)
+
+  @classmethod
+  def loadVOCacheFromFile(cls, vo):
+    """ Load VO cache from file
+
+        :param basestring vo: VO name
+        
+        :return: S_OK(dict)/S_ERROR() -- dictionary with information about users
+    """
+    try:
+      with open(os.path.join(cls.__workDir, vo + '.pkl'), 'rb') as f:
+        return S_OK(pickle.load(f))
+    except Exception as e:
+      return S_ERROR('Cannot read saved cahe: %s' % str(e))
+
+  @classmethod
+  def __refreshVOMSesUsersCache(cls, vos=None):
+    """ Update cache with information about active users from supported VOs
+
+        :param list vos: list of VOs that need to update, if None - update all VOs
+
+        :return: S_OK()/S_ERROR()
+    """    
+    diracAdminsNotifyDict = {}
+    absentAdminsProxies = []
+    gLogger.info('Update VOMSes information..')
+    if not vos:
+      # FIXME: Its VOs Names??
+      result = Registry.getVOs()
+      if not result['OK']:
+        return result
+      vos = result['Value']
+
+    for vo in vos:
+      DNs = []
+      # Get VO admin DNs from CS
+      for user in Registry.getVOOption(vo, "VOAdmin", []):
+        result = Registry.getDNsForUsername(user)
+        if not result['OK']:
+          gLogger.error(result['Message'])
+          continue
+        DNs += result['Value']
+      # FIXME: Get VO admin DNs from SyncServer
+      if not DNs:
+        diracAdminsNotifyDict[vo] = 'Cannot found administrators for %s VOMS VO' % vo
+        gLogger.error('Cannot update users from "%s" VO.' % vo, 'No admin user found.')
+        continue
+
+      proxyChain = None
+      for dn in DNs:
+        # Try to get proxy for any VO admin user DN
+        # WARN: For old version of DB, in new version has been used Clean_Proxies table without group
+        result = cls.__proxyDB.getProxiesContent({'UserDN': dn, 'Group': Registry.getGroupsForVO(vo).get('Value') or []}, {})
+        if result['OK']:
+          if not result['Value']['Records']:
+            result = S_ERROR('No administrators proxies found for "%s" VO.' % vo)
+            continue
+          for record in result['Value']['Records']:
+            # WARN: For old version of DB, in new version has been used Clean_Proxies table without group
+            result = cls.__proxyDB.getProxy(record[1], record[2], 1800)
+            if result['OK'] and result['Value'][0]:
+              proxyChain = result['Value'][0]
+              break
+        if proxyChain:
+          # Now we have a proxy, lets dump it to file
+          result = writeChainToProxyFile(proxyChain, '/tmp/x509_syncTmp')
+          if result['OK']:
+            # Get users from VOMS
+            result = VOMSService(vo=vo).getUsers(result['Value'])
+            if result['OK']:
+              break
+      if not proxyChain:
+        absentAdminsProxies.append(vo)
+        gLogger.error('Cannot update users from "%s" VO.' % vo, 'Need to upload admin proxy!')
+        continue
+      if not result['OK']:
+        diracAdminsNotifyDict[vo] = result['Message']
+        gLogger.error('Cannot update users from "%s" VO.' % vo, result['Message'])
+        continue
+      
+      # Parse response
+      voAllUsersDict = result['Value']
+      voActiveUsersDict = {}
+      for dn, dnInfo in voAllUsersDict.items():
+        if dnInfo['suspended']:
+          continue
+        voActiveUsersDict[dn] = dnInfo
+      cls.saveVOCacheToFile(vo, voActiveUsersDict)
+      cls.__VOMSesUsersCache.add(vo, 3600 * 24, voActiveUsersDict)
+    if diracAdminsNotifyDict:
+      # FIXME: Registry.getEmailsForGroup('dirac_admin'))
+      subject = '[ProxyManager] Cannot update users from %s VOMS VOs.' % ', '.join(diracAdminsNotifyDict.keys())
+      body = pprint.pformat(diracAdminsNotifyDict)
+      body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)
+    for vo in absentAdminsProxies:
+      # FIXME: get voadmin email
+      subject = '[DIRAC] Proxy of VO administrator is absent.'
+      body = "Dear VO administrator,"
+      body += "   please, upload your proxy."
+      body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)
+    return S_OK()
+
+  @classmethod
   def initializeHandler(cls, serviceInfoDict):
+    cls.__workDir = os.path.join(gConfig.getValue('/LocalSite/InstancePath', rootPath), 'work/ProxyManager')
     useMyProxy = cls.srv_getCSOption("UseMyProxy", False)
     try:
       result = ObjectLoader().loadObject('FrameworkSystem.DB.ProxyDB', 'ProxyDB')
@@ -28,17 +155,34 @@ class ProxyManagerHandler(RequestHandler):
         gLogger.error('Failed to load ProxyDB class: %s' % result['Message'])
         return result
       dbClass = result['Value']
-
       cls.__proxyDB = dbClass(useMyProxy=useMyProxy)
-
     except RuntimeError as excp:
       return S_ERROR("Can't connect to ProxyDB: %s" % excp)
     gThreadScheduler.addPeriodicTask(900, cls.__proxyDB.purgeExpiredTokens, elapsedTime=900)
     gThreadScheduler.addPeriodicTask(900, cls.__proxyDB.purgeExpiredRequests, elapsedTime=900)
     gThreadScheduler.addPeriodicTask(21600, cls.__proxyDB.purgeLogs)
     gThreadScheduler.addPeriodicTask(3600, cls.__proxyDB.purgeExpiredProxies)
+    gThreadScheduler.addPeriodicTask(3600 * 24, cls.__refreshVOMSesUsersCache)
     gLogger.info("MyProxy: %s\n MyProxy Server: %s" % (useMyProxy, cls.__proxyDB.getMyProxyServer()))
-    return S_OK()
+    return cls.__refreshVOMSesUsersCache()
+
+  types_getVOMSesUsers = []
+
+  def export_getVOMSesUsers(self):
+    """ Return fresh info from service about VOMSes
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    VOMSesUsers = self.__VOMSesUsersCache.getDict()  # self.__TESTVOMS
+    result = Registry.getVOs()
+    if not result['OK']:
+      return result
+    for vo in result['Value']:
+      if vo not in VOMSesUsers:
+        result = self.loadVOCacheFromFile(vo)
+        if result['OK']:
+          VOMSesUsers[vo] = result['Value']
+    return S_OK(VOMSesUsers)
 
   def __generateUserProxiesInfo(self):
     """ Generate information dict about user proxies
@@ -47,7 +191,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     proxiesInfo = {}
     credDict = self.getRemoteCredentials()
-    result = Registry.getDNForUsername(credDict['username'])
+    result = Registry.getDNsForUsername(credDict['username'])
     if not result['OK']:
       return result
     selDict = {'UserDN': result['Value']}
@@ -190,7 +334,6 @@ class ProxyManagerHandler(RequestHandler):
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
     credDict = self.getRemoteCredentials()
-
     result = self.__checkProperties(userDN, userGroup)
     if not result['OK']:
       return result

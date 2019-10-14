@@ -1,11 +1,12 @@
 """ ProxyManagementAPI has the functions to "talk" to the ProxyManagement service
 """
-import six
+from past.builtins import long
 import os
+import six
 import datetime
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSAttributeForGroup
 from DIRAC.Core.Utilities import ThreadSafe, DIRACSingleton
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Security.ProxyFile import multiProxyArgument, deleteMultiProxy
@@ -30,6 +31,7 @@ class ProxyManagerClient(object):
     self.__proxiesCache = DictCache()
     self.__vomsProxiesCache = DictCache()
     self.__pilotProxiesCache = DictCache()
+    self.__VOMSesUsersCache = DictCache()
     self.__filesCache = DictCache(self.__deleteTemporalFile)
 
   def __deleteTemporalFile(self, filename):
@@ -49,6 +51,7 @@ class ProxyManagerClient(object):
     self.__proxiesCache.purgeAll()
     self.__vomsProxiesCache.purgeAll()
     self.__pilotProxiesCache.purgeAll()
+    self.__VOMSesUsersCache.purgeAll()
 
   def __getSecondsLeftToExpiration(self, expiration, utc=True):
     """ Get time left to expiration in a seconds
@@ -83,6 +86,48 @@ class ProxyManagerClient(object):
                             self.__getSecondsLeftToExpiration(record['expirationtime']),
                             record)
     return S_OK()
+  
+  def __refreshVOMSesCache(self):
+    """ Get fresh info from service about VOMSes
+
+        :return: S_OK()/S_ERROR()
+    """
+    result = RPCClient("Framework/ProxyManager", timeout=120).getVOMSesUsers()
+    if not result['OK']:
+      return result
+    for vo, userInfo in result['Value'].items():
+      self.__VOMSesUsersCache.add(vo, 3600 * 24, value=userInfo)
+    self.__VOMSesUsersCache.add('Fresh', 3600 * 12, value=True)
+    return result
+
+  def getActualVOMSesDNs(self, DNs=None):
+    """ Return actual/not suspended DNs from VOMSes
+
+        :param list DNs: DNs fo filter result
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    __VOMSesUsersCache = self.__VOMSesUsersCache.getDict()
+    if not __VOMSesUsersCache.get('Fresh'):
+      result = self.__refreshVOMSesCache()
+      if not result['OK']:
+        return result
+      __VOMSesUsersCache = result['Value']
+    __VOMSesUsersCache.pop('Fresh', None)
+    vomsActualDNsDict = {}
+    if not __VOMSesUsersCache:
+      # I can use simulation here
+      return S_ERROR('VOMSes is not updated.')
+    for vo, voInfo in __VOMSesUsersCache.items():
+      for dn, dnDict in voInfo.items():
+        if DNs and dn not in DNs:
+          continue
+        if dn not in vomsActualDNsDict:
+          vomsActualDNsDict[dn] = {'VOMSRoles': [], 'SuspendedRoles': [], 'Emails': []}
+        vomsActualDNsDict[dn]['VOMSRoles'] = list(set(vomsActualDNsDict[dn]['VOMSRoles'] + dnDict['Roles']))
+        if dnDict['certSuspended']:
+          vomsActualDNsDict[dn]['SuspendedRoles'] = list(set(vomsActualDNsDict[dn]['SuspendedRoles'] + dnDict['Roles']))
+    return S_OK(vomsActualDNsDict)
 
   @gUsersSync
   def userHasProxy(self, userDN, userGroup, validSeconds=0):
@@ -96,14 +141,14 @@ class ProxyManagerClient(object):
         :return: S_OK()/S_ERROR()
     """
     cacheKey = (userDN, userGroup)
-    if self.__usersCache.exists(cacheKey, validSeconds):
+    if self.__usersCache.exists(cacheKey, validSeconds) or self.__usersCache.exists((userDN, ''), validSeconds):
       return S_OK(True)
     # Get list of users from the DB with proxys at least 300 seconds
     gLogger.verbose("Updating list of users in proxy management")
     retVal = self.__refreshUserCache(validSeconds)
     if not retVal['OK']:
       return retVal
-    return S_OK(self.__usersCache.exists(cacheKey, validSeconds))
+    return S_OK(self.__usersCache.exists(cacheKey, validSeconds) or self.__usersCache.exists((userDN, ''), validSeconds))
 
   @gUsersSync
   def getUserPersistence(self, userDN, userGroup, validSeconds=0):
@@ -359,7 +404,7 @@ class ProxyManagerClient(object):
         :return: S_OK(X509Chain)/S_ERROR()
     """
     # Assign VOMS attribute
-    vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
+    vomsAttr = getVOMSAttributeForGroup(userGroup)
     if not vomsAttr:
       gLogger.verbose("No voms attribute assigned to group %s when requested pilot proxy" % userGroup)
       return self.downloadProxy(userDN, userGroup, limited=False, requiredTimeLeft=requiredTimeLeft,
@@ -367,30 +412,6 @@ class ProxyManagerClient(object):
     else:
       return self.downloadVOMSProxy(userDN, userGroup, limited=False, requiredTimeLeft=requiredTimeLeft,
                                     requiredVOMSAttribute=vomsAttr, proxyToConnect=proxyToConnect)
-
-  def getPilotProxyFromVOMSGroup(self, userDN, vomsAttr, requiredTimeLeft=43200, proxyToConnect=None):
-    """ Download a pilot proxy with VOMS extensions depending on the group
-
-        :param basestring userDN: user DN
-        :param basestring vomsAttr: VOMS attribute
-        :param int requiredTimeLeft: required proxy live time in a seconds
-        :param X509Chain proxyToConnect: proxy as a chain
-
-        :return: S_OK(X509Chain)/S_ERROR()
-    """
-    groups = Registry.getGroupsWithVOMSAttribute(vomsAttr)
-    if not groups:
-      return S_ERROR("No group found that has %s as voms attrs" % vomsAttr)
-
-    for userGroup in groups:
-      result = self.downloadVOMSProxy(userDN, userGroup,
-                                      limited=False,
-                                      requiredTimeLeft=requiredTimeLeft,
-                                      requiredVOMSAttribute=vomsAttr,
-                                      proxyToConnect=proxyToConnect)
-      if result['OK']:
-        return result
-    return result
 
   def getPayloadProxyFromDIRACGroup(self, userDN, userGroup, requiredTimeLeft, token=None, proxyToConnect=None):
     """ Download a payload proxy with VOMS extensions depending on the group
@@ -404,7 +425,7 @@ class ProxyManagerClient(object):
         :return: S_OK(X509Chain)/S_ERROR()
     """
     # Assign VOMS attribute
-    vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
+    vomsAttr = getVOMSAttributeForGroup(userGroup)
     if not vomsAttr:
       gLogger.verbose("No voms attribute assigned to group %s when requested payload proxy" % userGroup)
       return self.downloadProxy(userDN, userGroup, limited=True, requiredTimeLeft=requiredTimeLeft,
@@ -413,30 +434,6 @@ class ProxyManagerClient(object):
       return self.downloadVOMSProxy(userDN, userGroup, limited=True, requiredTimeLeft=requiredTimeLeft,
                                     requiredVOMSAttribute=vomsAttr, proxyToConnect=proxyToConnect,
                                     token=token)
-
-  def getPayloadProxyFromVOMSGroup(self, userDN, vomsAttr, token, requiredTimeLeft, proxyToConnect=None):
-    """ Download a payload proxy with VOMS extensions depending on the VOMS attr
-
-        :param basestring userDN: user DN
-        :param basestring vomsAttr: VOMS attribute
-        :param basestring token: valid token to get a proxy
-        :param int requiredTimeLeft: required proxy live time in a seconds
-        :param X509Chain proxyToConnect: proxy as a chain
-
-        :return: S_OK(X509Chain)/S_ERROR()
-    """
-    groups = Registry.getGroupsWithVOMSAttribute(vomsAttr)
-    if not groups:
-      return S_ERROR("No group found that has %s as voms attrs" % vomsAttr)
-    userGroup = groups[0]
-
-    return self.downloadVOMSProxy(userDN,
-                                  userGroup,
-                                  limited=True,
-                                  requiredTimeLeft=requiredTimeLeft,
-                                  requiredVOMSAttribute=vomsAttr,
-                                  proxyToConnect=proxyToConnect,
-                                  token=token)
 
   def dumpProxyToFile(self, chain, destinationFile=None, requiredTimeLeft=600):
     """ Dump a proxy to a file. It's cached so multiple calls won't generate extra files
