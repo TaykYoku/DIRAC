@@ -114,9 +114,12 @@ class RequestTask(object):
       userName = shifterDict["Value"].get("User", "")
       userGroup = shifterDict["Value"].get("Group", "")
 
-      userDN = Registry.getDNForUsername(userName)
-      if not userDN["OK"]:
-        self.log.error("Cannot get DN For Username", "%s: %s" % (userName, userDN["Message"]))
+      result = Registry.getDNForUsernameInGroup(userName, userGroup)
+      if not result['OK']:
+        return result
+      userDN = result['Value']
+      if not userDN:
+        self.log.error("Cannot get DN For Username", userName)
         continue
       userDN = userDN["Value"][0]
       vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
