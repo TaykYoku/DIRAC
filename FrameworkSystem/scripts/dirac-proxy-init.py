@@ -441,7 +441,7 @@ class ProxyInit(object):
               continue
             sys.exit(result['Message'])
           statusDict = result['Value']
-          if statusDict['Status'] in ['prepared', 'in progress', 'finishing']:
+          if statusDict['Status'] in ['prepared', 'in progress', 'finishing', 'redirect']:
             if spinner.color != 'green':
               spinner.text = '"%s" session %s' % (authDict['Session'], statusDict['Status'])
             spinner.color = 'green'
