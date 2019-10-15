@@ -464,7 +464,7 @@ class ProxyInit(object):
 
     with Halo(text='Downloading proxy') as spin:
       # Get group status
-      result = restRequest(confUrl, '/getGroupsStatusByUsername', username='alitov')#statusDict['UserProfile']['username'])
+      result = restRequest(confUrl, '/getGroupsStatusByUsername', username=statusDict['UserProfile']['username'])
       if not result['OK']:
         sys.exit('Cannot get status of groups: %s' % result['Message'])
       groupsStatusDict = result['Value']
