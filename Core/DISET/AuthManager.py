@@ -182,9 +182,6 @@ class AuthManager(object):
     if authorized:
       authorized = groupInitialize(credDict)
 
-    # Authed query
-    allowGroup = not validGroups or credDict[KW_GROUP] in validGroups
-    #matchProperties = self.matchProperties(credDict, requiredProperties)
     # Authorize check
     if allowAll or authorized:
       # Properties check
@@ -196,7 +193,7 @@ class AuthManager(object):
                                (requiredProperties, credDict))
         return False
       # Groups check
-      elif not allowGroup:
+      elif validGroups and credDict[KW_GROUP] not in validGroups:
         self.__authLogger.warn("Client is not authorized\nValid groups: %s\nClient: %s" %
                                (validGroups, credDict))
         return False
@@ -287,7 +284,6 @@ class AuthManager(object):
         
         :return: boolean -- specifying whether any property has matched the valid ones
     """
-    gLogger.info('.....', validProps)
     if not validProps:
       return True
     if not caseSensitive:
