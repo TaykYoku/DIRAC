@@ -131,18 +131,16 @@ class ProxyManagerHandler(RequestHandler):
       cls.saveVOCacheToFile(vo, voActiveUsersDict)
       cls.__VOMSesUsersCache.add(vo, 3600 * 24, voActiveUsersDict)
     if diracAdminsNotifyDict:
-      # FIXME: Registry.getEmailsForGroup('dirac_admin'))
       subject = '[ProxyManager] Cannot update users from %s VOMS VOs.' % ', '.join(diracAdminsNotifyDict.keys())
       body = pprint.pformat(diracAdminsNotifyDict)
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME: Registry.getEmailsForGroup('dirac_admin'))
     for vo in absentAdminsProxies:
-      # FIXME: get voadmin email
       subject = '[DIRAC] Proxy of VO administrator is absent.'
       body = "Dear VO administrator,"
       body += "   please, upload your proxy."
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME: get voadmin email or use dirac admins email
     return S_OK()
 
   @classmethod
@@ -173,7 +171,7 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    VOMSesUsers = self.__VOMSesUsersCache.getDict()  # self.__TESTVOMS
+    VOMSesUsers = self.__VOMSesUsersCache.getDict()
     result = Registry.getVOs()
     if not result['OK']:
       return result
@@ -246,10 +244,10 @@ class ProxyManagerHandler(RequestHandler):
       # WARN:   doesn't need for storing proxies.
       self.log.warn("Proxy with DIRAC group or VOMS extensions must be not allowed to be uploaded.")
 
-    if userName not in Registry.getAllUsers():
+    if userName == 'anonymous':
       return S_ERROR("User %s is not valid to upload proxy." % userName)
 
-    result = self.__proxyDB.generateDelegationRequest(credDict['x509Chain'], userDN)
+    result = self.__proxyDB.generateDelegationRequest(credDict['x509Chain'])
     if result['OK']:
       gLogger.info("Upload request by %s:%s given id %s" % (userName, userGroup, result['Value']['id']))
     else:
@@ -266,9 +264,10 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK(dict)/S_ERROR() -- dict contain proxies
     """
+
     credDict = self.getRemoteCredentials()
     userId = "%s:%s" % (credDict['username'], credDict['group'])
-    retVal = self.__proxyDB.completeDelegation(requestId, credDict['DN'], pemChain)
+    retVal = self.__proxyDB.completeDelegation(requestId, pemChain)
     if not retVal['OK']:
       gLogger.error("Upload proxy failed", "id: %s user: %s message: %s" % (requestId, userId, retVal['Message']))
       return self.__addKnownUserProxiesInfo(retVal)
@@ -290,10 +289,10 @@ class ProxyManagerHandler(RequestHandler):
       return self.__proxyDB.getUsers(validSecondsRequired, userMask=credDict['username'])
     return self.__proxyDB.getUsers(validSecondsRequired)
 
-  def __checkProperties(self, requestedUserDN, requestedUserGroup):
+  def __checkProperties(self, requestedUsername, requestedUserGroup):
     """ Check the properties and return if they can only download limited proxies if authorized
 
-        :param basestring requestedUserDN: user DN
+        :param basestring requestedUsername: user name
         :param basestring requestedUserGroup: DIRAC group
 
         :return: S_OK(boolean)/S_ERROR()
@@ -304,7 +303,7 @@ class ProxyManagerHandler(RequestHandler):
     if Properties.LIMITED_DELEGATION in credDict['properties']:
       return S_OK(True)
     if Properties.PRIVATE_LIMITED_DELEGATION in credDict['properties']:
-      if credDict['DN'] != requestedUserDN:
+      if credDict['username'] != requestedUsername:
         return S_ERROR("You are not allowed to download any proxy")
       if Properties.PRIVATE_LIMITED_DELEGATION not in Registry.getPropertiesForGroup(requestedUserGroup):
         return S_ERROR("You can't download proxies for that group")
@@ -325,13 +324,18 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
+    result = Registry.getUsernameForDN(username)
+    if not result['OK']:
+      return result
+    username = result['Value']
+
     credDict = self.getRemoteCredentials()
-    result = self.__checkProperties(userDN, userGroup)
+    result = self.__checkProperties(username, userGroup)
     if not result['OK']:
       return result
     forceLimited = result['Value']
 
-    self.__proxyDB.logAction("download proxy", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("download proxy", credDict['username'], credDict['group'], username, userGroup)
     return self.__getProxy(userDN, userGroup, requestPem, requiredLifetime, forceLimited)
 
   def __getProxy(self, userDN, userGroup, requestPem, requiredLifetime, forceLimited):
@@ -351,8 +355,7 @@ class ProxyManagerHandler(RequestHandler):
     chain, secsLeft = retVal['Value']
     # If possible we return a proxy 1.5 longer than requested
     requiredLifetime = int(min(secsLeft, requiredLifetime * self.__maxExtraLifeFactor))
-    retVal = chain.generateChainFromRequestString(requestPem,
-                                                  lifetime=requiredLifetime,
+    retVal = chain.generateChainFromRequestString(requestPem, lifetime=requiredLifetime,
                                                   requireLimited=forceLimited)
     if not retVal['OK']:
       return retVal
@@ -372,32 +375,30 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
-    credDict = self.getRemoteCredentials()
+    result = Registry.getUsernameForDN(username)
+    if not result['OK']:
+      return result
+    username = result['Value']
 
-    result = self.__checkProperties(userDN, userGroup)
+    credDict = self.getRemoteCredentials()
+    result = self.__checkProperties(username, userGroup)
     if not result['OK']:
       return result
     forceLimited = result['Value']
 
-    self.__proxyDB.logAction("download voms proxy", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("download voms proxy", credDict['username'], credDict['group'], username, userGroup)
     return self.__getVOMSProxy(userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited)
 
   def __getVOMSProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited):
-    retVal = self.__proxyDB.getVOMSProxy(userDN, userGroup,
-                                         requiredLifeTime=requiredLifetime,
+    retVal = self.__proxyDB.getVOMSProxy(userDN, userGroup, requiredLifeTime=requiredLifetime,
                                          requestedVOMSAttr=vomsAttribute)
     if not retVal['OK']:
       return retVal
     chain, secsLeft = retVal['Value']
     # If possible we return a proxy 1.5 longer than requested
     requiredLifetime = int(min(secsLeft, requiredLifetime * self.__maxExtraLifeFactor))
-    retVal = chain.generateChainFromRequestString(requestPem,
-                                                  lifetime=requiredLifetime,
-                                                  requireLimited=forceLimited)
-    if not retVal['OK']:
-      return retVal
-    _credDict = self.getRemoteCredentials()
-    return S_OK(retVal['Value'])
+    return chain.generateChainFromRequestString(requestPem, lifetime=requiredLifetime,
+                                                requireLimited=forceLimited)
 
   types_setPersistency = [basestring, basestring, bool]
 
@@ -410,12 +411,16 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
+    result = Registry.getUsernameForDN(username)
+    if not result['OK']:
+      return result
+    username = result['Value']
     retVal = self.__proxyDB.setPersistencyFlag(userDN, userGroup, persistentFlag)
     if not retVal['OK']:
       return retVal
     credDict = self.getRemoteCredentials()
     self.__proxyDB.logAction("set persistency to %s" % bool(persistentFlag),
-                             credDict['DN'], credDict['group'], userDN, userGroup)
+                             credDict['username'], credDict['group'], username, userGroup)
     return S_OK()
 
   types_deleteProxyBundle = [(list, tuple)]
@@ -451,14 +456,19 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
+    result = Registry.getUsernameForDN(username)
+    if not result['OK']:
+      return result
+    username = result['Value']
+
     credDict = self.getRemoteCredentials()
     if Properties.PROXY_MANAGEMENT not in credDict['properties']:
-      if userDN != credDict['DN']:
+      if username != credDict['username']:
         return S_ERROR("You aren't allowed!")
     retVal = self.__proxyDB.deleteProxy(userDN, userGroup)
     if not retVal['OK']:
       return retVal
-    self.__proxyDB.logAction("delete proxy", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("delete proxy", credDict['username'], credDict['group'], username, userGroup)
     return S_OK()
 
   types_getContents = [dict, (list, tuple), six.integer_types, six.integer_types]
@@ -494,18 +504,26 @@ class ProxyManagerHandler(RequestHandler):
 
   types_generateToken = [basestring, basestring, six.integer_types]
 
-  def export_generateToken(self, requesterDN, requesterGroup, tokenUses):
+  def export_generateToken(self, requesterUsername, requesterGroup, tokenUses):
     """ Generate tokens for proxy retrieval
 
-        :param basestring requesterDN: user DN
+        :param basestring requesterUsername: user name
         :param basestring requesterGroup: DIRAC group
         :param int,long tokenUses: number of uses
 
         :return: S_OK(tuple)/S_ERROR() -- tuple contain token, number uses
     """
+    # WARN: For compatability
+    if len(requesterUsername.split('/')) > 1:
+      result = Registry.getUsernameForDN(requesterUsername)
+      if not result['OK']:
+        return result
+      requesterUsername = result['Value']
+    # WARN: End
+
     credDict = self.getRemoteCredentials()
-    self.__proxyDB.logAction("generate tokens", credDict['DN'], credDict['group'], requesterDN, requesterGroup)
-    return self.__proxyDB.generateToken(requesterDN, requesterGroup, numUses=tokenUses)
+    self.__proxyDB.logAction("generate tokens", credDict['username'], credDict['group'], requesterUsername, requesterGroup)
+    return self.__proxyDB.generateToken(requesterUsername, requesterGroup, numUses=tokenUses)
 
   types_getProxyWithToken = [basestring, basestring, basestring, six.integer_types, basestring]
 
@@ -521,19 +539,24 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
+    result = Registry.getUsernameForDN(userDN)
+    if not result['OK']:
+      return result
+    username = result['Value']
+
     credDict = self.getRemoteCredentials()
-    result = self.__proxyDB.useToken(token, credDict['DN'], credDict['group'])
-    gLogger.info("Trying to use token %s by %s:%s" % (token, credDict['DN'], credDict['group']))
+    result = self.__proxyDB.useToken(token, credDict['username'], credDict['group'])
+    gLogger.info("Trying to use token %s by %s:%s" % (token, credDict['username'], credDict['group']))
     if not result['OK']:
       return result
     if not result['Value']:
       return S_ERROR("Proxy token is invalid")
-    self.__proxyDB.logAction("used token", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("used token", credDict['username'], credDict['group'], username, userGroup)
 
-    result = self.__checkProperties(userDN, userGroup)
+    result = self.__checkProperties(username, userGroup)
     if not result['OK']:
       return result
-    self.__proxyDB.logAction("download proxy with token", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("download proxy with token", credDict['username'], credDict['group'], username, userGroup)
     return self.__getProxy(userDN, userGroup, requestPem, requiredLifetime, True)
 
   types_getVOMSProxyWithToken = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
@@ -550,16 +573,21 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
+    result = Registry.getUsernameForDN(userDN)
+    if not result['OK']:
+      return result
+    username = result['Value']
+
     credDict = self.getRemoteCredentials()
-    result = self.__proxyDB.useToken(token, credDict['DN'], credDict['group'])
+    result = self.__proxyDB.useToken(token, credDict['username'], credDict['group'])
     if not result['OK']:
       return result
     if not result['Value']:
       return S_ERROR("Proxy token is invalid")
-    self.__proxyDB.logAction("used token", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("used token", credDict['username'], credDict['group'], username, userGroup)
 
-    result = self.__checkProperties(userDN, userGroup)
+    result = self.__checkProperties(username, userGroup)
     if not result['OK']:
       return result
-    self.__proxyDB.logAction("download voms proxy with token", credDict['DN'], credDict['group'], userDN, userGroup)
+    self.__proxyDB.logAction("download voms proxy with token", credDict['DN'], credDict['group'], username, userGroup)
     return self.__getVOMSProxy(userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, True)
