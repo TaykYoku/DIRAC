@@ -25,6 +25,7 @@ from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 
+__versionDB = 1.0
 
 class ProxyDB(DB):
 
@@ -80,6 +81,10 @@ class ProxyDB(DB):
 
     tablesInDB = [t[0] for t in retVal['Value']]
     tablesD = {}
+
+    if 'ProxyDB_Version' not in tablesInDB:
+      tablesD['ProxyDB_Version'] = {'Fields': {'Version': 'INTEGER NOT NULL'},
+                                    'PrimaryKey': 'Version'}
 
     if 'ProxyDB_Requests' not in tablesInDB:
       tablesD['ProxyDB_Requests'] = {'Fields': {'Id': 'INTEGER AUTO_INCREMENT NOT NULL',
@@ -203,6 +208,50 @@ class ProxyDB(DB):
         result = self.__addUserNameToTable(tableName)
         if not result['OK']:
           return result
+
+  def __updateDBVersion(self):
+    """ Update DB version
+    """
+    version = 0.0
+    retVal = self._query("SELECT Version FROM `ProxyDB_Version`")
+    if not retVal['OK']:
+      return retVal
+    data = retVal['Value']
+    if len(data) > 0:
+      version = data[0][0]
+    else:
+      result = self._update("INSERT INTO `ProxyDB_Version` (Version) VALUES (%s)" % version)
+      if not result['OK']:
+        return result
+    if version == __versionDB:
+      return S_OK()
+    if version > _versionDB:
+      return S_ERROR('Your try to use older version of DB %s that install %s' % (__versionDB, version))
+    v = version
+    while v < __versionDB:
+      result = self.__updateDB(v)
+      if not result['OK']:
+        return result
+
+    return self._update("UPDATE `ProxyDB_Version` SET Version='%s' WHERE Version=%s" % (__versionDB, version))
+
+  def __updateDB(self, version):
+    """ Update versions of DB
+
+        :param int version: version of DB
+
+        :return: S_OK()/S_ERROR()
+    """
+    if version == 0.0:
+      for tb, oldColumn, newColumn in [('ProxyDB_Log', 'IssuerDN', 'IssuerUsername'),
+                                       ('ProxyDB_Log', 'TargetDN', 'TargetUsername'),
+                                       ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]
+        result = self._query('ALTER TABLE "%s" CHANGE "%s" "%s"' % (tb, oldColumn, newColumn))
+        if not result['OK']:
+          return result
+      version = 1.0
+    
+    return S_OK()
 
   def generateDelegationRequest(self, credDict):
     """ Generate a request and store it for a given proxy Chain
