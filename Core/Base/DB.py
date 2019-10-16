@@ -15,7 +15,7 @@ class DB(MySQL):
   """
 
   def __init__(self, dbname, fullname, debug=False):
-
+    self.versionDB = 0
     self.fullname = fullname
     database_name = dbname
     self.log = gLogger.getSubLogger(database_name)
@@ -40,6 +40,20 @@ class DB(MySQL):
 
     if not self._connected:
       raise RuntimeError("Can not connect to DB '%s', exiting..." % self.dbName)
+
+    # Initialize version
+    self.oldDBVersion = 0
+    retVal = self._query("SELECT Version FROM `%s_Version`" % database_name)
+    if not retVal['OK']:
+      return retVal
+    data = retVal['Value']
+    if len(data) > 0:
+      self.oldDBVersion = data[0][0]
+    else:
+      result = self._update("INSERT INTO `%s_Version` (Version) VALUES (%s)" % (database_name,
+                                                                                self.oldDBVersion))
+      if not result['OK']:
+        return result
 
     self.log.info("===================== MySQL ======================")
     self.log.info("User:           " + self.dbUser)

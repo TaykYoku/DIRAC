@@ -25,7 +25,6 @@ from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 
-__versionDB = 1.0
 
 class ProxyDB(DB):
 
@@ -35,6 +34,7 @@ class ProxyDB(DB):
                useMyProxy=False):
     DB.__init__(self, 'ProxyDB', 'Framework/ProxyDB')
     random.seed()
+    self.__versionDB = 1
     self.__defaultRequestLifetime = 300  # 5min
     self.__defaultTokenLifetime = 86400 * 7  # 1 week
     self.__defaultTokenMaxUses = 50
@@ -124,7 +124,7 @@ class ProxyDB(DB):
                                                    },
                                         'PrimaryKey': ['UserDN', 'UserGroup', 'vomsAttr']
                                         }
-    # FIXME: DNs was renamed to username, need to test
+    # FIXME:Lytov: DNs was renamed to username, need to test
     if 'ProxyDB_Log' not in tablesInDB:
       tablesD['ProxyDB_Log'] = {'Fields': {'ID': 'BIGINT NOT NULL AUTO_INCREMENT',
                                            'IssuerUsername': 'VARCHAR(255) NOT NULL',
@@ -137,7 +137,7 @@ class ProxyDB(DB):
                                 'PrimaryKey': 'ID',
                                 'Indexes': {'Timestamp': ['Timestamp']}
                                 }
-    # FIXME: DNs was renamed to username, need to test
+    # FIXME:Lytov: DNs was renamed to username, need to test
     if 'ProxyDB_Tokens' not in tablesInDB:
       tablesD['ProxyDB_Tokens'] = {'Fields': {'Token': 'VARCHAR(64) NOT NULL',
                                               'RequesterUsername': 'VARCHAR(255) NOT NULL',
@@ -149,7 +149,7 @@ class ProxyDB(DB):
                                    }
 
     if 'ProxyDB_ExpNotifs' not in tablesInDB:
-      tablesD['ProxyDB_ExpNotifs'] = {'Fields': {'UserDN': 'VARCHAR(255) NOT NULL',  # FIXME: Need to rename to username???
+      tablesD['ProxyDB_ExpNotifs'] = {'Fields': {'UserDN': 'VARCHAR(255) NOT NULL',  # FIXME:Lytov: Need to rename to username???
                                                  'UserGroup': 'VARCHAR(255) NOT NULL',
                                                  'LifeLimit': 'INTEGER UNSIGNED DEFAULT 0',
                                                  'ExpirationTime': 'DATETIME NOT NULL',
@@ -199,6 +199,11 @@ class ProxyDB(DB):
 
         :return: S_OK()/S_ERROR()
     """
+    if self.oldDNVersion == self.versionDB:
+      return S_OK()
+    if self.oldDNVersion > self.versionDB:
+      return S_ERROR('Your try to use older version of DB %s that install %s' % (self.versionDB, self.oldDNVersion))
+
     for tableName in ("ProxyDB_Proxies", "ProxyDB_VOMSProxies"):
       result = self._query("describe `%s`" % tableName)
       if not result['OK']:
@@ -209,47 +214,13 @@ class ProxyDB(DB):
         if not result['OK']:
           return result
 
-  def __updateDBVersion(self):
-    """ Update DB version
-    """
-    version = 0.0
-    retVal = self._query("SELECT Version FROM `ProxyDB_Version`")
-    if not retVal['OK']:
-      return retVal
-    data = retVal['Value']
-    if len(data) > 0:
-      version = data[0][0]
-    else:
-      result = self._update("INSERT INTO `ProxyDB_Version` (Version) VALUES (%s)" % version)
-      if not result['OK']:
-        return result
-    if version == __versionDB:
-      return S_OK()
-    if version > _versionDB:
-      return S_ERROR('Your try to use older version of DB %s that install %s' % (__versionDB, version))
-    v = version
-    while v < __versionDB:
-      result = self.__updateDB(v)
-      if not result['OK']:
-        return result
-
-    return self._update("UPDATE `ProxyDB_Version` SET Version='%s' WHERE Version=%s" % (__versionDB, version))
-
-  def __updateDB(self, version):
-    """ Update versions of DB
-
-        :param int version: version of DB
-
-        :return: S_OK()/S_ERROR()
-    """
-    if version == 0.0:
+    if self.oldDNVersion < 1:
       for tb, oldColumn, newColumn in [('ProxyDB_Log', 'IssuerDN', 'IssuerUsername'),
                                        ('ProxyDB_Log', 'TargetDN', 'TargetUsername'),
                                        ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]
         result = self._query('ALTER TABLE "%s" CHANGE "%s" "%s"' % (tb, oldColumn, newColumn))
         if not result['OK']:
           return result
-      version = 1.0
     
     return S_OK()
 
@@ -1281,7 +1252,7 @@ class ProxyDB(DB):
     cmd = "DELETE FROM `ProxyDB_ExpNotifs` WHERE ExpirationTime < UTC_TIMESTAMP()"
     return self._update(cmd)
 
-  # FIXME: Add clean proxy
+  # FIXME:Lytov: Add clean proxy
   def sendExpirationNotifications(self):
     """ Send notification about expiration
 
