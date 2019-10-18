@@ -68,7 +68,6 @@ class ProxyManagerHandler(RequestHandler):
     absentAdminsProxies = []
     gLogger.info('Update VOMSes information..')
     if not vos:
-      # FIXME: Its VOs Names??
       result = Registry.getVOs()
       if not result['OK']:
         return result
@@ -83,7 +82,7 @@ class ProxyManagerHandler(RequestHandler):
           gLogger.error(result['Message'])
           continue
         DNs += result['Value']
-      # FIXME: Get VO admin DNs from SyncServer
+      # FIXME:Lytov: Get VO admin DNs from SyncServer
       if not DNs:
         diracAdminsNotifyDict[vo] = 'Cannot found administrators for %s VOMS VO' % vo
         gLogger.error('Cannot update users from "%s" VO.' % vo, 'No admin user found.')
@@ -134,13 +133,13 @@ class ProxyManagerHandler(RequestHandler):
       subject = '[ProxyManager] Cannot update users from %s VOMS VOs.' % ', '.join(diracAdminsNotifyDict.keys())
       body = pprint.pformat(diracAdminsNotifyDict)
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME: Registry.getEmailsForGroup('dirac_admin'))
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: Registry.getEmailsForGroup('dirac_admin'))
     for vo in absentAdminsProxies:
       subject = '[DIRAC] Proxy of VO administrator is absent.'
       body = "Dear VO administrator,"
       body += "   please, upload your proxy."
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME: get voadmin email or use dirac admins email
+      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: get voadmin email or use dirac admins email
     return S_OK()
 
   @classmethod
