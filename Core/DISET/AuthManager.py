@@ -296,6 +296,4 @@ class AuthManager(object):
         prop = prop.lower()
       if prop in validProps:
         foundProps.append(validProps[prop])
-    # FIXME: Why?
-    credDict[KW_PROPERTIES] = foundProps
     return bool(foundProps)
