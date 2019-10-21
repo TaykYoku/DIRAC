@@ -38,7 +38,7 @@ fields = [
     'ProductionID',
     'CreationDate',
     'LastUpdate',
-    'Author',
+    'AuthorDN',
     'AuthorGroup']
 records = []
 
@@ -55,7 +55,7 @@ if res['OK']:
                 prod['ProductionID']), str(
                 prod['CreationDate']), str(
                 prod['LastUpdate']), str(
-                prod['Author']), str(
+                prod['AuthorDN']), str(
                 prod['AuthorGroup'])])
 else:
   DIRAC.gLogger.error(res['Message'])

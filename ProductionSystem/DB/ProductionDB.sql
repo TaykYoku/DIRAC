@@ -25,7 +25,7 @@ CREATE TABLE Productions(
     Description LONGBLOB,
     CreationDate DATETIME,
     LastUpdate DATETIME,
-    Author VARCHAR(255) NOT NULL,
+    AuthorDN VARCHAR(255) NOT NULL,
     AuthorGroup VARCHAR(255) NOT NULL,
     Status  CHAR(32) DEFAULT 'New',
     PRIMARY KEY(ProductionID),
