@@ -28,7 +28,7 @@ def getVOMSAttributeForGroup(group):
   """
   return gConfig.getValue("%s/Groups/%s/VOMSRole" % (gBaseRegistrySection, group), getDefaultVOMSAttribute())
 
-def getIDsForUsername(username):  # FIXME: active?
+def getIDsForUsername(username):
   """ Return IDs for DIRAC user
 
       :param basestring username: DIRAC user
@@ -490,7 +490,7 @@ def getProviderForID(ID):
     return S_ERROR('Cannot find identity providers for %s' % ID)
   return S_OK(list(set(providers)))
 
-def getDNsForUsername(username, active=False):  # FIXME: active?
+def getDNsForUsername(username, active=False):
   """ Find all DNs for DIRAC user
   
       :param basestring username: DIRAC user
