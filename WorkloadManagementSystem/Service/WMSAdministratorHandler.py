@@ -83,13 +83,8 @@ class WMSAdministratorHandler(RequestHandler):
     """ Ban the given site in the site mask
     """
 
-    result = self.getRemoteCredentials()
-    dn = result['DN']
-    result = getUsernameForDN(dn)
-    if result['OK']:
-      author = result['Value']
-    else:
-      author = dn
+    credDict = self.getRemoteCredentials()
+    author = credDict['username'] if credDict['username'] != 'anonymous' else credDict['DN']
     result = jobDB.banSiteInMask(site, author, comment)
     return result
 
@@ -100,13 +95,8 @@ class WMSAdministratorHandler(RequestHandler):
     """ Allow the given site in the site mask
     """
 
-    result = self.getRemoteCredentials()
-    dn = result['DN']
-    result = getUsernameForDN(dn)
-    if result['OK']:
-      author = result['Value']
-    else:
-      author = dn
+    credDict = self.getRemoteCredentials()
+    author = credDict['username'] if credDict['username'] != 'anonymous' else credDict['DN']
     result = jobDB.allowSiteInMask(site, author, comment)
     return result
 
