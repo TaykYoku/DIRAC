@@ -31,9 +31,9 @@ class ProductionManagerHandlerBase(RequestHandler):
 
   def export_addProduction(self, prodName, prodDescription):
     credDict = self.getRemoteCredentials()
-    authorDN = credDict['DN']
+    author = credDict['username']
     authorGroup = credDict['group']
-    res = database.addProduction(prodName, prodDescription, authorDN, authorGroup)
+    res = database.addProduction(prodName, prodDescription, author, authorGroup)
     if res['OK']:
       gLogger.info("Added production %d" % res['Value'])
     return self._parseRes(res)
@@ -42,8 +42,8 @@ class ProductionManagerHandlerBase(RequestHandler):
 
   def export_deleteProduction(self, prodName):
     credDict = self.getRemoteCredentials()
-    authorDN = credDict['DN']
-    res = database.deleteProduction(prodName, author=authorDN)
+    author = credDict['username']
+    res = database.deleteProduction(prodName, author=author)
     return self._parseRes(res)
 
   types_getProductions = []

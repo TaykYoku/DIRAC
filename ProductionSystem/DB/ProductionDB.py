@@ -50,7 +50,7 @@ class ProductionDB(DB):
                        'Description',
                        'CreationDate',
                        'LastUpdate',
-                       'AuthorDN',
+                       'Author',
                        'AuthorGroup',
                        'Status']
 
@@ -83,12 +83,12 @@ class ProductionDB(DB):
         'Stopped': 'stopTransformation',
         'Cleaned': 'cleanTransformation'}
 
-  def addProduction(self, prodName, prodDescription, authorDN, authorGroup, connection=False):
+  def addProduction(self, prodName, prodDescription, author, authorGroup, connection=False):
     """ Create new production starting from its description
 
     :param str prodName: a string with the Production name
     :param str prodDescription: a json object with the Production description
-    :param str authorDN: string with the author DN
+    :param str author: string with the author DN
     :param str authorGroup: string with author group
     """
     connection = self.__getConnection(connection)
@@ -102,9 +102,9 @@ class ProductionDB(DB):
     self.lock.acquire()
 
     req = "INSERT INTO Productions (ProductionName,Description,CreationDate,LastUpdate,\
-                                    AuthorDN,AuthorGroup,Status)\
+                                    Author,AuthorGroup,Status)\
                                 VALUES ('%s','%s',UTC_TIMESTAMP(),UTC_TIMESTAMP(),'%s','%s','New');" % \
-        (prodName, prodDescription, authorDN, authorGroup)
+        (prodName, prodDescription, author, authorGroup)
 
     res = self._update(req, connection)
     if not res['OK']:
