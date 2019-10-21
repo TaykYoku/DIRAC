@@ -42,14 +42,8 @@ class SystemLoggingHandler(RequestHandler):
     the log Database
     """
     credentials = self.getRemoteCredentials()
-    if 'DN' in credentials:
-      userDN = credentials['DN']
-    else:
-      userDN = 'unknown'
-    if 'group' in credentials:
-      userGroup = credentials['group']
-    else:
-      userGroup = 'unknown'
+    userDN = credentials['DN'] if credentials.get('DN') else 'unknown'
+    userGroup = credentials['group'] if credentials.get('group') else 'unknown'
 
     remoteAddress = self.getRemoteAddress()[0]
     return gLogDB.insertMessage(messageObject, site, nodeFQDN, userDN, userGroup, remoteAddress)
