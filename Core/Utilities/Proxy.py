@@ -227,7 +227,7 @@ def _putProxy(userDN=None, userName=None, userGroup=None, vomsFlag=None, proxyFi
     result = getDNForUsernameInGroup(userName, userGroup)
     if not result['OK']:
       return result
-    if not result['Value']
+    if not result['Value']:
       return S_ERROR('No user DN found for %s@%s' % (userName, userGroup))
     userDNs = [result['Value']]
 
