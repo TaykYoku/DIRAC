@@ -1110,6 +1110,11 @@ class ProxyDB(DB):
           record.insert(1, '')
           record.insert(3, False)
         record[3] = record[3] == 'True'
+        result = Registry.getUsernameForDN(record[0])
+        if not result['OK']:
+          self.log.error(result['Message'])
+          continue
+        record.insert(0, result['Value'])
         data.append(record)
     totalRecords = len(data)
     return S_OK({'ParameterNames': fields, 'Records': data, 'TotalRecords': totalRecords})
