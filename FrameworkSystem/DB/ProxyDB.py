@@ -124,7 +124,7 @@ class ProxyDB(DB):
                                                    },
                                         'PrimaryKey': ['UserDN', 'UserGroup', 'vomsAttr']
                                         }
-    # FIXME:Lytov: DNs was renamed to username, need to test
+
     if 'ProxyDB_Log' not in tablesInDB:
       tablesD['ProxyDB_Log'] = {'Fields': {'ID': 'BIGINT NOT NULL AUTO_INCREMENT',
                                            'IssuerUsername': 'VARCHAR(255) NOT NULL',
@@ -137,7 +137,7 @@ class ProxyDB(DB):
                                 'PrimaryKey': 'ID',
                                 'Indexes': {'Timestamp': ['Timestamp']}
                                 }
-    # FIXME:Lytov: DNs was renamed to username, need to test
+
     if 'ProxyDB_Tokens' not in tablesInDB:
       tablesD['ProxyDB_Tokens'] = {'Fields': {'Token': 'VARCHAR(64) NOT NULL',
                                               'RequesterUsername': 'VARCHAR(255) NOT NULL',
@@ -199,10 +199,21 @@ class ProxyDB(DB):
 
         :return: S_OK()/S_ERROR()
     """
-    if self.oldDNVersion == self.versionDB:
+    result = self._query("SELECT Version FROM `ProxyDB_Version`")
+    if not result['OK']:
+      return result
+    data = result['Value']
+    if len(data) == 0:
+      self.versionDB = 1
+      result = self._update("INSERT INTO `ProxyDB_Version` (Version) VALUES (%s)" % self.versionDB)
+      if not result['OK']:
+        return result
+    else:
+      self.versionDB = data[0][0]
+    if self.versionDB == 1:
       return S_OK()
-    if self.oldDNVersion > self.versionDB:
-      return S_ERROR('Your try to use older version of DB %s that install %s' % (self.versionDB, self.oldDNVersion))
+    if self.versionDB > 1:
+      return S_ERROR('Installed newer DB version "%s".' % self.versionDB)
 
     for tableName in ("ProxyDB_Proxies", "ProxyDB_VOMSProxies"):
       result = self._query("describe `%s`" % tableName)
@@ -214,10 +225,10 @@ class ProxyDB(DB):
         if not result['OK']:
           return result
 
-    if self.oldDNVersion < 1:
+    if self.versionDB < 1:
       for tb, oldColumn, newColumn in [('ProxyDB_Log', 'IssuerDN', 'IssuerUsername'),
                                        ('ProxyDB_Log', 'TargetDN', 'TargetUsername'),
-                                       ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]
+                                       ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]:
         result = self._query('ALTER TABLE "%s" CHANGE "%s" "%s"' % (tb, oldColumn, newColumn))
         if not result['OK']:
           return result
