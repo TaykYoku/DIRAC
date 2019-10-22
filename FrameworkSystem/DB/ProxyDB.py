@@ -1062,6 +1062,14 @@ class ProxyDB(DB):
 
         :return: S_OK(dict)/S_ERROR() -- dict contain fields, record list, total records
     """
+    if "UserName" in selDict:
+      if not selDict.get("UserDN"):
+        selDict["UserDN"] = []
+      for username in selDict["UserName"]:
+        result = Registry.getDNsForUsername(username)
+        if result['OK']:
+          selDict["UserDN"] += result['Value']
+      del selDict["UserName"]
     data = []
     sqlWhere = ["Pem is not NULL"]
     for table, fields in [('ProxyDB_CleanProxies', ("UserDN", "ExpirationTime")),
@@ -1084,6 +1092,8 @@ class ProxyDB(DB):
           elif len(sort) > 2:
             return S_ERROR("Invalid sort %s" % sort)
           if sort[0] not in fields:
+            if sort[0] == 'UserName':
+              continue
             if table == 'ProxyDB_CleanProxies' and sort[0] in ['UserGroup', 'PersistentFlag']:
               continue
             return S_ERROR("Invalid sorting field %s" % sort[0])

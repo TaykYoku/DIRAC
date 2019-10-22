@@ -671,7 +671,7 @@ def getGroupsForDN(dn):
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
   result = gProxyManager.getActualVOMSesDNs(dn)
   vomsInfo = result['Value'] if result['OK'] else {}
-  
+
   groups = []
   vomsRoles = dn in vomsInfo and vomsInfo[dn].get('VOMSRoles') or []
   for vomsRole in vomsRoles:
