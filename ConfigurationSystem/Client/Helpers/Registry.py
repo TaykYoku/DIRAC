@@ -670,8 +670,8 @@ def getGroupsForDN(dn):
   except Exception:
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
   result = gProxyManager.getActualVOMSesDNs(dn)
-
   vomsInfo = result['Value'] if result['OK'] else {}
+  
   groups = []
   vomsRoles = dn in vomsInfo and vomsInfo[dn].get('VOMSRoles') or []
   for vomsRole in vomsRoles:
@@ -712,7 +712,7 @@ def getDNsInGroup(group):
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
   result = gProxyManager.getActualVOMSesDNs()
   dnVOMSRoleDict = result['Value'] if result['OK'] else {}
-  
+
   DNs = getGroupOption(group, 'DNs', [])
   vomsRole = getGroupOption(group, 'VOMSRole', '')
   for dn, infoDict in dnVOMSRoleDict.items():
@@ -749,9 +749,7 @@ def getGroupsStatusByUsername(username):
     return result
   userDNs = result['Value']
   result = gProxyManager.getActualVOMSesDNs(userDNs)
-  if not result['OK']:
-    return result
-  vomsInfo = result['Value']
+  vomsInfo = result['Value'] if result['OK'] else {}
 
   for dn in userDNs:
     # Search proxy provider to set default status of groups of this DN
