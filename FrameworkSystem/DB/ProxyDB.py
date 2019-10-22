@@ -249,7 +249,7 @@ class ProxyDB(DB):
     result = credDict['x509Chain'].getCredentials()
     if not result['OK']:
       return result
-    DN = result['Value']['DN']
+    DN = result['Value']['subject']
     retVal = credDict['x509Chain'].generateProxyRequest()
     if not retVal['OK']:
       return retVal
@@ -342,10 +342,10 @@ class ProxyDB(DB):
     retVal = chain.loadChainFromString(delegatedPem)
     if not retVal['OK']:
       return retVal
-    result = credDict['x509Chain'].getCredentials()
+    result = chain.getCredentials()
     if not result['OK']:
       return result
-    userDN = result['Value']['DN']
+    userDN = result['Value']['issuer']
     retVal = self.__retrieveDelegationRequest(requestId, userDN)
     if not retVal['OK']:
       return retVal
