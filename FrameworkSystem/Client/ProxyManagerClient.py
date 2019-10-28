@@ -24,6 +24,21 @@ gVOMSProxiesSync = ThreadSafe.Synchronizer()
 
 
 class ProxyManagerClient(object):
+  """ Proxy manager client
+      
+      Contain __VOMSesUsersCache cache, with next structure:
+      {
+        <VOMSVO>: {
+          <User DN>: {
+                VOMSRoles: [ <VOMS roles> ],
+                SuspendedRoles: [ <suspended roles> ]
+                ...
+              },
+          <User DN2>: { ... },
+          ...
+        }
+      }
+  """
   __metaclass__ = DIRACSingleton.DIRACSingleton
 
   def __init__(self):
