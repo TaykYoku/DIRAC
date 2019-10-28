@@ -7,11 +7,18 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getInfoAboutProviders
 
 try:
-  from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+except ImportError:
+  pass
+try:
+  from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+except ImportError:
+  pass
+try:
+  from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
 except ImportError:
   pass
 
@@ -512,8 +519,9 @@ def getDNsForUsername(username, active=False):
     IdPsDict = result['Value']
   except Exception:
     IdPsDict = {}
-
+  
   DNs = getDNsForUsernameFromSC(username)
+  
   for ID, idDict in IdPsDict.items():
     if idDict.get('DNs'):
       # if active:
@@ -600,6 +608,11 @@ def getProxyProviderForDN(userDN):
 
       :return: S_OK(basestring)/S_ERROR()
   """
+  result = getUsernameForDN(userDN)
+  if not result['OK']:
+    return result
+  username = result['Value']
+
   try:
     gSessionManager
   except Exception:
@@ -607,7 +620,6 @@ def getProxyProviderForDN(userDN):
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
     except ImportError:
       pass
-  username = getUsernameForDN(userDN)
   try:
     result = gSessionManager.getIdPsCache(getIDsForUsername(username))
     if not result['OK']:
@@ -620,6 +632,25 @@ def getProxyProviderForDN(userDN):
   for ID, idDict in IDsDict.items():
     if userDN in (idDict.get('DNs') or []):
       provider = idDict['DNs'][userDN].get('ProxyProvider')
+  
+  if not provider:
+    # Get providers
+    result = getInfoAboutProviders(of='Proxy')
+    if not result['OK']:
+      return result
+      
+    # Try to use getUserDN method if exist
+    try:
+      ProxyProviderFactory()
+    except Exception:
+      from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+    for providerName in result['Value']:
+      providerObj = ProxyProviderFactory().getProxyProvider(providerName)
+      if providerObj['OK'] and 'getUserDN' in dir(providerObj['Value']):
+        result = providerObj['Value'].getUserDN(userDN=userDN)
+        if result['OK']:
+          return S_OK(providerName)
+
   return S_OK(provider or 'Certificate')
 
 def getUsersInVO(vo, defaultValue=None):
@@ -658,10 +689,10 @@ def getEmailsForGroup(groupName):
     emails.append(email)
   return emails
 
-def getGroupsForDN(dn):
+def getGroupsForDN(userDN):
   """ Get all posible groups for DN
 
-      :param basestirng DN: user DN
+      :param basestirng userDN: user DN
 
       :return: S_OK(list)/S_ERROR() -- contain list of groups
   """
@@ -669,17 +700,25 @@ def getGroupsForDN(dn):
     gProxyManager
   except Exception:
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  result = gProxyManager.getActualVOMSesDNs(dn)
+  result = gProxyManager.getActualVOMSesDNs(userDN)
   vomsInfo = result['Value'] if result['OK'] else {}
 
   groups = []
-  vomsRoles = dn in vomsInfo and vomsInfo[dn].get('VOMSRoles') or []
+  vomsRoles = userDN in vomsInfo and vomsInfo[userDN].get('VOMSRoles') or []
   for vomsRole in vomsRoles:
     groups += getGroupsWithVOMSAttribute(vomsRole)
 
+  result = getUsernameForDN(userDN)
+  if not result['OK']:
+    return result
+  username = result['Value']
+
   for group in getAllGroups():
-    if dn in getGroupOption(group, 'DNs', []):
+    if userDN in getGroupOption(group, 'DNs', []):
       groups.append(group)
+    elif username in getGroupOption(group, 'Users', []):
+      groups.append(group)
+
   return S_OK(list(set(groups)))
   
 def getDNForUsernameInGroup(username, group):
@@ -697,7 +736,7 @@ def getDNForUsernameInGroup(username, group):
   for dn in getDNsInGroup(group):
     if dn in userDNs:
       return S_OK(dn)
-  return S_OK()
+  return S_ERROR('For %s@%s not found DN.' % (username, group))
 
 def getDNsInGroup(group):
   """ Find user DNs for DIRAC group
@@ -711,13 +750,24 @@ def getDNsInGroup(group):
   except Exception:
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
   result = gProxyManager.getActualVOMSesDNs()
-  dnVOMSRoleDict = result['Value'] if result['OK'] else {}
+  vomsInfo = result['Value'] if result['OK'] else {}
 
   DNs = getGroupOption(group, 'DNs', [])
   vomsRole = getGroupOption(group, 'VOMSRole', '')
-  for dn, infoDict in dnVOMSRoleDict.items():
+  for dn, infoDict in vomsInfo.items():
     if vomsRole in infoDict['VOMSRoles']:
       DNs.append(dn)
+  
+  for username in getGroupOption(group, 'Users', []):
+    result = getDNsForUsername(username)
+    if not result['OK']:
+      return result
+    if not any(dn in result['Value'] for dn in DNs):
+      result = findSomeDNToUseForGroupsThatNotNeedDN(username)
+      if not result['OK']:
+        return result
+      DNs.append(result['Value'])
+    
   return list(set(DNs))
 
 def getGroupsStatusByUsername(username):
@@ -725,76 +775,83 @@ def getGroupsStatusByUsername(username):
 
       :param basestring username: user name
 
-      :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
-                                       {<group name>: {'Status': <status of group>,
-                                                       'Comment': <information what need to do>},
-                                        ...: {...}}
+      :return: S_OK(dict)/S_ERROR()
   """
-  try:
-    gProxyManager
-  except Exception:
-    from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  try:
-    ProxyProviderFactory
-  except Exception:
-    from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
-
   statusDict = {}
   result = getGroupsForUser(username)
   if not result['OK']:
     return result
-  userGroups = result['Value']
-  result = getDNsForUsername(username)
+  for group in result['Value']:
+    result = getStatusGroupByUsername(group, username)
+    if not result['OK']:
+      return result
+    statusDict[group] = result['Value']
+  return S_OK(statusDict)
+
+def getStatusGroupByUsername(group, username):
+  """ Get status of group for DIRAC user
+
+      :param basestring group: group name
+      :param basestring username: user name
+
+      :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
+                                       {'Status': <status of group>, 'Comment': <information what need to do>}
+  """
+  result = getDNForUsernameInGroup(username, group)
   if not result['OK']:
     return result
-  userDNs = result['Value']
-  result = gProxyManager.getActualVOMSesDNs(userDNs)
-  vomsInfo = result['Value'] if result['OK'] else {}
+  dn = result['Value']
 
-  for dn in userDNs:
-    # Search proxy provider to set default status of groups of this DN
-    defStatus = {'Status': 'needToUpload', 'Comment': 'Need to upload %s certificate' % dn}
+  try:
+    gProxyManager
+  except Exception:
+    from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+  result = gProxyManager.getActualVOMSesDNs([dn])
+  vomsInfo = result['Value'] if result['OK'] else {}
+  
+  vomsRole = getGroupOption(group, 'VOMSRole')
+  if vomsRole:
+    result = gProxyManager.getActualVOMSesDNs([dn])
+    vomsInfo = result['Value'] if result['OK'] else {}
+    if not any(dnDict.get('VOMSRoles') for dnDict in vomsInfo.values()):
+      return S_OK({'Status': 'failed', 'Comment': 'Not found VOMS role'})
+    if any(vomsRole in dnDict['SuspendedRoles'] for dnDict in vomsInfo.values()):
+      return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
+
+  result = gProxyManager.userHasProxy(dn, group)
+  if not result['OK']:
+    return result
+  if not result['Value']:
     result = getProxyProviderForDN(dn)
     if not result['OK']:
       return result
     proxyProvider = result['Value']
-    if not proxyProvider == 'Certificate':
-      result = ProxyProviderFactory().getProxyProvider(proxyProvider)
-      if not result['OK']:
-        return result
-      providerObj = result['Value']
-      result = providerObj.checkStatus(dn)
-      if not result['OK']:
-        return result
-      defStatus = result['Value']
+    if proxyProvider == 'Certificate':
+      return S_OK({'Status': 'needToUpload', 'Comment': 'Need to upload %s certificate' % dn})
+
+    try:
+      ProxyProviderFactory()
+    except Exception:
+      from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+    providerRes = ProxyProviderFactory().getProxyProvider(proxyProvider)
+    if not providerRes['OK']:
+      return providerRes
+    return providerRes['Value'].checkStatus(dn)
     
-    # Look groups with DN
-    result = getGroupsForDN(dn)
+  return S_OK({'Status': 'ready', 'Comment': 'Proxy uploaded'})
+
+def findSomeDNToUseForGroupsThatNotNeedDN(username):
+  """ This method is HACK for groups that not need DN from user, like as dirac_user, dirac_admin
+      In this cause we will search first DN in CS or any DN that we can to find
+
+      :param basestring username: user name
+
+      :return: S_OK(basestring)/S_ERROR()
+  """
+  defDNs = getDNsForUsernameFromSC(username)
+  if not defDNs:
+    result = getDNsForUsername(username)
     if not result['OK']:
       return result
-    groups = result['Value']
-    userGroups = list(set(userGroups) - set(groups))
-    for group in groups:
-      vomsRole = getGroupOption(group, 'VOMSRole')
-      
-      # Look in VOMSes
-      if any(vomsRole in dnDict['SuspendedRoles'] for dnDict in vomsInfo.values()):
-        statusDict[group] = {'Status': 'suspended', 'Comment': 'User suspended'}
-        continue
-      
-      # Look in proxies repository
-      if any(vomsRole in dnDict['VOMSRoles'] for dnDict in vomsInfo.values()):
-        result = gProxyManager.userHasProxy(dn, group)
-        if not result['OK']:
-          return result
-        if result['Value']:
-          statusDict[group] = {'Status': 'ready', 'Comment': 'Proxy uploaded'}
-          continue
-      
-      # Set default status
-      statusDict[group] = defStatus
-  
-  # Add groups that not need certificate
-  for group in userGroups:
-    statusDict[group] = {'Status': 'ready', 'Comment': 'Certificate not need for this group'}
-  return S_OK(statusDict)
+    defDNs = result['Value']
+  return S_OK(defDNs[0])
