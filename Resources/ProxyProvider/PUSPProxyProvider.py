@@ -91,15 +91,15 @@ class PUSPProxyProvider(ProxyProvider):
     proxyString = result['Value']
     return S_OK((proxyString, timeLeft))
 
-  def getUserDN(self, userDict):
-    """ Get DN of the user certificate that will be created
+  # def getUserDN(self, userDN=None):
+  #   """ Get DN of the user certificate that will be created
 
-    :param dict userDict:
-    :return: S_OK/S_ERROR, Value is the DN string
-    """
+  #   :param dict userDict:
+  #   :return: S_OK/S_ERROR, Value is the DN string
+  #   """
 
-    userDN = userDict.get('DN')
-    if not userDN:
-      return S_ERROR('Incomplete user information')
+  #   userDN = userDict.get('DN')
+  #   if not userDN:
+  #     return S_ERROR('Incomplete user information')
 
-    return S_OK(userDN)
+  #   return S_OK(userDN)

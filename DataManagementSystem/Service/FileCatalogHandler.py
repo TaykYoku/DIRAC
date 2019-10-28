@@ -104,7 +104,7 @@ def initializeFileCatalogHandler(serviceInfo):
 
   return res
 
-# FIXME:Lytov: Need to check howto use DN in getRemoteCredentials
+
 class FileCatalogHandler(RequestHandler):
   """
   ..class:: FileCatalogHandler

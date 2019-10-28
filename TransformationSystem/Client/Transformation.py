@@ -257,7 +257,7 @@ class Transformation(API):
       return res
     loggingList = res['Value']
     if printOutput:
-      self._printFormattedDictList(loggingList, ['Message', 'MessageDate', 'Author'], 'MessageDate', 'MessageDate')
+      self._printFormattedDictList(loggingList, ['Message', 'MessageDate', 'AuthorDN'], 'MessageDate', 'MessageDate')
     return S_OK(loggingList)
 
   def extendTransformation(self, nTasks, printOutput=False):
@@ -404,10 +404,10 @@ class Transformation(API):
   def getTransformationsByUser(self, authorDN="", userName="", transID=[], transStatus=[],
                                outputFields=['TransformationID', 'Status',
                                               'AgentType', 'TransformationName',
-                                             'CreationDate', 'Author'],
+                                             'CreationDate', 'AuthorDN'],
                                orderBy='TransformationID', printOutput=False):
     condDict = {}
-    if not authorDN or not userName:
+    if not authorDN:
       res = self.getAuthorDNfromProxy()
       if not res['OK']:
         gLogger.error(res['Message'])
@@ -432,7 +432,7 @@ class Transformation(API):
     else:
       gLogger.info("Will list transformations created by '%s' with status '%s'" % (authorDN, ', '.join(transStatus)))
 
-    condDict['Author'] = userName
+    condDict['AuthorDN'] = AuthorDN
     if transID:
       condDict['TransformationID'] = transID
     if transStatus:

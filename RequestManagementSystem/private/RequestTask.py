@@ -121,7 +121,7 @@ class RequestTask(object):
       if not userDN:
         self.log.error("Cannot get DN For Username", userName)
         continue
-      userDN = userDN["Value"][0]
+      userDN = userDN["Value"]
       vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
       if vomsAttr:
         self.log.debug("getting VOMS [%s] proxy for shifter %s@%s (%s)" % (vomsAttr, userName,

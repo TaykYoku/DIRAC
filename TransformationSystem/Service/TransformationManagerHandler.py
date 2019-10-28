@@ -72,9 +72,9 @@ class TransformationManagerHandler(RequestHandler):
                                inputMetaQuery=None,
                                outputMetaQuery=None):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
+    authorDN = credDict['DN']
     authorGroup = credDict['group']
-    res = database.addTransformation(transName, description, longDescription, author, authorGroup, transType, plugin,
+    res = database.addTransformation(transName, description, longDescription, authorDN, authorGroup, transType, plugin,
                                      agentType, fileMask,
                                      transformationGroup=transformationGroup,
                                      groupSize=groupSize,
@@ -93,24 +93,24 @@ class TransformationManagerHandler(RequestHandler):
 
   def export_deleteTransformation(self, transName):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
-    res = database.deleteTransformation(transName, author=author)
+    authorDN = credDict['DN']
+    res = database.deleteTransformation(transName, author=authorDN)
     return self._parseRes(res)
 
   types_cleanTransformation = [transTypes]
 
   def export_cleanTransformation(self, transName):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
-    res = database.cleanTransformation(transName, author=author)
+    authorDN = credDict['DN']
+    res = database.cleanTransformation(transName, author=authorDN)
     return self._parseRes(res)
 
   types_setTransformationParameter = [transTypes, basestring]
 
   def export_setTransformationParameter(self, transName, paramName, paramValue):
     credDict = self.getRemoteCredentials()
-    author = credDict['useranme']
-    res = database.setTransformationParameter(transName, paramName, paramValue, author=author)
+    authorDN = credDict['DN']
+    res = database.setTransformationParameter(transName, paramName, paramValue, author=authorDN)
     return self._parseRes(res)
 
   types_deleteTransformationParameter = [transTypes, basestring]
@@ -263,8 +263,8 @@ class TransformationManagerHandler(RequestHandler):
 
   def export_deleteTasks(self, transName, taskMin, taskMax):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
-    res = database.deleteTasks(transName, taskMin, taskMax, author=author)
+    authorDN = credDict['DN']
+    res = database.deleteTasks(transName, taskMin, taskMax, author=authorDN)
     return self._parseRes(res)
 
   types_extendTransformation = [transTypes, [long, int]]
@@ -307,16 +307,16 @@ class TransformationManagerHandler(RequestHandler):
 
   def export_createTransformationMetaQuery(self, transName, queryDict, queryType):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
-    res = database.createTransformationMetaQuery(transName, queryDict, queryType, author=author)
+    authorDN = credDict['DN']
+    res = database.createTransformationMetaQuery(transName, queryDict, queryType, author=authorDN)
     return self._parseRes(res)
 
   types_deleteTransformationMetaQuery = [transTypes, basestring]
 
   def export_deleteTransformationMetaQuery(self, transName, queryType):
     credDict = self.getRemoteCredentials()
-    author = credDict['username']
-    res = database.deleteTransformationMetaQuery(transName, queryType, author=author)
+    authorDN = credDict['DN']
+    res = database.deleteTransformationMetaQuery(transName, queryType, author=authorDN)
     return self._parseRes(res)
 
   types_getTransformationMetaQuery = [transTypes, basestring]

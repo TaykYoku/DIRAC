@@ -51,11 +51,11 @@ class JobPolicy(object):
         :param basestring userGroup: group name
         :param boolean allInfo: all information
     """
+    self.jobDB = None
+    self.allInfo = allInfo
     self.userName = username
     self.userGroup = userGroup
     self.userProperties = getPropertiesForGroup(userGroup, [])
-    self.jobDB = None
-    self.allInfo = allInfo
     self.__permissions = {}
     self.__getUserJobPolicy()
 
@@ -111,7 +111,7 @@ class JobPolicy(object):
       for right in PROPERTY_RIGHTS[Properties.GENERIC_PILOT]:
         self.__permissions[right] = True
 
-  def getJobPolicy(self, jobOwner='', jobOwnerGroup=''):
+  def getJobPolicy(self, jobOwner=None, jobOwnerGroup=None):
     """ Get the job operations rights for a job owned by jobOwner/jobOwnerGroup
         for a user with username/userGroup.
         Returns a dictionary of various operations rights
