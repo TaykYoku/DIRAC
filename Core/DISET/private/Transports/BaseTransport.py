@@ -121,8 +121,12 @@ class BaseTransport(object):
     groupInitialize(credDict)
     return credDict
 
-  def setExtraCredentials(self, group):
-    self.peerCredentials['extraCredentials'] = group
+  def setExtraCredentials(self, extraCredentials):
+    """ Add extra credentials to peerCredentials
+
+        :param bsaestring,tuple extraCredentials: group or tuple with DN and group
+    """
+    self.peerCredentials['extraCredentials'] = extraCredentials
 
   def serverMode(self):
     return self.bServerMode
