@@ -15,9 +15,16 @@ class DB(MySQL):
   """
 
   def __init__(self, dbname, fullname, debug=False):
+    """ C'or
+
+        :param basestring dbname: DB name
+        :param basestring fullname: full name
+        :param boolean debug: debug mode
+    """
     self.versionDB = 0
     self.fullname = fullname
     database_name = dbname
+    self.versionTable = '%s_Version' % database_name
     self.log = gLogger.getSubLogger(database_name)
 
     result = getDBParameters(fullname)
@@ -42,18 +49,21 @@ class DB(MySQL):
       raise RuntimeError("Can not connect to DB '%s', exiting..." % self.dbName)
 
     # Initialize version
-    self.oldDBVersion = 0
-    retVal = self._query("SELECT Version FROM `%s_Version`" % database_name)
-    if not retVal['OK']:
-      return retVal
-    data = retVal['Value']
-    if len(data) > 0:
-      self.oldDBVersion = data[0][0]
-    else:
-      result = self._update("INSERT INTO `%s_Version` (Version) VALUES (%s)" % (database_name,
-                                                                                self.oldDBVersion))
-      if not result['OK']:
-        return result
+    result = self._query("show tables")
+    if result['OK']:
+      if self.versionTable not in [t[0] for t in result['Value']]:
+        result = self._createTables({self.versionTable: {'Fields': {'Version': 'INTEGER NOT NULL'},
+                                                         'PrimaryKey': 'Version'}})
+    if not result['OK']:
+      raise RuntimeError("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
+    result = self._query("SELECT Version FROM `%s`" % self.versionTable)
+    if result['OK']:
+      if len(result['Value']) > 0:
+        self.versionDB = result['Value'][0][0]
+      else:
+        result = self._update("INSERT INTO `%s` (Version) VALUES (%s)" % (self.versionTable, self.versionDB))
+    if not result['OK']:
+      raise RuntimeError("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
 
     self.log.info("===================== MySQL ======================")
     self.log.info("User:           " + self.dbUser)
@@ -65,5 +75,25 @@ class DB(MySQL):
 
 #############################################################################
   def getCSOption(self, optionName, defaultValue=None):
+    """ Get option from CS
+
+        :param basestring optionName: option name
+        :param basestring,list defaultValue: default value
+
+        :return basestring or list
+    """
     cs_path = getDatabaseSection(self.fullname)
     return gConfig.getValue("/%s/%s" % (cs_path, optionName), defaultValue)
+  
+  def updateDBVersion(self, version):
+    """ Update DB version
+
+        :param int version: version number
+
+        :return: S_OK()/S_ERROR()
+    """
+    result = self._update("INSERT INTO `%s_Version` (Version) VALUES (%s)" % (database_name, version))
+    if not result['OK']:
+      return S_ERROR("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
+    self.versionDB = version
+    return S_OK()
