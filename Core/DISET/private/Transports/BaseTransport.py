@@ -28,7 +28,7 @@ from hashlib import md5
 from DIRAC.Core.Utilities.ReturnValues import S_ERROR, S_OK
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.Core.Utilities import DEncode
-from DIRAC.Core.DISET.AuthManager import certificateInitialize, groupInitialize
+from DIRAC.Core.DISET.AuthManager import certificateInitialize, groupInitialize, forwardedCredentials
 
 class BaseTransport(object):
   """ Invokes DEncode for marshaling/unmarshaling of data calls in transit
