@@ -117,6 +117,7 @@ class BaseTransport(object):
       Before the handshake, dictionnary is empty
     """
     credDict = self.peerCredentials.copy()
+    forwardedCredentials(credDict)
     certificateInitialize(credDict)
     groupInitialize(credDict)
     return credDict

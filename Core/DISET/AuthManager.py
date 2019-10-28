@@ -19,6 +19,28 @@ KW_HOSTS_GROUP = 'hosts'
 KW_PROPERTIES = 'properties'
 KW_EXTRA_CREDENTIALS = 'extraCredentials'
 
+def forwardedCredentials(credDict):
+  """ Check whether the credentials are being forwarded by a valid source and extract it
+
+      :param dict credDict: Credentials to ckeck
+      
+      :return: boolean -- the result
+  """
+  if isinstance(credDict.get(KW_EXTRA_CREDENTIALS), tuple):
+    retVal = Registry.getHostnameForDN(credDict.get(KW_DN))
+    if not retVal['OK']:
+      self.__authLogger.debug("The credentials forwarded not by a host")
+      return False
+    hostname = retVal['Value']
+    if Properties.TRUSTED_HOST not in Registry.getPropertiesForHost(hostname, []):
+      self.__authLogger.debug("The credentials forwarded by a %s host, but it is not a trusted one" % hostname)
+      return False
+    credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
+    credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS][1]
+    del credDict[KW_EXTRA_CREDENTIALS]
+    return True
+  return False
+
 def sessionInitialize(credDict):
   """ Discover the username associated to the authentication session. It will check if the selected group is valid.
       The username will be included in the credentials dictionary. And will discover DN for group if last not set.
@@ -157,7 +179,7 @@ class AuthManager(object):
         credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS]
         del credDict[KW_EXTRA_CREDENTIALS]
       # Check if query comes though a gateway/web server
-      elif self.forwardedCredentials(credDict):
+      elif forwardedCredentials(credDict):
         self.__authLogger.debug("Query comes from a gateway")
         return self.authQuery(methodQuery, credDict, requiredProperties)
       else:
@@ -251,28 +273,6 @@ class AuthManager(object):
 
     validGroups = list(set(validGroups))
     return validGroups
-
-  def forwardedCredentials(self, credDict):
-    """ Check whether the credentials are being forwarded by a valid source and extract it
-
-        :param dict credDict: Credentials to ckeck
-        
-        :return: boolean -- the result
-    """
-    if isinstance(credDict.get(KW_EXTRA_CREDENTIALS), tuple):
-      retVal = Registry.getHostnameForDN(credDict.get(KW_DN))
-      if not retVal['OK']:
-        self.__authLogger.debug("The credentials forwarded not by a host")
-        return False
-      hostname = retVal['Value']
-      if Properties.TRUSTED_HOST not in Registry.getPropertiesForHost(hostname, []):
-        self.__authLogger.debug("The credentials forwarded by a %s host, but it is not a trusted one" % hostname)
-        return False
-      credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
-      credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS][1]
-      del credDict[KW_EXTRA_CREDENTIALS]
-      return True
-    return False
 
   def matchProperties(self, credDict, validProps, caseSensitive=False):
     """ Return True if one or more properties are in the valid list of properties
