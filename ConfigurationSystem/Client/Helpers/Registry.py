@@ -521,7 +521,6 @@ def getDNsForUsername(username, active=False):
     IdPsDict = {}
   
   DNs = getDNsForUsernameFromSC(username)
-  
   for ID, idDict in IdPsDict.items():
     if idDict.get('DNs'):
       # if active:
