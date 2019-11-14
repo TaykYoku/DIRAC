@@ -145,7 +145,7 @@ class ProxyDB(DB):
                                    }
 
     if 'ProxyDB_ExpNotifs' not in tablesInDB:
-      tablesD['ProxyDB_ExpNotifs'] = {'Fields': {'UserDN': 'VARCHAR(255) NOT NULL',  # FIXME:Lytov: Need to rename to username???
+      tablesD['ProxyDB_ExpNotifs'] = {'Fields': {'UserDN': 'VARCHAR(255) NOT NULL',
                                                  'UserGroup': 'VARCHAR(255) NOT NULL',
                                                  'LifeLimit': 'INTEGER UNSIGNED DEFAULT 0',
                                                  'ExpirationTime': 'DATETIME NOT NULL',
@@ -1266,7 +1266,6 @@ class ProxyDB(DB):
     cmd = "DELETE FROM `ProxyDB_ExpNotifs` WHERE ExpirationTime < UTC_TIMESTAMP()"
     return self._update(cmd)
 
-  # FIXME:Lytov: Add clean proxy
   def sendExpirationNotifications(self):
     """ Send notification about expiration
 
