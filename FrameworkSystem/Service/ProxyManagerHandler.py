@@ -68,7 +68,7 @@ class ProxyManagerHandler(RequestHandler):
     absentAdminsProxies = []
     gLogger.info('Update VOMSes information..')
     if not vos:
-      result = Registry.getVOs()
+      result = Registry.getVOs()  # Actualy need VOMS VOs, need to check for every VO VOMSName option exist
       if not result['OK']:
         return result
       vos = result['Value']
@@ -82,7 +82,7 @@ class ProxyManagerHandler(RequestHandler):
           gLogger.error(result['Message'])
           continue
         DNs += result['Value']
-      # FIXME:Lytov: Get VO admin DNs from SyncServer
+      # WARN: When has been used global sync server need to get VO admin DNs there
       if not DNs:
         diracAdminsNotifyDict[vo] = 'Cannot found administrators for %s VOMS VO' % vo
         gLogger.error('Cannot update users from "%s" VO.' % vo, 'No admin user found.')
@@ -133,13 +133,13 @@ class ProxyManagerHandler(RequestHandler):
       subject = '[ProxyManager] Cannot update users from %s VOMS VOs.' % ', '.join(diracAdminsNotifyDict.keys())
       body = pprint.pformat(diracAdminsNotifyDict)
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: Registry.getEmailsForGroup('dirac_admin'))
+      #cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: Registry.getEmailsForGroup('dirac_admin'))
     for vo in absentAdminsProxies:
       subject = '[DIRAC] Proxy of VO administrator is absent.'
       body = "Dear VO administrator,"
       body += "   please, upload your proxy."
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: get voadmin email or use dirac admins email
+      #cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: get voadmin email or use dirac admins email
     return S_OK()
 
   @classmethod
@@ -309,11 +309,38 @@ class ProxyManagerHandler(RequestHandler):
     # Not authorized!
     return S_ERROR("You can't get proxies!")
 
+  types_getPersonalProxy = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
+
+  def export_getPersonalProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttr):
+    """ Get a proxy for a userDN/userGroup
+
+        :param basestring userDN: user DN
+        :param basestring userGroup: DIRAC group
+        :param requestPem: PEM encoded request object for delegation
+        :param requiredLifetime: Argument for length of proxy
+        :param vomsAttr: VOMS attr to add to the proxy
+
+          * Properties:
+              * NormalUser <- permits full delegation of proxies
+    """
+    credDict = self.getRemoteCredentials()
+    if userDN != credDict['DN'] or userGroup != credDict['group']:
+      return S_ERROR("You can't get %s@%s proxy!" % (credDict['username'], credDict['group']))
+
+    self.__proxyDB.logAction("download %sproxy" % 'voms ' if vomsAttr else '',
+                             credDict['username'], credDict['group'], credDict['username'], credDict['group'])
+    if vomsAttr:
+      return self.__getVOMSProxy(credDict['DN'], credDict['group'], requestPem, requiredLifetime, vomsAttr, False)
+    else:
+      return self.__getProxy(credDict['DN'], credDict['group'], requestPem, requiredLifetime, False)
+
   types_getProxy = [basestring, basestring, basestring, six.integer_types]
 
   def export_getProxy(self, userDN, userGroup, requestPem, requiredLifetime):
     """ Get a proxy for a userDN/userGroup
 
+        :param basestring userDN: user DN
+        :param basestring userGroup: DIRAC group
         :param requestPem: PEM encoded request object for delegation
         :param requiredLifetime: Argument for length of proxy
 
@@ -322,7 +349,7 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
-    result = Registry.getUsernameForDN(username)
+    result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
       return result
     username = result['Value']
