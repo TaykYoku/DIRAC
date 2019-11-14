@@ -485,8 +485,9 @@ def getProviderForID(ID):
   except Exception:
     try:
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
-    except ImportError:
-      return S_ERROR('Session manager not found.')
+    except Exception as ex:
+      return S_ERROR('Session manager not found:', ex)
+  gLogger.info('..........getProviderForID')
   result = gSessionManager.getIdPsCache([ID])
   if not result['OK']:
     return result
@@ -510,10 +511,12 @@ def getDNsForUsername(username, active=False):
   except Exception:
     try:
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
-    except ImportError:
+    except Exception:
       pass
   try:
+    gLogger.info('..........getDNsForUsername')
     result = gSessionManager.getIdPsCache(getIDsForUsername(username))
+    gLogger.info('..........getDNsForUsername.......')
     if not result['OK']:
       return result
     IdPsDict = result['Value']
@@ -617,9 +620,10 @@ def getProxyProviderForDN(userDN):
   except Exception:
     try:
       from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
-    except ImportError:
+    except Exception:
       pass
   try:
+    gLogger.info('..........getProxyProviderForDN')
     result = gSessionManager.getIdPsCache(getIDsForUsername(username))
     if not result['OK']:
       return result
