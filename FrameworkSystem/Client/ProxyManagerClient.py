@@ -276,6 +276,35 @@ class ProxyManagerClient(object):
     return S_OK(result.get('proxies') or result['Value'])
 
   @gProxiesSync
+  def downloadPersonalProxy(self, userDN, userGroup, requiredTimeLeft=1200, cacheTime=14400, vomsAttr=None):
+    """ Get a proxy Chain from the proxy management
+
+        :param basestring userDN: user DN
+        :param basestring userGroup: user group
+        :param int requiredTimeLeft: required proxy live time in a seconds
+        :param int cacheTime: store in a cache time in a seconds
+        :param basestring vomsAttr: VOMS attr to add to the proxy
+
+        :return: S_OK(X509Chain)/S_ERROR()
+    """
+    cacheKey = (userDN, userGroup)
+    if self.__proxiesCache.exists(cacheKey, requiredTimeLeft):
+      return S_OK(self.__proxiesCache.get(cacheKey))
+    req = X509Request()
+    req.generateProxyRequest()
+    rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
+    retVal = rpcClient.getPersonalProxy(userDN, userGroup, req.dumpRequest()['Value'],
+                                        int(cacheTime + requiredTimeLeft), vomsAttr)
+    if not retVal['OK']:
+      return retVal
+    chain = X509Chain(keyObj=req.getPKey())
+    retVal = chain.loadChainFromString(retVal['Value'])
+    if not retVal['OK']:
+      return retVal
+    self.__proxiesCache.add(cacheKey, chain.getRemainingSecs()['Value'], chain)
+    return S_OK(chain)
+
+  @gProxiesSync
   def downloadProxy(self, userDN, userGroup, limited=False, requiredTimeLeft=1200,
                     cacheTime=14400, proxyToConnect=None, token=None):
     """ Get a proxy Chain from the proxy management
