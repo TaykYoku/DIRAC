@@ -29,11 +29,11 @@ def forwardedCredentials(credDict):
   if isinstance(credDict.get(KW_EXTRA_CREDENTIALS), tuple):
     retVal = Registry.getHostnameForDN(credDict.get(KW_DN))
     if not retVal['OK']:
-      self.__authLogger.debug("The credentials forwarded not by a host")
+      gLogger.debug("The credentials forwarded not by a host")
       return False
     hostname = retVal['Value']
     if Properties.TRUSTED_HOST not in Registry.getPropertiesForHost(hostname, []):
-      self.__authLogger.debug("The credentials forwarded by a %s host, but it is not a trusted one" % hostname)
+      gLogger.debug("The credentials forwarded by a %s host, but it is not a trusted one" % hostname)
       return False
     credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
     credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS][1]
