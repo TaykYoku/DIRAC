@@ -400,8 +400,9 @@ class ProxyInit(object):
         spinner.info(authDict['Comment'].strip())
 
       spin.result = None
-
+    
     if authDict['Status'] == 'needToAuth':
+      session = authDict['Session']
       if not authDict.get('URL'):
         sys.exit('Cannot get link for authentication.')
       # Show QR code
@@ -432,7 +433,7 @@ class ProxyInit(object):
           if time.time() - __start > 300:
             sys.exit('Time out.')
 
-          result = restRequest(authAPI, '/auth/%s/status' % authDict['Session'])
+          result = restRequest(authAPI, '/auth/%s/status' % session)
           if not result['OK']:
             if __eNum < 3:
               __eNum += 1
@@ -440,20 +441,20 @@ class ProxyInit(object):
               spinner.text = result['Message']
               continue
             sys.exit(result['Message'])
-          statusDict = result['Value']
-          if statusDict['Status'] in ['prepared', 'in progress', 'finishing', 'redirect']:
+          authDict = result['Value']
+          if authDict['Status'] in ['prepared', 'in progress', 'finishing', 'redirect']:
             if spinner.color != 'green':
-              spinner.text = '"%s" session %s' % (authDict['Session'], statusDict['Status'])
+              spinner.text = '"%s" session %s' % (session, authDict['Status'])
             spinner.color = 'green'
             continue
           break
 
-        comment = statusDict['Comment'].strip()
-        if statusDict['Status'] != 'authed':
-          if statusDict['Status'] == 'authed and reported':
+        comment = authDict['Comment'].strip()
+        if authDict['Status'] != 'authed':
+          if authDict['Status'] == 'authed and reported':
             spinner.warn('Authenticated success. Administrators was notified about you.')
             sys.exit(0)
-          elif statusDict['Status'] == 'visitor':
+          elif authDict['Status'] == 'visitor':
             spinner.warn('Authenticated success. You have permissions as Visitor.')
             sys.exit(0)
           sys.exit('Authentication failed.')
@@ -462,9 +463,11 @@ class ProxyInit(object):
       if comment:
         spinner.info(comment)
 
+    username = authDict['UserName']
+
     with Halo(text='Downloading proxy') as spin:
       # Get group status
-      result = restRequest(confUrl, '/getGroupsStatusByUsername', username=statusDict['UserProfile']['username'])
+      result = restRequest(confUrl, '/getGroupsStatusByUsername', username=username)
       if not result['OK']:
         sys.exit('Cannot get status of groups: %s' % result['Message'])
       groupsStatusDict = result['Value']
@@ -475,8 +478,7 @@ class ProxyInit(object):
 
       addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
       result = restRequest(proxyAPI, 's:%s/g:%s/proxy' % (setup, self.__piParams.diracGroup),
-                           group=self.__piParams.diracGroup, lifetime=self.__piParams.proxyLifeTime,
-                           voms=addVOMS)
+                           lifetime=self.__piParams.proxyLifeTime, voms=addVOMS)
       if not result['OK']:
         sys.exit(result['Message'])
       proxy = result['Value']
