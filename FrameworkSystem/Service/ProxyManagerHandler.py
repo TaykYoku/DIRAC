@@ -133,13 +133,13 @@ class ProxyManagerHandler(RequestHandler):
       subject = '[ProxyManager] Cannot update users from %s VOMS VOs.' % ', '.join(diracAdminsNotifyDict.keys())
       body = pprint.pformat(diracAdminsNotifyDict)
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      #cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: Registry.getEmailsForGroup('dirac_admin'))
+      #cls.__notify.sendMail(Registry.getEmailsForGroup('dirac_admin'), subject, body)
     for vo in absentAdminsProxies:
       subject = '[DIRAC] Proxy of VO administrator is absent.'
       body = "Dear VO administrator,"
       body += "   please, upload your proxy."
       body += "\n------\n This is a notification from the DIRAC ProxyManager service, please do not reply."
-      #cls.__notify.sendMail('yokutayk@gmail.com', subject, body)  # FIXME:Lytov: get voadmin email or use dirac admins email
+      #cls.__notify.sendMail( Here need to get voadmin email or use dirac admins email , subject, body)
     return S_OK()
 
   @classmethod
