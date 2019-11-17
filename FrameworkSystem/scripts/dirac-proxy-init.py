@@ -280,7 +280,7 @@ class ProxyInit(object):
     import threading
     import webbrowser
 
-    from OAuthDIRAC.FrameworkSystem.Utilities.halo import Halo
+    from DIRAC.FrameworkSystem.Utilities.halo import Halo
     from DIRAC.Core.Utilities.JEncode import decode, encode
 
     authAPI = None
