@@ -805,8 +805,6 @@ def getStatusGroupByUsername(group, username):
     gProxyManager
   except Exception:
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  result = gProxyManager.getActualVOMSesDNs([dn])
-  vomsInfo = result['Value'] if result['OK'] else {}
   
   vomsRole = getGroupOption(group, 'VOMSRole')
   if vomsRole:
