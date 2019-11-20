@@ -400,7 +400,7 @@ class ProxyManagerHandler(RequestHandler):
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
     """
-    result = Registry.getUsernameForDN(username)
+    result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
       return result
     username = result['Value']
@@ -436,7 +436,7 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    result = Registry.getUsernameForDN(username)
+    result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
       return result
     username = result['Value']
@@ -481,7 +481,7 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    result = Registry.getUsernameForDN(username)
+    result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
       return result
     username = result['Value']
