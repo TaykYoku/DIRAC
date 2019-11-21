@@ -214,8 +214,10 @@ class ProxyDB(DB):
       for tb, oldColumn, newColumn in [('ProxyDB_Log', 'IssuerDN', 'IssuerUsername'),
                                        ('ProxyDB_Log', 'TargetDN', 'TargetUsername'),
                                        ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]:
-        result = self._query('ALTER TABLE %s CHANGE COLUMN %s %s VARCHAR(255) NOT NULL' % (tb, oldColumn, newColumn))
-        gLogger.info('ALTER TABLE %s CHANGE COLUMN %s %s VARCHAR(255) NOT NULL' % (tb, oldColumn, newColumn), result)
+        cmd = 'IF EXISTS(SHOW COLUMNS FROM `%s` LIKE %s) THEN' % (tb, oldColumn)
+        cmd += 'ALTER TABLE %s CHANGE COLUMN %s %s VARCHAR(255) NOT NULL' % (tb, oldColumn, newColumn)
+        result = self._query(cmd)
+        gLogger.info(cmd, result)
         if not result['OK']:
           return result
       result = self.updateDBVersion(1)
