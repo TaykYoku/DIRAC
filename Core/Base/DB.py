@@ -63,7 +63,7 @@ class DB(MySQL):
       else:
         result = self._update("INSERT INTO `%s` (Version) VALUES (%s)" % (self.versionTable, self.versionDB))
     if not result['OK']:
-      raise RuntimeError("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
+      raise RuntimeError("Can not initialize %s version: %s" % (self.dbName, result['Message']))
 
     self.log.info("===================== MySQL ======================")
     self.log.info("User:           " + self.dbUser)
@@ -94,6 +94,6 @@ class DB(MySQL):
     """
     result = self._update("INSERT INTO `%s_Version` (Version) VALUES (%s)" % (self.dbName, version))
     if not result['OK']:
-      return S_ERROR("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
+      return S_ERROR("Can not initialize %s version: %s" % (self.dbName, result['Message']))
     self.versionDB = version
     return S_OK()
