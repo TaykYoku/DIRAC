@@ -55,7 +55,7 @@ class DB(MySQL):
         result = self._createTables({self.versionTable: {'Fields': {'Version': 'INTEGER NOT NULL'},
                                                          'PrimaryKey': 'Version'}})
     if not result['OK']:
-      raise RuntimeError("Can not initialize %s DB version: %s" % (self.dbName, result['Message']))
+      raise RuntimeError("Can not initialize %s version: %s" % (self.dbName, result['Message']))
     result = self._query("SELECT Version FROM `%s`" % self.versionTable)
     if result['OK']:
       if len(result['Value']) > 0:
