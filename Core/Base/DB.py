@@ -2,7 +2,7 @@
     It uniforms the way the database objects are constructed
 """
 
-from DIRAC import gLogger, gConfig, S_OK
+from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.Core.Utilities.MySQL import MySQL
 from DIRAC.ConfigurationSystem.Client.Utilities import getDBParameters
 from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
