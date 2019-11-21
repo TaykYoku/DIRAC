@@ -195,6 +195,8 @@ class ProxyDB(DB):
 
         :return: S_OK()/S_ERROR()
     """
+    gLogger.info('.......  self.versionDB:', self.versionDB)
+    gLogger.info('.......  self.__version:', self.__version)
     if self.versionDB == self.__version:
       return S_OK()
     if self.versionDB > self.__version:
@@ -211,10 +213,12 @@ class ProxyDB(DB):
           return result
 
     if self.versionDB < 1 and self.versionDB < self.__version:
+      gLogger.info('.......  startVersionAction')
       for tb, oldColumn, newColumn in [('ProxyDB_Log', 'IssuerDN', 'IssuerUsername'),
                                        ('ProxyDB_Log', 'TargetDN', 'TargetUsername'),
                                        ('ProxyDB_Tokens', 'RequesterDN', 'RequesterUsername')]:
-        result = self._query('ALTER TABLE "%s" CHANGE "%s" "%s"' % (tb, oldColumn, newColumn))
+        result = self._query('ALTER TABLE %s CHANGE COLUMN %s %s VARCHAR(255) NOT NULL' % (tb, oldColumn, newColumn))
+        gLogger.info('ALTER TABLE %s CHANGE COLUMN %s %s VARCHAR(255) NOT NULL' % (tb, oldColumn, newColumn), result)
         if not result['OK']:
           return result
       result = self.updateDBVersion(1)
