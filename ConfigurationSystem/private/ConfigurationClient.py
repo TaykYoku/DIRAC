@@ -145,6 +145,26 @@ class ConfigurationClient(object):
       return S_OK(optionsDict)
     else:
       return S_ERROR("Path %s does not exist or it's not a section" % sectionPath)
+  
+  def getOptionsDictRecursively(self, sectionPath):
+    optionsDict = {}
+    result = self.getOptionsDict(sectionPath)
+    if not result['OK']:
+      return result
+    for opt, value in result['Value'].items():
+      optionsDict[opt] = value
+    
+    result = self.getSections(sectionPath)
+    if not result['OK']:
+      return result
+    for section in result['Value']:
+      result = self.getOptionsDictRecursively(sectionPath + '/' + section)
+      if not result['OK']:
+        return result
+      optionsDict[section] = {}
+      for opt, value in result['Value'].items():
+        optionsDict[section][opt] = value
+    return S_OK(optionsDict)
 
   def getConfigurationTree(self, root='', *filters):
     """
