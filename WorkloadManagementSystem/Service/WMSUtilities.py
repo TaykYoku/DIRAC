@@ -11,7 +11,7 @@ from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Utilities.Grid import executeGridCommand
 from DIRAC.Core.Utilities.Proxy import executeWithUserProxy
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getQueue
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getGroupOption
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSAttributeForGroup
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.Resources.Computing.ComputingElementFactory import ComputingElementFactory
 from DIRAC.WorkloadManagementSystem.Client.ServerUtils import pilotAgentsDB
@@ -112,7 +112,7 @@ def getGridJobOutput(pilotReference):
     shutil.rmtree(queueDict['WorkingDirectory'])
     return result
   ce = result['Value']
-  vomsAttr = Registry.getVOMSAttributeForGroup(group)
+  vomsAttr = getVOMSAttributeForGroup(group)
   if not vomsAttr:
     self.log.error("No voms attribute assigned to group %s when requested pilot proxy." % group)
     return S_ERROR("Failed to get the pilot's owner proxy")
@@ -170,7 +170,7 @@ def killPilotsInQueues(pilotRefDict):
 
     # FIXME: quite hacky. Should be either removed, or based on some flag
     if gridType in ["LCG", "CREAM", "ARC", "Globus", "HTCondorCE"]:
-      vomsAttr = Registry.getVOMSAttributeForGroup(group)
+      vomsAttr = getVOMSAttributeForGroup(group)
       if not vomsAttr:
         self.log.error("No voms attribute assigned to group %s when requested pilot proxy." % group)
         return S_ERROR("Failed to get the pilot's owner proxy")
