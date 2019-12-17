@@ -1052,7 +1052,6 @@ class ProxyDB(DB):
 
         :return: S_OK(dict)/S_ERROR() -- dict contain fields, record list, total records
     """
-    gLogger.info('--> getProxiesContent:', [selDict, sortList, start, limit])
     if "UserName" in selDict:
       if not selDict.get("UserDN"):
         selDict["UserDN"] = []
@@ -1103,11 +1102,9 @@ class ProxyDB(DB):
         except ValueError:
           return S_ERROR("start and limit have to be integers")
         cmd += " LIMIT %d,%d" % (start, limit)
-      gLogger.info('==>', cmd)
       retVal = self._query(cmd)
       if not retVal['OK']:
         return retVal
-      gLogger.info('==============')
       for record in retVal['Value']:
         record = list(record)
         if table == 'ProxyDB_CleanProxies':
@@ -1442,7 +1439,6 @@ Cheers,
     cmd = "SELECT TIMESTAMPDIFF( SECOND, UTC_TIMESTAMP(), ExpirationTime ), Pem "
     cmd += "FROM `ProxyDB_Proxies` WHERE UserDN=%s AND UserGroup=%s" % (
         sUserDN, sUserGroup)
-    gLogger.info('===-->:', cmd)
     result = self._query(cmd)
     if not result['OK']:
       return result
