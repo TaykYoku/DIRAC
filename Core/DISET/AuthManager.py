@@ -29,7 +29,7 @@ def forwardedCredentials(credDict):
   if isinstance(credDict.get(KW_EXTRA_CREDENTIALS), tuple):
     retVal = Registry.getHostnameForDN(credDict.get(KW_DN))
     if not retVal['OK']:
-      gLogger.debug("The credentials forwarded not by a host")
+      gLogger.debug("The credentials forwarded not by a host:", credDict.get(KW_DN))
       return False
     hostname = retVal['Value']
     if Properties.TRUSTED_HOST not in Registry.getPropertiesForHost(hostname, []):
