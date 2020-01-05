@@ -43,7 +43,12 @@ MAX_PARAMETRIC_JOBS = 20
 
 
 def initializeJobManagerHandler(serviceInfo):
+  """ Initialize
 
+      :param dict serviceInfo: service information dictionary
+
+      :return: S_OK()
+  """
   global gJobDB, gJobLoggingDB, gtaskQueueDB, enablePilotsLogging, gPilotAgentsDB, gPilotsLoggingDB
   gJobDB = JobDB()
   gJobLoggingDB = JobLoggingDB()
