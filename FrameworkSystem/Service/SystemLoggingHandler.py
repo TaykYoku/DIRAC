@@ -22,6 +22,10 @@ gLogDB = False
 
 def initializeSystemLoggingHandler(serviceInfo):
   """ Check that we can connect to the DB and that the tables are properly created or updated
+
+      :param dict serviceInfo: service information dictionary
+
+      :return: S_OK()/S_ERROR()
   """
   global gLogDB
   gLogDB = SystemLoggingDB()
@@ -37,9 +41,13 @@ class SystemLoggingHandler(RequestHandler):
   """
 
   def __addMessage(self, messageObject, site, nodeFQDN):
-    """
-    This is the function that actually adds the Message to
-    the log Database
+    """ This is the function that actually adds the Message to the log Database
+
+        :param messageObject: message object
+        :param basestring site: site name
+        :param basestring nodeFQDN: nodeFQDN
+
+        :return: S_OK()/S_ERROR()
     """
     credentials = self.getRemoteCredentials()
     userDN = credentials['DN'] if credentials.get('DN') else 'unknown'
@@ -51,17 +59,13 @@ class SystemLoggingHandler(RequestHandler):
   types_addMessages = [list, basestring, basestring]
 
   def export_addMessages(self, messagesList, site, nodeFQDN):
-    """
-    This is the interface to the service
-    Inputs:
+    """ This is the interface to the service
+        
+        :param list messagesList: list of Message Objects.
+        :param basestring site: site
+        :param basestring nodeFQDN: nodeFQDN
 
-      msgList contains a list of Message Objects.
-
-    Outputs:
-
-      S_OK if no exception was raised
-      S_ERROR if an exception was raised
-
+        :return: S_OK()/S_ERROR()
     """
     for messageTuple in messagesList:
       messageObject = tupleToMessage(messageTuple)

@@ -144,6 +144,12 @@ class ProxyManagerHandler(RequestHandler):
 
   @classmethod
   def initializeHandler(cls, serviceInfoDict):
+    """ Initialization
+
+        :param dict serviceInfoDict: service information dictionary
+
+        :return: S_OK()/S_ERROR()
+    """
     cls.__workDir = os.path.join(gConfig.getValue('/LocalSite/InstancePath', rootPath), 'work/ProxyManager')
     useMyProxy = cls.srv_getCSOption("UseMyProxy", False)
     try:
@@ -322,6 +328,8 @@ class ProxyManagerHandler(RequestHandler):
 
           * Properties:
               * NormalUser <- permits full delegation of proxies
+        
+        :return: S_OK(basestring)/S_ERROR()
     """
     credDict = self.getRemoteCredentials()
     if userDN != credDict['DN'] or userGroup != credDict['group']:
@@ -348,6 +356,8 @@ class ProxyManagerHandler(RequestHandler):
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
+        
+        :return: S_OK(basestring)/S_ERROR()
     """
     result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
@@ -399,6 +409,8 @@ class ProxyManagerHandler(RequestHandler):
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
+        
+        :return: S_OK(basestring)/S_ERROR()
     """
     result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
@@ -415,6 +427,18 @@ class ProxyManagerHandler(RequestHandler):
     return self.__getVOMSProxy(userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited)
 
   def __getVOMSProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited):
+    """ Get a proxy for a userDN/userGroup
+
+        :param basestring userDN: user DN
+        :param basestring userGroup: DIRAC group
+        :param basestring requestPem: dump of request certificate
+        :param int,long requiredLifetime: requested live time of proxy
+        :param requiredLifetime: Argument for length of proxy
+        :param vomsAttribute: VOMS attr to add to the proxy
+        :param boolean forceLimited: limited proxy
+
+        :return: S_OK(basestring)/S_ERROR()
+    """
     retVal = self.__proxyDB.getVOMSProxy(userDN, userGroup, requiredLifeTime=requiredLifetime,
                                          requestedVOMSAttr=vomsAttribute)
     if not retVal['OK']:
@@ -428,7 +452,7 @@ class ProxyManagerHandler(RequestHandler):
   types_setPersistency = [basestring, basestring, bool]
 
   def export_setPersistency(self, userDN, userGroup, persistentFlag):
-    """ Set the persistency for a given dn/group
+    """ Set the persistency for a given DN/group
 
         :param basestring userDN: user DN
         :param basestring userGroup: DIRAC group
@@ -451,7 +475,7 @@ class ProxyManagerHandler(RequestHandler):
   types_deleteProxyBundle = [(list, tuple)]
 
   def export_deleteProxyBundle(self, idList):
-    """ delete a list of id's
+    """ Delete a list of id's
 
         :param list,tuple idList: list of identity numbers
 
@@ -563,6 +587,8 @@ class ProxyManagerHandler(RequestHandler):
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
+        
+        :return: S_OK(basestring)/S_ERROR()
     """
     result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
@@ -597,6 +623,8 @@ class ProxyManagerHandler(RequestHandler):
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
+        
+        :return: S_OK(basestring)/S_ERROR()
     """
     result = Registry.getUsernameForDN(userDN)
     if not result['OK']:

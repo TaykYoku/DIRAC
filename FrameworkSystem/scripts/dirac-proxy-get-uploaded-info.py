@@ -22,6 +22,12 @@ userName = False
 
 
 def setUser(arg):
+  """ Set user
+
+      :param basestring arg: user name
+
+      :return: S_OK()
+  """
   global userName
   userName = arg
   return DIRAC.S_OK()

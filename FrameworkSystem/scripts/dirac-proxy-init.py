@@ -35,28 +35,59 @@ class Params(ProxyGeneration.CLIParams):
   uploadPilot = False
 
   def setEmail(self, arg):
+    """ Set email
+
+        :param basestring arg: email
+
+        :return: S_OK()
+    """
     self.Email = arg
     self.addEmail = True
     return S_OK()
 
   def setQRcode(self, _arg):
+    """ Use QRcode
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
     self.addQRcode = True
     return S_OK()
 
   def setProvider(self, arg):
+    """ Set provider
+
+        :param basestring arg: provider
+
+        :return: S_OK()
+    """
     self.provider = arg
     self.addProvider = True
     return S_OK()
 
   def setVOMSExt(self, _arg):
+    """ Set VOMS extention
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
     self.addVOMSExt = True
     return S_OK()
 
   def setUploadProxy(self, _arg):
+    """ Set upload proxy
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
     self.uploadProxy = True
     return S_OK()
 
   def registerCLISwitches(self):
+    """ Register CLI switches """
     ProxyGeneration.CLIParams.registerCLISwitches(self)
     Script.registerSwitch("U", "upload", "Upload a long lived proxy to the ProxyManager", self.setUploadProxy)
     Script.registerSwitch("e:", "email=", "Send oauth authentification url on email", self.setEmail)
