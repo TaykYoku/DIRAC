@@ -19,7 +19,7 @@ KW_HOSTS_GROUP = 'hosts'
 KW_PROPERTIES = 'properties'
 KW_EXTRA_CREDENTIALS = 'extraCredentials'
 
-def forwardedCredentials(credDict):
+def forwardingCredentials(credDict):
   """ Check whether the credentials are being forwarded by a valid source and extract it
 
       :param dict credDict: Credentials to ckeck
@@ -41,7 +41,7 @@ def forwardedCredentials(credDict):
     return True
   return False
 
-def sessionInitialize(credDict):
+def initializationOfSession(credDict):
   """ Discover the username associated to the authentication session. It will check if the selected group is valid.
       The username will be included in the credentials dictionary. And will discover DN for group if last not set.
 
@@ -58,7 +58,7 @@ def sessionInitialize(credDict):
   credDict[KW_USERNAME] = result['Value']
   return True
 
-def certificateInitialize(credDict):
+def initializationOfCertificate(credDict):
   """ Discover the username associated to the certificate DN. It will check if the selected group is valid.
       The username will be included in the credentials dictionary.
 
@@ -88,7 +88,7 @@ def certificateInitialize(credDict):
   credDict[KW_USERNAME] = result['Value']
   return True
 
-def groupInitialize(credDict):
+def initializationOfGroup(credDict):
   """ Check/get default group
 
       :param dict credDict: Credentials to check
@@ -179,7 +179,7 @@ class AuthManager(object):
         credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS]
         del credDict[KW_EXTRA_CREDENTIALS]
       # Check if query comes though a gateway/web server
-      elif forwardedCredentials(credDict):
+      elif forwardingCredentials(credDict):
         self.__authLogger.debug("Query comes from a gateway")
         return self.authQuery(methodQuery, credDict, requiredProperties)
       else:
@@ -191,10 +191,10 @@ class AuthManager(object):
     if not credDict.get(KW_USERNAME):
       if credDict.get(KW_DN):
         # With certificate
-        authorized = certificateInitialize(credDict)
+        authorized = initializationOfCertificate(credDict)
       elif credDict.get(KW_ID):
         # With IdP session
-        authorized = sessionInitialize(credDict)
+        authorized = initializationOfSession(credDict)
       else:
         credDict[KW_USERNAME] = "anonymous"
         credDict[KW_GROUP] = "visitor"
@@ -202,7 +202,7 @@ class AuthManager(object):
     
     # Search group
     if authorized:
-      authorized = groupInitialize(credDict)
+      authorized = initializationOfGroup(credDict)
 
     # Authorize check
     if allowAll or authorized:
