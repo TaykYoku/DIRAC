@@ -794,7 +794,7 @@ def getStatusGroupByUsername(group, username):
       :param basestring username: user name
 
       :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
-                                       {'Status': <status of group>, 'Comment': <information what need to do>}
+               {'Status': <status of group>, 'Comment': <information what need to do>}
   """
   result = getDNForUsernameInGroup(username, group)
   if not result['OK']:
