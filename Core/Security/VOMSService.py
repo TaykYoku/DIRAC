@@ -19,9 +19,8 @@ class VOMSService(object):
   def __init__(self, vo=None):
     """ c'tor
 
-    :param str vo: name of the virtual organization (community)
+        :param basestring vo: name of the virtual organization (community)
     """
-
     if vo is None:
       vo = getVO()
     if not vo:
@@ -47,18 +46,18 @@ class VOMSService(object):
   def admGetVOName(self):
     """ Get VOMS VO name, kept for backward compatibility
 
-    :return: S_OK with Value: VOMS VO name
+        :return: S_OK with Value: VOMS VO name
     """
     return S_OK(self.vo)
 
   def attGetUserNickname(self, dn, _ca=None):
     """ Get user nickname for a given DN if any
 
-    :param str dn: user DN
-    :param str _ca: CA, kept for backward compatibility
-    :return:  S_OK with Value: nickname
-    """
+        :param basestring dn: user DN
+        :param basestring _ca: CA, kept for backward compatibility
 
+        :return:  S_OK with Value: nickname
+    """
     if self.userDict is None:
       result = self.getUsers()
       if not result['OK']:
@@ -75,9 +74,10 @@ class VOMSService(object):
   def getUsers(self, proxyPath=None):
     """ Get all the users of the VOMS VO with their detailed information
 
-    :return: user dictionary keyed by the user DN
-    """
+        :param basestring proxyPath: proxy path
 
+        :return: S_OK(dict)/S_ERROR() -- user dictionary keyed by the user DN
+    """
     if not self.urls:
       return S_ERROR(DErrno.ENOAUTH, "No VOMS server defined")
 

@@ -216,10 +216,10 @@ class UserProxy(object):
 
 
 def _putProxy(userDN=None, userName=None, userGroup=None, vomsFlag=None, proxyFilePath=None, executionLockFlag=False):
-  """Download proxy, place in a file and populate X509_USER_PROXY environment variable.
+  """ Download proxy, place in a file and populate X509_USER_PROXY environment variable.
 
-  Parameters like `userProxy` or `executeWithUserProxy`.
-  :returns: Tuple of originalUserProxy, useServerCertificate, executionLock
+      Parameters like `userProxy` or `executeWithUserProxy`.
+      :returns: Tuple of originalUserProxy, useServerCertificate, executionLock
   """
   # Setup user proxy
   userDNs = userDN

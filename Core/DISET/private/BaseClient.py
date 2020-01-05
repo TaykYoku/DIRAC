@@ -153,7 +153,7 @@ class BaseClient(object):
           * self.__URLTuple: a split of serviceURL obtained by Network.splitURL
           * self._serviceName: the last part of URLTuple (typically System/Component)
 
-          :return: S_OK()/S_ERROR()
+        :return: S_OK()/S_ERROR()
     """
     # Calculate final URL
     try:
@@ -383,7 +383,7 @@ class BaseClient(object):
         Note: If we do not have different host we will use the selected url...
 
         :param notselect: URL that should NOT be selected
-        :param urls: list of potential URLs
+        :param list urls: list of potential URLs
 
         :return: basestring -- selected URL
     """
@@ -530,10 +530,10 @@ and this is thread %s
 
         :param transport: the Transport object returned by _connect
         :param action: tuple (<action type>, <action name>). It depends on the
-                       subclasses of BaseClient. <action type> can be for example
-                       'RPC' or 'FileTransfer'
+              subclasses of BaseClient. <action type> can be for example
+              'RPC' or 'FileTransfer'
 
-       :return: whatever the server sent back
+        :return: whatever the server sent back
     """
     if not self.__initStatus['OK']:
       return self.__initStatus
@@ -561,6 +561,9 @@ and this is thread %s
     """ Perform a credential delegation. This seems to be used only for the GatewayService.
         It calls the delegation mechanism of the Transport class. Note that it is not used when
         delegating credentials to the ProxyDB
+
+        :param transport: the Transport object returned by _connect
+        :param delegationRequest: delegation request
 
         :return: S_OK()/S_ERROR()
     """

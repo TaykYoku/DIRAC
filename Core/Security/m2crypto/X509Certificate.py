@@ -42,7 +42,7 @@ class X509Certificate(object):
       is nothing but a X509Chain of length 1.
 
       Note that the SSL connection itself does not use this class, it gives directly the certificate to the library
-  """
+    """
 
   def __init__(self, x509Obj=None, certString=None):
     """

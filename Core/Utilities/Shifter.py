@@ -14,11 +14,12 @@ from DIRAC.ConfigurationSystem.Client.Helpers import cfgPath
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
 def getShifterProxy(shifterType, fileName=False):
-  """
-  This method returns a shifter's proxy
+  """ This method returns a shifter's proxy
 
-  :param shifterType: ProductionManager / DataManager...
+      :param basestring shifterType: ProductionManager / DataManager...
+      :param basestring fileName: file name
 
+      :return: S_OK(dict)/S_ERROR()
   """
   if fileName:
     mkDir(os.path.dirname(fileName))
@@ -63,13 +64,14 @@ def getShifterProxy(shifterType, fileName=False):
 
 
 def setupShifterProxyInEnv(shifterType, fileName=False):
-  """
-  Return the shifter's proxy and set it up as the default
-  proxy via changing the environment.
-  This method returns a shifter's proxy
+  """ Return the shifter's proxy and set it up as the default
+      proxy via changing the environment.
+      This method returns a shifter's proxy
 
-  :param shifterType: ProductionManager / DataManager...
+      :param basestring shifterType: ProductionManager / DataManager...
+      :param basestring fileName: file name
 
+      :return: S_OK(dict)/S_ERROR()
   """
   result = getShifterProxy(shifterType, fileName)
   if not result['OK']:

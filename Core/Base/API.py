@@ -16,7 +16,13 @@ COMPONENT_NAME = 'API'
 
 
 def _printFormattedDictList(dictList, fields, uniqueField, orderBy):
-  """ Will print ordered the supplied field of a list of dictionaries """
+  """ Will print ordered the supplied field of a list of dictionaries
+  
+      :param list dictList: list of dictionaries
+      :param list fields: fields
+      :param basestring uniqueField: unique field
+      :param basestring orderBy: ordered
+  """
   orderDict = {}
   fieldWidths = {}
   dictFields = {}
@@ -72,7 +78,7 @@ class API(object):
     """ Return a copied dictionary containing all the attributes of the API.
         Called when pickling the object. Also used in copy.deepcopy.
 
-    :return: dictionary of attributes
+        :return: dict -- dictionary of attributes
     """
     from DIRAC.FrameworkSystem.private.standardLogging.Logging import Logging
     state = dict(self.__dict__)
@@ -86,7 +92,7 @@ class API(object):
     """ Parameter the Job with an attributes dictionary.
         Called when un-pickling the object.
 
-    :params state: attributes dictionary
+        :params state: attributes dictionary
     """
     self.__dict__.update(state)
     # Build the Logging instance again because it can not be in the dictionary
@@ -97,7 +103,13 @@ class API(object):
   #############################################################################
 
   def _errorReport(self, error, message=None):
-    """Internal function to return errors and exit with an S_ERROR() """
+    """ Internal function to return errors and exit with an S_ERROR()
+
+        :param basestring error: error
+        :param basestring message: message
+
+        :return: S_ERROR(basestring)
+    """
     if not message:
       message = error
 
@@ -107,12 +119,19 @@ class API(object):
   #############################################################################
 
   def _prettyPrint(self, myObject):
-    """Helper function to pretty print an object. """
+    """ Helper function to pretty print an object.
+    
+        :param myObject: an object
+    """
     print(self.pPrint.pformat(myObject))
 
   #############################################################################
 
   def _getCurrentUser(self):
+    """ Get current user
+
+        :return: S_OK(dict)/S_ERROR()
+    """
     res = getProxyInfo(False, False)
     if not res['OK']:
       return self._errorReport('No proxy found in local environment', res['Message'])
@@ -131,9 +150,14 @@ class API(object):
   #############################################################################
 
   def _reportError(self, message, name='', **kwargs):
-    """Internal Function. Gets caller method name and arguments, formats the
-       information and adds an error to the global error dictionary to be
-       returned to the user.
+    """ Internal Function. Gets caller method name and arguments, formats the
+        information and adds an error to the global error dictionary to be
+        returned to the user.
+
+        :param basestring message: message
+        :param basestring name: name
+        
+        :return: S_ERROR(basestring)
     """
     className = name
     if not name:
