@@ -22,7 +22,7 @@ import six
 # # from DIRAC
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Security.ProxyInfo import getProxyInfo
-from DIRAC.Core.DISET.AuthManager import certificateInitialize, groupInitialize
+from DIRAC.Core.DISET.AuthManager import initializationOfCertificate, initializationOfGroup
 from DIRAC.RequestManagementSystem.Client.Operation import Operation
 from DIRAC.RequestManagementSystem.private.JSONUtils import RMSEncoder
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers
@@ -88,7 +88,7 @@ class Request( object ):
     if proxyInfo["OK"]:
       proxyInfo = proxyInfo["Value"]
       
-      if groupInitialize(proxyInfo) and groupInitialize(proxyInfo):
+      if initializationOfCertificate(proxyInfo) and initializationOfGroup(proxyInfo):
         self.Owner = proxyInfo["username"]
         self.OwnerDN = proxyInfo["DN"]
         self.OwnerGroup = proxyInfo["group"]
