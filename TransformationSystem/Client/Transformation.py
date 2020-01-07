@@ -407,7 +407,7 @@ class Transformation(API):
                                              'CreationDate', 'AuthorDN'],
                                orderBy='TransformationID', printOutput=False):
     condDict = {}
-    if not authorDN:
+    if authorDN == "":
       res = self.getAuthorDNfromProxy()
       if not res['OK']:
         gLogger.error(res['Message'])
@@ -432,7 +432,7 @@ class Transformation(API):
     else:
       gLogger.info("Will list transformations created by '%s' with status '%s'" % (authorDN, ', '.join(transStatus)))
 
-    condDict['AuthorDN'] = AuthorDN
+    condDict['AuthorDN'] = authorDN
     if transID:
       condDict['TransformationID'] = transID
     if transStatus:
