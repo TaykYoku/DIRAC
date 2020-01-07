@@ -333,8 +333,7 @@ class Matcher(object):
           result = Registry.getGroupsForDN(resourceDict['OwnerDN'])
           if not result['OK']:
             raise RuntimeError(result['Message'])
-          groups = result['Value']
-          if not groups:
+          if not result['Value']:
             raise RuntimeError('No groups found for %s' % resourceDict['OwnerDN'])
           if credDict['group'] not in result['Value']:
             # DN is not in the same group! bad boy.
