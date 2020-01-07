@@ -212,12 +212,8 @@ class GlobusComputingElement(ComputingElement):
       return S_ERROR('Failed to determine owner for pilot ' + pilotRef)
     pilotDict = result['Value'][pilotRef]
     owner = pilotDict['OwnerDN']
-    group = pilotDict['OwnerGroup']
-    vomsAttr = Registry.getVOMSAttributeForGroup(group)
-    if not vomsAttr:
-      self.log.error("No voms attribute assigned to group %s when requested pilot proxy." % group)
-      return S_ERROR("Failed to get the pilot's owner proxy")
-    ret = gProxyManager.downloadVOMSProxy(owner, group, requiredVOMSAttribute=vomsAttr)
+    group = getGroupOption(pilotDict['OwnerGroup'], 'VOMSRole', pilotDict['OwnerGroup'])
+    ret = gProxyManager.getPilotProxyFromVOMSGroup(owner, group)
     if not ret['OK']:
       self.log.error(ret['Message'])
       self.log.error('Could not get proxy:', 'User "%s", Group "%s"' % (owner, group))
