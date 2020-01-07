@@ -22,10 +22,6 @@ gLogDB = False
 
 def initializeSystemLoggingHandler(serviceInfo):
   """ Check that we can connect to the DB and that the tables are properly created or updated
-
-      :param dict serviceInfo: service information dictionary
-
-      :return: S_OK()/S_ERROR()
   """
   global gLogDB
   gLogDB = SystemLoggingDB()
@@ -41,17 +37,19 @@ class SystemLoggingHandler(RequestHandler):
   """
 
   def __addMessage(self, messageObject, site, nodeFQDN):
-    """ This is the function that actually adds the Message to the log Database
-
-        :param messageObject: message object
-        :param basestring site: site name
-        :param basestring nodeFQDN: nodeFQDN
-
-        :return: S_OK()/S_ERROR()
+    """
+    This is the function that actually adds the Message to
+    the log Database
     """
     credentials = self.getRemoteCredentials()
-    userDN = credentials['DN'] if credentials.get('DN') else 'unknown'
-    userGroup = credentials['group'] if credentials.get('group') else 'unknown'
+    if 'DN' in credentials:
+      userDN = credentials['DN']
+    else:
+      userDN = 'unknown'
+    if 'group' in credentials:
+      userGroup = credentials['group']
+    else:
+      userGroup = 'unknown'
 
     remoteAddress = self.getRemoteAddress()[0]
     return gLogDB.insertMessage(messageObject, site, nodeFQDN, userDN, userGroup, remoteAddress)
@@ -59,13 +57,17 @@ class SystemLoggingHandler(RequestHandler):
   types_addMessages = [list, basestring, basestring]
 
   def export_addMessages(self, messagesList, site, nodeFQDN):
-    """ This is the interface to the service
-        
-        :param list messagesList: list of Message Objects.
-        :param basestring site: site
-        :param basestring nodeFQDN: nodeFQDN
+    """
+    This is the interface to the service
+    Inputs:
 
-        :return: S_OK()/S_ERROR()
+      msgList contains a list of Message Objects.
+
+    Outputs:
+
+      S_OK if no exception was raised
+      S_ERROR if an exception was raised
+
     """
     for messageTuple in messagesList:
       messageObject = tupleToMessage(messageTuple)
