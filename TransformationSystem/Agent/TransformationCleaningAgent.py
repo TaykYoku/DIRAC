@@ -149,7 +149,7 @@ class TransformationCleaningAgent(AgentModule):
           self.log.info("Cleaning transformation %(TransformationID)s with %(AuthorDN)s, %(AuthorGroup)s" %
                         transDict)
           executeWithUserProxy(self._executeClean)(transDict,
-                                                   proxyUserDN=transDict['AuthorDN'],
+                                                   proxyUserName=transDict['AuthorDN'],
                                                    proxyUserGroup=transDict['AuthorGroup'])
     else:
       self.log.error("Failed to get transformations", res['Message'])
@@ -165,7 +165,7 @@ class TransformationCleaningAgent(AgentModule):
           self.log.info("Removing files for transformation %(TransformationID)s with %(AuthorDN)s, %(AuthorGroup)s" %
                         transDict)
           executeWithUserProxy(self._executeRemoval)(transDict,
-                                                     proxyUserDN=transDict['AuthorDN'],
+                                                     proxyUserName=transDict['AuthorDN'],
                                                      proxyUserGroup=transDict['AuthorGroup'])
     else:
       self.log.error("Could not get the transformations", res['Message'])
@@ -184,7 +184,7 @@ class TransformationCleaningAgent(AgentModule):
           self.log.info("Archiving files for transformation %(TransformationID)s with %(AuthorDN)s, %(AuthorGroup)s" %
                         transDict)
           executeWithUserProxy(self._executeArchive)(transDict,
-                                                     proxyUserDN=transDict['AuthorDN'],
+                                                     proxyUserName=transDict['AuthorDN'],
                                                      proxyUserGroup=transDict['AuthorGroup'])
     else:
       self.log.error("Could not get the transformations", res['Message'])
