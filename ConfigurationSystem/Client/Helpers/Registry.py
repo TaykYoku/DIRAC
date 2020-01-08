@@ -66,6 +66,7 @@ def __getGroupsWithAttr(attrName, value):
   """ Get all posible groups with some attribute
 
       :param basestirng attrName: attribute name
+      :param basestring value: attribute value
 
       :return: S_OK(list)/S_ERROR() -- contain list of groups
   """
@@ -442,7 +443,7 @@ def isDownloadableGroup(groupName):
 
       :params basestring groupName: DIRAC group
 
-      :return: boolean
+      :return: bool
   """
   if getGroupOption(groupName, 'DownloadableProxy') in [False, 'False', 'false', 'no']:
     return False
@@ -452,7 +453,7 @@ def getDNsForUsernameFromSC(username):
   """ Find all DNs for DIRAC user
   
       :param basestring username: DIRAC user
-      :param boolean active: if need to search only DNs with active sessions
+      :param bool active: if need to search only DNs with active sessions
       
       :return: list -- contain DNs
   """
@@ -501,7 +502,7 @@ def getDNsForUsername(username, active=False):
   """ Find all DNs for DIRAC user
   
       :param basestring username: DIRAC user
-      :param boolean active: if need to search only DNs with active sessions
+      :param bool active: if need to search only DNs with active sessions
       
       :return: S_OK(list)/S_ERROR() -- contain DNs
   """
@@ -571,7 +572,7 @@ def getGroupsForUser(username):
   groups.sort()
   return S_OK(list(set(groups)))
 
-def findDefaultUserGroupForDN(dn):
+def findDefaultGroupForDN(dn):
   """ Search defaut group for DN
 
       :param basestring dn: DN
@@ -590,7 +591,8 @@ def findDefaultGroupForUser(username):
 
       :return: S_OK(basestring)/S_ERROR()
   """
-  defGroups = getUserOption(username, "DefaultGroup", [])
+  userDefGroups = getUserOption(username, "DefaultGroup", [])
+  defGroups = userDefGroups + gConfig.getValue("%s/DefaultGroup" % gBaseRegistrySection, ["user"])
   result = getGroupsForUser(username)
   if not result['OK']:
     return result
@@ -652,25 +654,18 @@ def getProxyProviderForDN(userDN):
 
   return S_OK(provider or 'Certificate')
 
-def getUsersInVO(vo, defaultValue=None):
+def getUsersInVO(vo):
   """ Search users in VO
 
       :param basestring vo: DIRAC VO name
-      :param basestring,list defaultValue: default value
 
       :return: list
   """
-  if defaultValue is None:
-    defaultValue = []
-  result = getGroupsForVO(vo)
-  if not result['OK']:
-    return defaultValue
-  groups = result['Value']
-  if not groups:
-    return defaultValue
-
   userList = []
-  for group in groups:
+  result = getGroupsForVO(vo)
+  if not result['OK'] or not result['Value']:
+    return userList
+  for group in result['Value']:
     userList += getUsersInGroup(group)
   userList.sort()
   return userList
@@ -683,7 +678,7 @@ def getEmailsForGroup(groupName):
       :return: list(list) -- inner list contains emails for a user
   """
   emails = []
-  for username in getUsersInGroup(groupName, defaultValue=[]):
+  for username in getUsersInGroup(groupName):
     email = getUserOption(username, 'Email', [])
     emails.append(email)
   return emails
