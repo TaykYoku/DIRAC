@@ -228,18 +228,14 @@ class ProxyManagerClient(object):
         :return: S_OK(dict)/S_ERROR() -- dict contain proxies
     """
     # Discover proxy location
+    proxyLocation = proxy if isinstance(proxy, six.string_types) else ""
     if isinstance(proxy, X509Chain):
       chain = proxy
-      proxyLocation = ""
     else:
-      if not proxy:
+      if not proxyLocation:
         proxyLocation = Locations.getProxyLocation()
         if not proxyLocation:
           return S_ERROR("Can't find a valid proxy")
-      elif isinstance(proxy, six.string_types):
-        proxyLocation = proxy
-      else:
-        return S_ERROR("Can't find a valid proxy")
       chain = X509Chain()
       result = chain.loadProxyFromFile(proxyLocation)
       if not result['OK']:
@@ -251,7 +247,7 @@ class ProxyManagerClient(object):
     if chain.getDIRACGroup().get('Value') or chain.isVOMS().get('Value'):
       return S_ERROR("Cannot upload proxy with DIRAC group or VOMS extensions")
     if proxy:
-      rpcClient = RPCClient("Framework/ProxyManager", timeout=120, useCertificates=False, proxyChain=proxy)
+      rpcClient = RPCClient("Framework/ProxyManager", timeout=120, useCertificates=False, proxyChain=chain)
     else:
       rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     # Get a delegation request

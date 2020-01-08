@@ -356,7 +356,7 @@ def generateProxy(params):
     retVal = Registry.getGroupsForUser(username)
     if not retVal['OK']:
       gLogger.warn(retVal['Message'])
-      return S_ERROR("User %s has no groups defined. %s" % (username, result['Message']))
+      return S_ERROR("User %s has no groups defined." % username)
     if params.diracGroup not in retVal['Value']:
       return S_ERROR("Requested group %s is not valid for %s user" % (params.diracGroup, username))
     gLogger.info("Creating proxy for %s@%s (%s)" % (username, params.diracGroup, userDN))
