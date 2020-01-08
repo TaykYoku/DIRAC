@@ -257,9 +257,10 @@ class BaseClient(object):
     delegatedGroup = self.kwargs.get(self.KW_DELEGATED_GROUP) or self.__threadConfig.getGroup()
     self.kwargs[self.KW_DELEGATED_DN] = delegatedDN
     self.kwargs[self.KW_DELEGATED_GROUP] = delegatedGroup
-    if not getUsernameForDN(self.kwargs[self.KW_DELEGATED_DN])['OK']:
-      return S_ERROR('%s is not registred.' % self.kwargs[self.KW_DELEGATED_DN])
-    self.__extraCredentials = (delegatedDN, delegatedGroup)
+    if delegatedDN:
+      if not getUsernameForDN(self.kwargs[self.KW_DELEGATED_DN])['OK']:
+        return S_ERROR('%s is not registred.' % self.kwargs[self.KW_DELEGATED_DN])
+      self.__extraCredentials = (delegatedDN, delegatedGroup) 
     return S_OK()
 
   def __findServiceURL(self):

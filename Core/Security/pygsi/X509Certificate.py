@@ -176,7 +176,7 @@ class X509Certificate(object):
     result = self.getIssuerDN()
     if not result['OK']:
       return result
-    return Registry.findDefaultUserGroupForDN(result['Value'])
+    return Registry.findDefaultGroupForDN(result['Value'])
 
   def hasVOMSExtensions(self):
     """

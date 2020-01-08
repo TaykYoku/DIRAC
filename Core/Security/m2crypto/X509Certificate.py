@@ -8,17 +8,19 @@ X509RFC: https://tools.ietf.org/html/rfc5280
 
 __RCSID__ = "$Id$"
 
-import os
-import time
-import random
 import datetime
+import os
+import random
+import time
+
 import M2Crypto
+
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.Core.Security.m2crypto import asn1_utils
 from DIRAC.Core.Utilities.Decorators import executeOnlyIf
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
 
 # Init the rand seed
@@ -345,7 +347,7 @@ class X509Certificate(object):
     result = self.getIssuerDN()
     if not result['OK']:
       return result
-    return Registry.findDefaultUserGroupForDN(result['Value'])
+    return Registry.findDefaultGroupForDN(result['Value'])
 
   @executeOnlyIfCertLoaded
   def hasVOMSExtensions(self):

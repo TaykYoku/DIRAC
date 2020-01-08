@@ -222,8 +222,9 @@ def _putProxy(userDN=None, userName=None, userGroup=None, vomsFlag=None, proxyFi
       :returns: Tuple of originalUserProxy, useServerCertificate, executionLock
   """
   # Setup user proxy
-  userDNs = userDN
-  if not userDNs:
+  if userDN:
+    userDNs = [userDN]
+  else:
     result = getDNForUsernameInGroup(userName, userGroup)
     if not result['OK']:
       return result
