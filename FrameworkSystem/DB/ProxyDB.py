@@ -154,7 +154,7 @@ class ProxyDB(DB):
                                       }
 
     return self._createTables(tablesD)
-  
+
   def __addUserNameToTable(self, tableName):
     """ Add user name to the table
 
@@ -679,7 +679,7 @@ class ProxyDB(DB):
     userMask = "%s@%s" % (userDN, userGroup)
     return S_ERROR("%s has no proxy registered" % userMask)
 
-  # WARN: This proxy manager work as myproxy, so external myproxy not need I think
+  # WARN: This proxy manager work as myproxy, it seems we no use an external myproxy anymore
   def renewFromMyProxy(self, userDN, userGroup, lifeTime=None, chain=None):
     """ Renew proxy from MyProxy
 
