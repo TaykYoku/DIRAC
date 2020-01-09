@@ -210,16 +210,7 @@ class GlobusComputingElement(ComputingElement):
     result = PilotAgentsDB().getPilotInfo(pilotRef)
     if not result['OK'] or not result['Value']:
       return S_ERROR('Failed to determine owner for pilot ' + pilotRef)
-    pilotDict = result['Value'][pilotRef]
-    owner = pilotDict['OwnerDN']
-    group = getGroupOption(pilotDict['OwnerGroup'], 'VOMSRole', pilotDict['OwnerGroup'])
-    ret = gProxyManager.getPilotProxyFromVOMSGroup(owner, group)
-    if not ret['OK']:
-      self.log.error(ret['Message'])
-      self.log.error('Could not get proxy:', 'User "%s", Group "%s"' % (owner, group))
-      return S_ERROR("Failed to get the pilot's owner proxy")
-    self.proxy = ret['Value']
-
+    
     self.log.verbose("Getting output for: %s " % pilotRef)
     cmd = ['globus-job-get-output', '-out', pilotRef]
     result = executeGridCommand(self.proxy, cmd, self.gridEnv)
