@@ -156,7 +156,7 @@ class FTS3Agent(AgentModule):
       # It has to have a lifetime of at least 2 hours
       # and we cache it for 1.5 hours
       res = gProxyManager.downloadVOMSProxyToFile(
-          userDN, group, requiredTimeLeft=7200, cacheTime=5400)
+          username, group, requiredTimeLeft=7200, cacheTime=5400)
       if not res['OK']:
         return res
 
