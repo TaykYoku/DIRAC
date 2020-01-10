@@ -466,18 +466,25 @@ class ProxyDB(DB):
     self.logAction("store proxy", userName, 'any', userName, 'any')
     return self._update(cmd)
   
-  def __getProxyForDNGroup(self, userDN, userGroup, requiredLifeTime=None):
+  def __getPemAndTimeLeft(self, userDN, userGroup, requiredLifeTime=None, vomsAttr=None):
     """ Get proxy from DB and add group
 
         :param basestring userDN: user DN
         :param basestring userGroup: required DIRAC group
         :param int requiredLifeTime: required proxy live time in a seconds
+        :param str vomsAttr: if need search VOMS proxy first
 
         :return: S_OK(tuple)/S_ERROR() -- tuple with proxy as chain and proxy live time in a seconds
     """
-    cmd = "SELECT Pem, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ExpirationTime) FROM `ProxyDB_CleanProxies`"
-    cmd += ' WHERE UserDN="%s" AND TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ExpirationTime) > 0' % userDN
-    result = self._query(cmd)
+    cmd = 'SELECT Pem, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ExpirationTime) FROM '
+    cmd += '`%%s` WHERE UserDN="%s" AND TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ExpirationTime) > 0' % userDN
+    if vomsAttr:
+      # Search VOMS proxy first
+      result = self._query(cmd % 'ProxyDB_VOMSProxies' + " AND VOMSAttr=%s AND UserGroup=%s" % (vomsAttr, userGroup))
+      if not result['OK']:
+        result = self._query(cmd % 'ProxyDB_CleanProxies') 
+    else:
+      result = self._query(cmd % 'ProxyDB_CleanProxies')
     err = "%s@%s proxy" % (userDN, userGroup)
     if not result['OK']:
       return S_ERROR("%s getting error: %s" % (err, result['Message']))
@@ -493,7 +500,7 @@ class ProxyDB(DB):
         return S_ERROR("%s exist in DB, but %s" % (err, result['Message']))
       return S_OK((result['Value'], requiredLifeTime))
     return S_ERROR("%s with %s group is absent in DB" % (userDN, userGroup))
-  
+
   def __generateProxyForDNGroup(self, userDN, userGroup, requiredLifeTime):
     """ Generate proxy from proxy provider and store it to DB
 
@@ -536,58 +543,6 @@ class ProxyDB(DB):
     if not result['OK']:
       return S_ERROR("Cannot generate proxy: %s" % result['Message'])
     return S_OK((result['Value'], requiredLifeTime))
-
-  def getProxy(self, userDN, userGroup, vomsAttr=None, requiredLifeTime=None):
-    """ Get proxy string from the Proxy Repository for use with userDN
-        in the userGroup
-
-        :param basestring userDN: user DN
-        :param basestring userGroup: required DIRAC group
-        :param basestring vomsAttr: requested VOMS attribute
-        :param int requiredLifeTime: required proxy live time in a seconds
-
-        :return: S_OK(tuple)/S_ERROR() -- tuple with proxy as chain and proxy live time in a seconds
-    """
-    # Test that group enable to download
-    if not Registry.isDownloadableGroup(userGroup):
-      return S_ERROR('"%s" group is disable to download.' % userGroup)
-
-    # Standard proxy is requested
-    self.log.verbose('Try to get proxy from ProxyDB_Proxies')
-    result = self.__getProxyForDNGroup(userDN, userGroup, requiredLifeTime)
-    if not result['OK']:
-
-      # WARN: for compatibility
-      result = self.__getPemAndTimeLeftOld(userDN, userGroup)
-      if not result['OK'] or requiredLifeTime and timeLeft < requiredLifeTime:
-      # WARN: end compatibility
-
-        errMsg = result['Message']
-        result = self.__generateProxyForDNGroup(userDN, userGroup, requiredLifeTime)
-        if not result['OK']:
-          return S_ERROR('%s; %s' % (errMsg, result['Message']))
-
-    pemData = result['Value'][0]
-    timeLeft = result['Value'][1]
-
-    chain = X509Chain()
-    result = chain.loadProxyFromString(pemData)
-    if not result['OK']:
-      return S_ERROR("Checking %s@%s proxy failed: %s" % (userDN, userGroup, result['Message']))
-  
-    if self.__useMyProxy:
-      if requiredLifeTime:
-        if timeLeft < requiredLifeTime:
-          retVal = self.renewFromMyProxy(userDN, userGroup, lifeTime=requiredLifeTime, chain=chain)
-          if not retVal['OK']:
-            return S_ERROR("%s; the proxy lifetime from MyProxy is less than required." % errMsg)
-          chain = retVal['Value']
-
-    # Proxy is invalid for some reason, let's delete it
-    if not chain.isValidProxy()['OK']:
-      self.deleteProxy(userDN, userGroup)
-      return S_ERROR("%s@%s has no proxy registered" % (userDN, userGroup))
-    return S_OK((chain, timeLeft))
 
   def purgeExpiredProxies(self, sendNotifications=True):
     """ Purge expired requests from the db
@@ -825,72 +780,74 @@ class ProxyDB(DB):
 
     return S_OK({'attribute': csVOMSMapping, 'VOMSVO': Registry.getVOMSVOForGroup(userGroup)})
 
-  def getVOMSProxy(self, userDN, userGroup, requiredLifeTime=None, requestedVOMSAttr=None):
-    """ Get proxy string from the Proxy Repository for use with userDN
-        in the userGroup
+  def getProxy(self, userName, userGroup, requiredLifeTime=None, voms=False):
+    """ Get proxy string from the Proxy Repository for use with userName in the userGroup
 
-        :param basestring userDN: user DN
+        :param basestring userName: user DN
         :param basestring userGroup: required DIRAC group
         :param int requiredLifeTime: required proxy live time in a seconds
-        :param basestring requestedVOMSAttr: VOMS attribute
+        :param basestring voms: if need VOMS attribute
 
         :return: S_OK(tuple)/S_ERROR() -- tuple with proxy as chain and proxy live time in a seconds
     """
-    retVal = self.__getVOMSAttribute(userGroup, requestedVOMSAttr)
-    if not retVal['OK']:
-      return retVal
-    vomsAttr = retVal['Value']['attribute']
-    vomsVO = retVal['Value']['VOMSVO']
+    # Test that group enable to download
+    if not Registry.isDownloadableGroup(userGroup):
+      return S_ERROR('"%s" group is disable to download.' % userGroup)
 
-    # Look in the cache
-    retVal = self.__getPemAndTimeLeftOld(userDN, userGroup, vomsAttr)
-    if retVal['OK']:
-      pemData = retVal['Value'][0]
-      vomsTime = retVal['Value'][1]
-      chain = X509Chain()
-      retVal = chain.loadProxyFromString(pemData)
-      if retVal['OK']:
-        retVal = chain.getRemainingSecs()
-        if retVal['OK']:
-          remainingSecs = retVal['Value']
-          if requiredLifeTime and requiredLifeTime <= vomsTime and requiredLifeTime <= remainingSecs:
-            return S_OK((chain, min(vomsTime, remainingSecs)))
+    # Found DN
+    result = Registry.getDNForUsernameInGroup(userName, userGroup)
+    if not result['OK']:
+      return result
+    userDN = result['Value']
+    vomsAttr = Registry.getVOMSAttributeForGroup(userGroup)
+    if not vomsAttr and voms:
+      return S_ERROR("No mapping defined for group %s in the CS" % userGroup)
 
-    if isPUSPdn(userDN):
-      # Get the Per User SubProxy if one is requested
-      result = self.__getPUSProxy(userDN, userGroup, requiredLifeTime, requestedVOMSAttr)
-      if not result['OK']:
-        return result
-      pemData = result['Value'][0]
-      chain = X509Chain()
-      result = chain.loadProxyFromString(pemData)
-      if not result['OK']:
-        return result
+    # Standard proxy is requested
+    self.log.verbose('Try to get proxy from ProxyDB_CleanProxies')
+    result = self.__getPemAndTimeLeft(userDN, userGroup, requiredLifeTime, voms and vomsAttr)
+    if not result['OK']:
 
-    else:
-      # Get the stored proxy and dress it with the VOMS extension
-      retVal = self.getProxy(userDN, userGroup, requiredLifeTime)
-      if not retVal['OK']:
-        return retVal
-      chain, secsLeft = retVal['Value']
+      # WARN: for compatibility
+      result = self.__getPemAndTimeLeftOld(userDN, userGroup, voms and vomsAttr)
+      if not result['OK'] or requiredLifeTime and timeLeft < requiredLifeTime:
 
+        errMsg = result['Message']
+        result = self.__generateProxyForDNGroup(userDN, userGroup, requiredLifeTime)
+        if not result['OK']:
+          return S_ERROR('%s; %s' % (errMsg, result['Message']))
+
+    pemData, timeLeft = result['Value']
+    
+    chain = X509Chain()
+    result = chain.loadProxyFromString(pemData)
+    if not result['OK']:
+      return S_ERROR("Checking %s@%s proxy failed: %s" % (userDN, userGroup, result['Message']))
+
+    # Proxy is invalid for some reason, let's delete it
+    if not chain.isValidProxy()['OK']:
+      self.deleteProxy(userDN, userGroup)
+      return S_ERROR("%s@%s has no proxy registered" % (userDN, userGroup))
+    
+    if voms:
       vomsMgr = VOMS()
-      attrs = vomsMgr.getVOMSAttributes(chain).get('Value') or ['']
-      if attrs[0]:
+      attrs = vomsMgr.getVOMSAttributes(chain).get('Value')
+      if attrs and attrs[0]:
         if vomsAttr != attrs[0]:
           return S_ERROR("Stored proxy has already a different VOMS attribute %s than requested %s" %
-                         (attrs[0], vomsAttr))
+                          (attrs[0], vomsAttr))
       else:
         retVal = vomsMgr.setVOMSAttributes(chain, vomsAttr, vo=vomsVO)
         if not retVal['OK']:
           return S_ERROR("Cannot append voms extension: %s" % retVal['Message'])
         chain = retVal['Value']
+      # We have got the VOMS proxy, store it into the cache
+      result = self.__storeVOMSProxy(userDN, userGroup, vomsAttr, chain)
+      if not result['OK']:
+        return result
+      timeLeft = result['Value']
 
-    # We have got the VOMS proxy, store it into the cache
-    result = self.__storeVOMSProxy(userDN, userGroup, vomsAttr, chain)
-    if not result['OK']:
-      return result
-    return S_OK((chain, result['Value']))
+    return S_OK((chain, timeLeft)) 
 
   def __storeVOMSProxy(self, userDN, userGroup, vomsAttr, chain):
     """ Store VOMS proxy
