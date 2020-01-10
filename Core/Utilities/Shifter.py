@@ -42,13 +42,13 @@ def getShifterProxy(shifterType, fileName=False):
   if vomsAttr:
     gLogger.info("Getting VOMS [%s] proxy for shifter %s@%s (%s)" % (vomsAttr, userName,
                                                                      userGroup, userDN))
-    result = gProxyManager.downloadVOMSProxyToFile(userDN, userGroup,
+    result = gProxyManager.downloadVOMSProxyToFile(userName, userGroup,
                                                    filePath=fileName,
                                                    requiredTimeLeft=86400,
                                                    cacheTime=86400)
   else:
     gLogger.info("Getting proxy for shifter %s@%s (%s)" % (userName, userGroup, userDN))
-    result = gProxyManager.downloadProxyToFile(userDN, userGroup,
+    result = gProxyManager.downloadProxyToFile(userName, userGroup,
                                                filePath=fileName,
                                                requiredTimeLeft=86400,
                                                cacheTime=86400)
