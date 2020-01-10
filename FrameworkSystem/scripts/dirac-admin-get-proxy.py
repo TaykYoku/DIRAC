@@ -9,7 +9,7 @@ from __future__ import print_function
 import os
 import DIRAC
 
-from DIRAC import gLogger
+from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base import Script
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
@@ -23,17 +23,16 @@ class Params(object):
   proxyPath = False
   proxyLifeTime = 86400
   enableVOMS = False
-  vomsAttr = False
 
   def setLimited(self, args):
     """ Set limited
 
-        :param boolean args: is limited
+        :param bool args: is limited
 
         :return: S_OK()/S_ERROR()
     """
     self.limited = True
-    return DIRAC.S_OK()
+    return S_OK()
 
   def setProxyLocation(self, args):
     """ Set proxy location
@@ -43,7 +42,7 @@ class Params(object):
         :return: S_OK()/S_ERROR()
     """
     self.proxyPath = args
-    return DIRAC.S_OK()
+    return S_OK()
 
   def setProxyLifeTime(self, arg):
     """ Set proxy lifetime
@@ -57,29 +56,18 @@ class Params(object):
       self.proxyLifeTime = int(fields[0]) * 3600 + int(fields[1]) * 60
     except BaseException:
       gLogger.notice("Can't parse %s time! Is it a HH:MM?" % arg)
-      return DIRAC.S_ERROR("Can't parse time argument")
-    return DIRAC.S_OK()
+      return S_ERROR("Can't parse time argument")
+    return S_OK()
 
   def automaticVOMS(self, arg):
     """ Enable VOMS
 
-        :param boolean arg: enable VOMS
+        :param bool arg: enable VOMS
 
         :return: S_OK()/S_ERROR()
     """
     self.enableVOMS = True
-    return DIRAC.S_OK()
-
-  def setVOMSAttr(self, arg):
-    """ Set VOMS attribute
-
-        :param basestring arg: VOMS attribute
-
-        :return: S_OK()/S_ERROR()
-    """
-    self.enableVOMS = True
-    self.vomsAttr = arg
-    return DIRAC.S_OK()
+    return S_OK()
 
   def registerCLISwitches(self):
     """ Register CLI switches
@@ -88,7 +76,6 @@ class Params(object):
     Script.registerSwitch("l", "limited", "Get a limited proxy", self.setLimited)
     Script.registerSwitch("u:", "out=", "File to write as proxy", self.setProxyLocation)
     Script.registerSwitch("a", "voms", "Get proxy with VOMS extension mapped to the DIRAC group", self.automaticVOMS)
-    Script.registerSwitch("m:", "vomsAttr=", "VOMS attribute to require", self.setVOMSAttr)
 
 params = Params()
 params.registerCLISwitches()
@@ -108,17 +95,23 @@ if len(args) != 2:
   Script.showHelp()
 
 userGroup = str(args[1])
-userDN = str(args[0])
-userName = False
-if userDN.find("/") != 0:
-  userName = userDN
+
+# First argument is user name
+if str(args[0]).find("/"):
+  userName = str(args[0])
   result = Registry.getDNForUsernameInGroup(userName, userGroup)
   if not result['OK']:
-    return result
-  userDN = result['Value']
-  if not userDN:
     gLogger.notice("Cannot discover DN for %s@%s" % (userName, userGroup))
     DIRAC.exit(2)
+  userDN = result['Value']
+# Or DN
+else:
+  userDN = str(args[0])
+  result = Registry.getUsernameForDN(userDN)
+  if not result['OK']:
+    gLogger.notice("DN '%s' is not registered in DIRAC" % userDN)
+    DIRAC.exit(2)
+  userName = result['Value']
 
 if not params.proxyPath:
   if not userName:
@@ -130,11 +123,10 @@ if not params.proxyPath:
   params.proxyPath = "%s/proxy.%s.%s" % (os.getcwd(), userName, userGroup)
 
 if params.enableVOMS:
-  result = gProxyManager.downloadVOMSProxy(userDN, userGroup, limited=params.limited,
-                                           requiredTimeLeft=params.proxyLifeTime,
-                                           requiredVOMSAttribute=params.vomsAttr)
+  result = gProxyManager.downloadVOMSProxy(userName, userGroup, limited=params.limited,
+                                           requiredTimeLeft=params.proxyLifeTime)
 else:
-  result = gProxyManager.downloadProxy(userDN, userGroup, limited=params.limited,
+  result = gProxyManager.downloadProxy(userName, userGroup, limited=params.limited,
                                        requiredTimeLeft=params.proxyLifeTime)
 if not result['OK']:
   gLogger.notice('Proxy file cannot be retrieved: %s' % result['Message'])
