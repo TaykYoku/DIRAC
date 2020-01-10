@@ -315,132 +315,60 @@ class ProxyManagerHandler(RequestHandler):
     # Not authorized!
     return S_ERROR("You can't get proxies!")
 
-  types_getPersonalProxy = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
-
-  def export_getPersonalProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttr):
-    """ Get a proxy for a userDN/userGroup
-
-        :param basestring userDN: user DN
-        :param basestring userGroup: DIRAC group
-        :param requestPem: PEM encoded request object for delegation
-        :param requiredLifetime: Argument for length of proxy
-        :param vomsAttr: VOMS attr to add to the proxy
-
-          * Properties:
-              * NormalUser <- permits full delegation of proxies
-        
-        :return: S_OK(basestring)/S_ERROR()
-    """
-    credDict = self.getRemoteCredentials()
-    if userDN != credDict['DN'] or userGroup != credDict['group']:
-      return S_ERROR("You can't get %s@%s proxy!" % (credDict['username'], credDict['group']))
-
-    self.__proxyDB.logAction("download %sproxy" % 'voms ' if vomsAttr else '',
-                             credDict['username'], credDict['group'], credDict['username'], credDict['group'])
-    if vomsAttr:
-      return self.__getVOMSProxy(credDict['DN'], credDict['group'], requestPem, requiredLifetime, vomsAttr, False)
-    else:
-      return self.__getProxy(credDict['DN'], credDict['group'], requestPem, requiredLifetime, False)
-
   types_getProxy = [basestring, basestring, basestring, six.integer_types]
 
-  def export_getProxy(self, userDN, userGroup, requestPem, requiredLifetime):
-    """ Get a proxy for a userDN/userGroup
+  def export_getProxy(self, user, userGroup, requestPem, requiredLifetime, token=None, vomsAttribute=None, personal=False):
+    """ Get a proxy for a user/userGroup
 
-        :param basestring userDN: user DN
-        :param basestring userGroup: DIRAC group
-        :param requestPem: PEM encoded request object for delegation
-        :param requiredLifetime: Argument for length of proxy
+        :param str user: user name
+        :param str userGroup: DIRAC group
+        :param str requestPem: PEM encoded request object for delegation
+        :param int requiredLifetime: Argument for length of proxy
+        :param str token: token that need to use
+        :param bool vomsAttribute: make proxy with VOMS extension
+        :param bool personal: get personal proxy
 
           * Properties:
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
               * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
-        
-        :return: S_OK(basestring)/S_ERROR()
+          
+          * Properties for personal proxy:
+              * NormalUser <- permits full delegation of proxies
+
+        :return: S_OK(str)/S_ERROR()
     """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    username = result['Value']
+    # WARN: Next block for compatability
+    if not user.find("/"):  # Is it DN?
+      result = Registry.getUsernameForDN(user)
+      if not result['OK']:
+        return result
+      user = result['Value']
 
     credDict = self.getRemoteCredentials()
-    result = self.__checkProperties(username, userGroup)
-    if not result['OK']:
-      return result
-    forceLimited = result['Value']
 
-    self.__proxyDB.logAction("download proxy", credDict['username'], credDict['group'], username, userGroup)
-    return self.__getProxy(userDN, userGroup, requestPem, requiredLifetime, forceLimited)
+    if token:
+      result = self.__proxyDB.useToken(token, credDict['username'], credDict['group'])
+      if not result['OK']:
+        return result
+      if not result['Value']:
+        return S_ERROR("Proxy token is invalid")
 
-  def __getProxy(self, userDN, userGroup, requestPem, requiredLifetime, forceLimited):
-    """ Internal to get a proxy
+    if personal:
+      # For personal proxy
+      if user != credDict['username'] or userGroup != credDict['group']:
+        return S_ERROR("You can't get %s@%s proxy!" % (credDict['username'], credDict['group']))
+      forceLimited = False
+    else:
+      result = self.__checkProperties(user, userGroup)
+      if not result['OK']:
+        return result
+      forceLimited = True if token else result['Value']
 
-        :param basestring userDN: user DN
-        :param basestring userGroup: DIRAC group
-        :param basestring requestPem: dump of request certificate
-        :param int,long requiredLifetime: requested live time of proxy
-        :param boolean forceLimited: limited proxy
+    log = "download %sproxy%s" % ('VOMS ' if vomsAttribute else '', 'with token' if token else '')
+    self.__proxyDB.logAction(log, credDict['username'], credDict['group'], user, userGroup)
 
-        :return: S_OK(basestring)/S_ERROR()
-    """
-    retVal = self.__proxyDB.getProxy(userDN, userGroup, requiredLifeTime=requiredLifetime)
-    if not retVal['OK']:
-      return retVal
-    chain, secsLeft = retVal['Value']
-    # If possible we return a proxy 1.5 longer than requested
-    requiredLifetime = int(min(secsLeft, requiredLifetime * self.__maxExtraLifeFactor))
-    retVal = chain.generateChainFromRequestString(requestPem, lifetime=requiredLifetime,
-                                                  requireLimited=forceLimited)
-    if not retVal['OK']:
-      return retVal
-    return S_OK(retVal['Value'])
-
-  types_getVOMSProxy = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
-
-  def export_getVOMSProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttribute=None):
-    """ Get a proxy for a userDN/userGroup
-
-        :param requestPem: PEM encoded request object for delegation
-        :param requiredLifetime: Argument for length of proxy
-        :param vomsAttribute: VOMS attr to add to the proxy
-
-          * Properties :
-              * FullDelegation <- permits full delegation of proxies
-              * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
-        
-        :return: S_OK(basestring)/S_ERROR()
-    """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    username = result['Value']
-
-    credDict = self.getRemoteCredentials()
-    result = self.__checkProperties(username, userGroup)
-    if not result['OK']:
-      return result
-    forceLimited = result['Value']
-
-    self.__proxyDB.logAction("download voms proxy", credDict['username'], credDict['group'], username, userGroup)
-    return self.__getVOMSProxy(userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited)
-
-  def __getVOMSProxy(self, userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, forceLimited):
-    """ Get a proxy for a userDN/userGroup
-
-        :param basestring userDN: user DN
-        :param basestring userGroup: DIRAC group
-        :param basestring requestPem: dump of request certificate
-        :param int,long requiredLifetime: requested live time of proxy
-        :param requiredLifetime: Argument for length of proxy
-        :param vomsAttribute: VOMS attr to add to the proxy
-        :param boolean forceLimited: limited proxy
-
-        :return: S_OK(basestring)/S_ERROR()
-    """
-    retVal = self.__proxyDB.getVOMSProxy(userDN, userGroup, requiredLifeTime=requiredLifetime,
-                                         requestedVOMSAttr=vomsAttribute)
+    retVal = self.__proxyDB.getProxy(user, userGroup, requiredLifeTime=requiredLifetime, voms=bool(vomsAttribute))
     if not retVal['OK']:
       return retVal
     chain, secsLeft = retVal['Value']
@@ -562,85 +490,58 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK(tuple)/S_ERROR() -- tuple contain token, number uses
     """
-    # WARN: For compatability
-    if len(requesterUsername.split('/')) > 1:
+    # WARN: Next block for compatability
+    if not requesterUsername.find("/"):  # Is it DN?
       result = Registry.getUsernameForDN(requesterUsername)
       if not result['OK']:
         return result
       requesterUsername = result['Value']
-    # WARN: End
 
     credDict = self.getRemoteCredentials()
     self.__proxyDB.logAction("generate tokens", credDict['username'], credDict['group'], requesterUsername, requesterGroup)
     return self.__proxyDB.generateToken(requesterUsername, requesterGroup, numUses=tokenUses)
 
-  types_getProxyWithToken = [basestring, basestring, basestring, six.integer_types, basestring]
-
-  def export_getProxyWithToken(self, userDN, userGroup, requestPem, requiredLifetime, token):
-    """ Get a proxy for a userDN/userGroup
-
-        :param requestPem: PEM encoded request object for delegation
-        :param requiredLifetime: Argument for length of proxy
-        :param token: Valid token to get a proxy
-
-          * Properties:
-              * FullDelegation <- permits full delegation of proxies
-              * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
-        
-        :return: S_OK(basestring)/S_ERROR()
-    """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    username = result['Value']
-
-    credDict = self.getRemoteCredentials()
-    result = self.__proxyDB.useToken(token, credDict['username'], credDict['group'])
-    gLogger.info("Trying to use token %s by %s:%s" % (token, credDict['username'], credDict['group']))
-    if not result['OK']:
-      return result
-    if not result['Value']:
-      return S_ERROR("Proxy token is invalid")
-    self.__proxyDB.logAction("used token", credDict['username'], credDict['group'], username, userGroup)
-
-    result = self.__checkProperties(username, userGroup)
-    if not result['OK']:
-      return result
-    self.__proxyDB.logAction("download proxy with token", credDict['username'], credDict['group'], username, userGroup)
-    return self.__getProxy(userDN, userGroup, requestPem, requiredLifetime, True)
-
   types_getVOMSProxyWithToken = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
 
-  def export_getVOMSProxyWithToken(self, userDN, userGroup, requestPem, requiredLifetime, token, vomsAttribute=None):
-    """ Get a proxy for a userDN/userGroup
+  def export_getVOMSProxyWithToken(self, user, userGroup, requestPem, requiredLifetime, token, vomsAttribute=None):
+    """ Get a proxy with VOMS extension for a user/userGroup by using token
 
-        :param requestPem: PEM encoded request object for delegation
-        :param requiredLifetime: Argument for length of proxy
-        :param vomsAttribute: VOMS attr to add to the proxy
+        :param str user: user name
+        :param str userGroup: DIRAC group
+        :param str requestPem: PEM encoded request object for delegation
+        :param int requiredLifetime: Argument for length of proxy
+        :param str token: Valid token to get a proxy
 
-          * Properties :
-              * FullDelegation <- permits full delegation of proxies
-              * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
-        
-        :return: S_OK(basestring)/S_ERROR()
+        :return: S_OK(str)/S_ERROR()
     """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    username = result['Value']
+    return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, token=token, vomsAttribute=vomsAttribute)
+  
+  types_getProxyWithToken = [basestring, basestring, basestring, six.integer_types, basestring]
 
-    credDict = self.getRemoteCredentials()
-    result = self.__proxyDB.useToken(token, credDict['username'], credDict['group'])
-    if not result['OK']:
-      return result
-    if not result['Value']:
-      return S_ERROR("Proxy token is invalid")
-    self.__proxyDB.logAction("used token", credDict['username'], credDict['group'], username, userGroup)
+  def export_getProxyWithToken(self, user, userGroup, requestPem, requiredLifetime, token):
+    """ Get a proxy for a user/userGroup by using token
 
-    result = self.__checkProperties(username, userGroup)
-    if not result['OK']:
-      return result
-    self.__proxyDB.logAction("download voms proxy with token", credDict['DN'], credDict['group'], username, userGroup)
-    return self.__getVOMSProxy(userDN, userGroup, requestPem, requiredLifetime, vomsAttribute, True)
+        :param str user: user name
+        :param str userGroup: DIRAC group
+        :param str requestPem: PEM encoded request object for delegation
+        :param int requiredLifetime: Argument for length of proxy
+        :param str token: Valid token to get a proxy
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, token=token)
+
+  types_getVOMSProxy = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
+
+  def export_getVOMSProxy(self, user, userGroup, requestPem, requiredLifetime, vomsAttribute=None):
+    """ Get a proxy with VOMS extension for a user/userGroup
+
+        :param str user: user name
+        :param str userGroup: DIRAC group
+        :param str requestPem: PEM encoded request object for delegation
+        :param int requiredLifetime: Argument for length of proxy
+        :param str token: Valid token to get a proxy
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, vomsAttribute=vomsAttribute)
