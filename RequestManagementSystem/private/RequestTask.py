@@ -126,12 +126,12 @@ class RequestTask(object):
       if vomsAttr:
         self.log.debug("getting VOMS [%s] proxy for shifter %s@%s (%s)" % (vomsAttr, userName,
                                                                            userGroup, userDN))
-        getProxy = gProxyManager.downloadVOMSProxyToFile(userDN, userGroup,
+        getProxy = gProxyManager.downloadVOMSProxyToFile(userName, userGroup,
                                                          requiredTimeLeft=1200,
                                                          cacheTime=4 * 43200)
       else:
         self.log.debug("getting proxy for shifter %s@%s (%s)" % (userName, userGroup, userDN))
-        getProxy = gProxyManager.downloadProxyToFile(userDN, userGroup,
+        getProxy = gProxyManager.downloadProxyToFile(userName, userGroup,
                                                      requiredTimeLeft=1200,
                                                      cacheTime=4 * 43200)
       if not getProxy["OK"]:
