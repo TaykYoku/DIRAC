@@ -203,9 +203,9 @@ class JobManagerHandler(RequestHandler):
       jobIDList.append(jobID)
 
     # Set persistency flag
-    retVal = gProxyManager.getUserPersistence(self.ownerDN, self.ownerGroup)
-    if 'Value' not in retVal or not retVal['Value']:
-      gProxyManager.setPersistency(self.ownerDN, self.ownerGroup, True)
+    retVal = gProxyManager.getUserPersistence(self.owner, self.ownerGroup)
+    if not retVal.get('Value'):
+      gProxyManager.setPersistency(self.owner, self.ownerGroup, True)
 
     if parametricJob:
       result = S_OK(jobIDList)
@@ -279,7 +279,7 @@ class JobManagerHandler(RequestHandler):
 
         :return: bool
     """
-    result = gProxyManager.userHasProxy(self.ownerDN, self.ownerGroup, validSeconds=18000)
+    result = gProxyManager.userHasProxy(self.owner, self.ownerGroup, validSeconds=18000)
     if not result['OK']:
       self.log.error("Can't check if the user has proxy uploaded", result['Message'])
       return True

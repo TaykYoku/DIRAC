@@ -545,7 +545,7 @@ def getUsernameForDN(dn, usersList=None):
       return result
     if dn in result['Value']:
       return S_OK(username)
-  return S_ERROR("No username found for dn %s" % dn)
+  return S_ERROR("No username found for DN %s" % dn)
 
 def getGroupsForUser(username):
   """ Find groups for user

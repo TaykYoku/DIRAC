@@ -70,48 +70,49 @@ class DiracAdmin(API):
        :return: S_OK,S_ERROR
 
        :param permanent: Indefinitely update proxy
-       :type permanent: boolean
+       :type permanent: bool
 
     """
     return gProxyManager.uploadProxy()
 
   #############################################################################
-  def setProxyPersistency(self, userDN, userGroup, persistent=True):
+  def setProxyPersistency(self, userName, userGroup, persistent=True):
     """Set the persistence of a proxy in the Proxy Manager
 
        Example usage:
 
-         >>> gLogger.notice(diracAdmin.setProxyPersistency( 'some DN', 'dirac group', True ))
+         >>> gLogger.notice(diracAdmin.setProxyPersistency( 'user name', 'dirac group', True ))
          {'OK': True }
 
-       :param userDN: User DN
-       :type userDN: string
+       :param userName: User name
+       :type userName: string
        :param userGroup: DIRAC Group
        :type userGroup: string
        :param persistent: Persistent flag
-       :type persistent: boolean
+       :type persistent: bool
        :return: S_OK,S_ERROR
     """
-    return gProxyManager.setPersistency(userDN, userGroup, persistent)
+    return gProxyManager.setPersistency(userName, userGroup, persistent)
 
   #############################################################################
-  def checkProxyUploaded(self, userDN, userGroup, requiredTime):
-    """Set the persistence of a proxy in the Proxy Manager
+  def checkProxyUploaded(self, userName, userGroup, requiredTime):
+    """Check if a user(DN-group) has a proxy in the proxy management
+       Updates internal cache if needed to minimize queries to the service
 
        Example usage:
 
-         >>> gLogger.notice(diracAdmin.setProxyPersistency( 'some DN', 'dirac group', True ))
+         >>> gLogger.notice(diracAdmin.checkProxyUploaded('user name', 'dirac group', 0))
          {'OK': True, 'Value' : True/False }
 
-       :param userDN: User DN
-       :type userDN: string
+       :param userName: User name
+       :type userName: string
        :param userGroup: DIRAC Group
        :type userGroup: string
        :param requiredTime: Required life time of the uploaded proxy
-       :type requiredTime: boolean
+       :type requiredTime: bool
        :return: S_OK,S_ERROR
     """
-    return gProxyManager.userHasProxy(userDN, userGroup, requiredTime)
+    return gProxyManager.userHasProxy(userName, userGroup, requiredTime)
 
   #############################################################################
   def getSiteMask(self, printOutput=False, status='Active'):
