@@ -93,13 +93,12 @@ class ProxyManagerClient(object):
     retVal = rpcClient.getRegisteredUsers(validSeconds)
     if not retVal['OK']:
       return retVal
-    data = retVal['Value']
     # Update the cache
-    for record in data:
-      cacheKey = (record['DN'], record['group'])
-      self.__usersCache.add(cacheKey,
-                            self.__getSecondsLeftToExpiration(record['expirationtime']),
-                            record)
+    for record in retVal['Value']:
+      for group in record['groups']:
+        cacheKey = (record['user'], group)
+        self.__usersCache.add(cacheKey, self.__getSecondsLeftToExpiration(record['expirationtime']),
+                              record)
     return S_OK()
   
   def __refreshVOMSesCache(self):
@@ -146,7 +145,7 @@ class ProxyManagerClient(object):
 
   @gUsersSync
   def userHasProxy(self, user, userGroup, validSeconds=0):
-    """ Check if a user(DN-group) has a proxy in the proxy management
+    """ Check if a user-group has a proxy in the proxy management
         Updates internal cache if needed to minimize queries to the service
 
         :param str user: user name
@@ -156,14 +155,14 @@ class ProxyManagerClient(object):
         :return: S_OK()/S_ERROR()
     """
     cacheKey = (user, userGroup)
-    if self.__usersCache.exists(cacheKey, validSeconds) or self.__usersCache.exists((user, ''), validSeconds):
+    if self.__usersCache.exists(cacheKey, validSeconds):
       return S_OK(True)
     # Get list of users from the DB with proxys at least 300 seconds
     gLogger.verbose("Updating list of users in proxy management")
     retVal = self.__refreshUserCache(validSeconds)
     if not retVal['OK']:
       return retVal
-    return S_OK(self.__usersCache.exists(cacheKey, validSeconds) or self.__usersCache.exists((user, ''), validSeconds))
+    return S_OK(self.__usersCache.exists(cacheKey, validSeconds))
 
   @gUsersSync
   def getUserPersistence(self, user, userGroup, validSeconds=0):
@@ -191,10 +190,10 @@ class ProxyManagerClient(object):
       return S_OK(userData['persistent'])
     return S_OK(False)
 
-  def setPersistency(self, userDN, userGroup, persistent):
+  def setPersistency(self, user, userGroup, persistent):
     """ Set the persistency for user/group
 
-        :param str userDN: user DN
+        :param str user: user name
         :param str userGroup: user group
         :param bool persistent: presistent flag
 
@@ -205,11 +204,11 @@ class ProxyManagerClient(object):
     if not persistent:
       persistentFlag = False
     rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
-    retVal = rpcClient.setPersistency(userDN, userGroup, persistentFlag)
+    retVal = rpcClient.setPersistency(user, userGroup, persistentFlag)
     if not retVal['OK']:
       return retVal
     # Update internal persistency cache
-    cacheKey = (userDN, userGroup)
+    cacheKey = (user, userGroup)
     record = self.__usersCache.get(cacheKey, 0)
     if record:
       record['persistent'] = persistentFlag
@@ -290,7 +289,7 @@ class ProxyManagerClient(object):
     req.generateProxyRequest()
     rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     retVal = rpcClient.getProxy(user, userGroup, req.dumpRequest()['Value'],
-                                int(cacheTime + requiredTimeLeft), False, vomsAttr, personal)
+                                int(cacheTime + requiredTimeLeft), False, vomsAttr, True)
     if not retVal['OK']:
       return retVal
     chain = X509Chain(keyObj=req.getPKey())
@@ -326,7 +325,7 @@ class ProxyManagerClient(object):
       rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     
     retVal = rpcClient.getProxy(user, userGroup, req.dumpRequest()['Value'],
-                                int(cacheTime + requiredTimeLeft), token)
+                                int(cacheTime + requiredTimeLeft), token, vomsAttr, False)
     if not retVal['OK']:
       return retVal
     chain = X509Chain(keyObj=req.getPKey())
@@ -391,7 +390,7 @@ class ProxyManagerClient(object):
     else:
       rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     retVal = rpcClient.getProxy(user, userGroup, req.dumpRequest()['Value'],
-                                int(cacheTime + requiredTimeLeft), token, True)
+                                int(cacheTime + requiredTimeLeft), token, True, False)
     if not retVal['OK']:
       return retVal
     
@@ -484,18 +483,18 @@ class ProxyManagerClient(object):
     self.__filesCache.delete(chain)
     return S_OK()
 
-  def requestToken(self, requesterDN, requesterGroup, numUses=1):
+  def requestToken(self, requester, requesterGroup, numUses=1):
     """ Request a number of tokens. usesList must be a list of integers and each integer is the number of uses a token
         must have
 
-        :param str requesterDN: user DN
+        :param str requester: user name
         :param str requesterGroup: user group
         :param int numUses: number of uses
 
         :return: S_OK(tuple)/S_ERROR() -- tuple contain token, number uses
     """
     rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
-    return rpcClient.generateToken(requesterDN, requesterGroup, numUses)
+    return rpcClient.generateToken(requester, requesterGroup, numUses)
 
   def renewProxy(self, proxyToBeRenewed=None, minLifeTime=3600, newProxyLifeTime=43200, proxyToConnect=None):
     """ Renew a proxy using the ProxyManager

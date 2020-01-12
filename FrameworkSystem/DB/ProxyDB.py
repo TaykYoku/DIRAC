@@ -935,8 +935,18 @@ class ProxyDB(DB):
         if table == 'ProxyDB_CleanProxies':
           record.insert(1, '')
           record.insert(3, False)
+        result = Registry.getGroupsForDN(record[0])
+        if result['OK']:
+          groups = result['Value']
+        result = Registry.getUsernameForDN(record[0])
+        if result['OK']:
+          user = result['Value']
+        if not result['OK']:
+          return result
         data.append({'DN': record[0],
-                     'group': record[1],
+                     'user': user,
+                     'group': record[1],  # for compatibility with -v7r0
+                     'groups': groups,
                      'expirationtime': record[2],
                      'persistent': record[3] == 'True'})
     return S_OK(data)
