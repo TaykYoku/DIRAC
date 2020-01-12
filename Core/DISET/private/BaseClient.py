@@ -101,14 +101,14 @@ class BaseClient(object):
   def getDestinationService(self):
     """ Return service destination
 
-        :return: basestring
+        :return: str
     """
     return self._destinationSrv
 
   def getServiceName(self):
     """ Return service name
 
-        :return: basestring
+        :return: str
     """
     return self._serviceName
 
@@ -281,7 +281,7 @@ class BaseClient(object):
           * self.__nbOfRetry = 2 if we have more than 2 urls, otherwise 3
           * self.__bannedUrls is reinitialized if all the URLs are banned
 
-        :return: S_OK(basestring)/S_ERROR() -- the selected URL
+        :return: S_OK(str)/S_ERROR() -- the selected URL
     """
     if not self.__initStatus['OK']:
       return self.__initStatus
@@ -386,7 +386,7 @@ class BaseClient(object):
         :param notselect: URL that should NOT be selected
         :param list urls: list of potential URLs
 
-        :return: basestring -- selected URL
+        :return: str -- selected URL
     """
     url = None
     for i in urls:
@@ -502,7 +502,7 @@ and this is thread %s
   def _disconnect(self, trid):
     """ Disconnect the connection.
 
-        :param basestring trid: Transport ID in the transportPool
+        :param str trid: Transport ID in the transportPool
     """
     getGlobalTransportPool().close(trid)
 

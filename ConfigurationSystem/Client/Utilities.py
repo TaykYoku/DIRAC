@@ -73,7 +73,7 @@ def getCEsFromCS():
 def getSEsFromCS(protocol='srm'):
   """ Get all the SEs defined in the CS
 
-      :param basestring protocol: storage protocol
+      :param str protocol: storage protocol
 
       :return: S_OK(dict)/S_ERROR()
   """
@@ -103,11 +103,11 @@ def getSEsFromCS(protocol='srm'):
 def getGridCEs(vo, bdiiInfo=None, ceBlackList=None, hostURL=None, glue2=False):
   """ Get all the CEs available for a given VO and having queues in Production state
 
-      :param basestring vo: VO name
+      :param str vo: VO name
       :param dict bddiInfo: information from BDII
       :param list ceBlackList: CEs from black list
-      :param basestring hostURL: host URL
-      :param boolean glue2: use glue2
+      :param str hostURL: host URL
+      :param bool glue2: use glue2
 
       :return: S_OK(set)/S_ERROR()
   """
@@ -163,7 +163,7 @@ def getGridCEs(vo, bdiiInfo=None, ceBlackList=None, hostURL=None, glue2=False):
 def getSiteUpdates(vo, bdiiInfo=None, log=None):
   """ Get all the necessary updates for the already defined sites and CEs
 
-      :param basestring vo: VO name
+      :param str vo: VO name
       :param dict bdiiInfo: information from DBII
       :param log: logger
 
@@ -350,7 +350,7 @@ def getSiteUpdates(vo, bdiiInfo=None, log=None):
 def getGridSEs(vo, bdiiInfo=None, seBlackList=None):
   """ Get all the SEs available for a given VO
 
-      :param basestring vo: VO name
+      :param str vo: VO name
       :param dict bdiiInfo: information from BDII
       :param list seBlackList: SEs from black list
 
@@ -398,10 +398,10 @@ def getGridSEs(vo, bdiiInfo=None, seBlackList=None):
 def getGridSRMs(vo, bdiiInfo=None, srmBlackList=None, unUsed=False):
   """ Get all the SRMs available for a given VO
 
-      :param basestring vo: VO name
+      :param str vo: VO name
       :param dict bdiiInfo: information from BDII
       :param list srmBlackList: SRMs from black list
-      :param boolean unUsed: unused
+      :param bool unUsed: unused
 
       :return: S_OK(dict)/S_ERROR()
   """
@@ -463,7 +463,7 @@ def getGridSRMs(vo, bdiiInfo=None, srmBlackList=None, unUsed=False):
 def getSRMUpdates(vo, bdiiInfo=None):
   """ Get SRM updates
 
-      :param basestring vo: VO name
+      :param str vo: VO name
       :param dict bdiiInfo: information from BDII
 
       :return: S_OK(set)/S_ERROR()
@@ -537,7 +537,7 @@ def getSRMUpdates(vo, bdiiInfo=None):
 def getDBParameters(fullname):
   """ Retrieve Database parameters from CS
       
-      :param basestring fullname: should be of the form <System>/<DBname>
+      :param str fullname: should be of the form <System>/<DBname>
              defaultHost is the host to return if the option is not found in the CS.
              Not used as the method will fail if it cannot be found
              defaultPort is the port to return if the option is not found in the CS
@@ -611,7 +611,7 @@ def getDBParameters(fullname):
 def getElasticDBParameters(fullname):
   """ Retrieve Database parameters from CS
       
-      :param basestring fullname: should be of the form <System>/<DBname>
+      :param str fullname: should be of the form <System>/<DBname>
 
       :return: S_OK(dict)/S_ERROR()
   """
@@ -696,8 +696,8 @@ def getElasticDBParameters(fullname):
 def getAuthAPI(instance='Production'):
   """ Get OAuth API url
 
-      :param basestring instance: instance
+      :param str instance: instance
 
-      :return: basestring
+      :return: str
   """
   return gConfig.getValue("/Systems/Framework/%s/URLs/AuthAPI" % instance)

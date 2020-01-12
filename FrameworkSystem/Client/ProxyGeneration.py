@@ -34,7 +34,7 @@ class CLIParams(object):
   def setProxyLifeTime(self, arg):
     """ Set proxy lifetime
 
-        :param basestring arg: arguments
+        :param str arg: arguments
 
         :return: S_OK()/S_ERROR()
     """
@@ -79,7 +79,7 @@ class CLIParams(object):
   def getProxyLifeTime(self):
     """ Get proxy lifetime
 
-        :return: basestring
+        :return: str
     """
     hours = int(self.proxyLifeTime / 3600)
     mins = int(self.proxyLifeTime / 60 - hours * 60)
@@ -95,7 +95,7 @@ class CLIParams(object):
   def setDIRACGroup(self, arg):
     """ Set DIRAC group
 
-        :param basestring arg: arguments
+        :param str arg: arguments
 
         :return: S_OK()
     """
@@ -105,7 +105,7 @@ class CLIParams(object):
   def getDIRACGroup(self):
     """ Get DIRAC group
 
-        :return: basestring
+        :return: str
     """
     return self.diracGroup
 
@@ -126,7 +126,7 @@ class CLIParams(object):
 
         :param _arg: unuse
 
-        :return: basestring
+        :return: str
     """
     self.limitedProxy = True
     return S_OK()
@@ -136,7 +136,7 @@ class CLIParams(object):
 
         :param _arg: unuse
 
-        :return: basestring
+        :return: str
     """
     gLogger.info("Enabling summary output")
     self.summary = True
@@ -145,7 +145,7 @@ class CLIParams(object):
   def setCertLocation(self, arg):
     """ Set certificate path
 
-        :param basestring arg: certificate path
+        :param str arg: certificate path
 
         :return: S_OK()
     """
@@ -155,7 +155,7 @@ class CLIParams(object):
   def setKeyLocation(self, arg):
     """ Set key path
 
-        :param basestring arg: key path
+        :param str arg: key path
 
         :return: S_OK()
     """
@@ -165,7 +165,7 @@ class CLIParams(object):
   def setProxyLocation(self, arg):
     """ Set proxy path
 
-        :param basestring arg: proxy path
+        :param str arg: proxy path
 
         :return: S_OK()
     """

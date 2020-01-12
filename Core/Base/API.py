@@ -20,8 +20,8 @@ def _printFormattedDictList(dictList, fields, uniqueField, orderBy):
   
       :param list dictList: list of dictionaries
       :param list fields: fields
-      :param basestring uniqueField: unique field
-      :param basestring orderBy: ordered
+      :param str uniqueField: unique field
+      :param str orderBy: ordered
   """
   orderDict = {}
   fieldWidths = {}
@@ -78,7 +78,7 @@ class API(object):
     """ Return a copied dictionary containing all the attributes of the API.
         Called when pickling the object. Also used in copy.deepcopy.
 
-        :return: dict -- dictionary of attributes
+        :return: dictionary of attributes
     """
     from DIRAC.FrameworkSystem.private.standardLogging.Logging import Logging
     state = dict(self.__dict__)
@@ -105,10 +105,10 @@ class API(object):
   def _errorReport(self, error, message=None):
     """ Internal function to return errors and exit with an S_ERROR()
 
-        :param basestring error: error
-        :param basestring message: message
+        :param str error: error
+        :param str message: message
 
-        :return: S_ERROR(basestring)
+        :return: S_ERROR(str)
     """
     if not message:
       message = error
@@ -154,10 +154,10 @@ class API(object):
         information and adds an error to the global error dictionary to be
         returned to the user.
 
-        :param basestring message: message
-        :param basestring name: name
+        :param str message: message
+        :param str name: name
         
-        :return: S_ERROR(basestring)
+        :return: S_ERROR(str)
     """
     className = name
     if not name:

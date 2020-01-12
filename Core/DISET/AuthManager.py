@@ -24,7 +24,7 @@ def forwardingCredentials(credDict):
 
       :param dict credDict: Credentials to ckeck
       
-      :return: boolean -- the result
+      :return: bool
   """
   if isinstance(credDict.get(KW_EXTRA_CREDENTIALS), tuple):
     retVal = Registry.getHostnameForDN(credDict.get(KW_DN))
@@ -47,7 +47,7 @@ def initializationOfSession(credDict):
 
       :param dict credDict: Credentials to check
 
-      :return: boolean -- specifying whether the username was found
+      :return: bool -- specifying whether the username was found
   """
   # Find user
   result = Registry.getUsernameForID(credDict[KW_ID])
@@ -64,7 +64,7 @@ def initializationOfCertificate(credDict):
 
       :param dict credDict: Credentials to check
 
-      :return: boolean -- specifying whether the username was found
+      :return: bool -- specifying whether the username was found
   """
   # Search host
   result = Registry.getHostnameForDN(credDict[KW_DN])
@@ -93,7 +93,7 @@ def initializationOfGroup(credDict):
 
       :param dict credDict: Credentials to check
 
-      :return: boolean -- specifying whether the username was found
+      :return: bool -- specifying whether the username was found
   """
   # Find/check group
   credDict[KW_PROPERTIES] = []
@@ -139,19 +139,20 @@ class AuthManager(object):
   def __init__(self, authSection):
     """ Constructor
 
-        :param basestring authSection: Section containing the authorization rules
+        :param str authSection: Section containing the authorization rules
     """
     self.authSection = authSection
 
   def authQuery(self, methodQuery, credDict, defaultProperties=False):
     """ Check if the query is authorized for a credentials dictionary
 
-        :param basestring methodQuery: Method to test
+        :param str methodQuery: Method to test
         :param dict credDict: dictionary containing credentials for test. The dictionary can contain the DN
                and selected group.
-        :param list,tuple defaultProperties: default properties
+        :param defaultProperties: default properties
+        :type defaultProperties: list or tuple
 
-        :return: boolean -- result of test
+        :return: bool -- result of test
     """
     userString = ""
     if KW_ID in credDict:
@@ -230,8 +231,9 @@ class AuthManager(object):
   def getValidPropertiesForMethod(self, method, defaultProperties=False):
     """ Get all authorized groups for calling a method
 
-        :param basestring method: Method to test
-        :param list,tuple defaultProperties: default properties
+        :param str method: Method to test
+        :param defaultProperties: default properties
+        :type defaultProperties: list or tuple
         
         :return: list -- List containing the allowed groups
     """
@@ -256,7 +258,7 @@ class AuthManager(object):
 
         :param list rawProperties: all method properties
 
-        :return: list -- list of allowed groups or []
+        :return: list -- list of allowed groups
     """
     validGroups = []
     for prop in list(rawProperties):
@@ -279,10 +281,10 @@ class AuthManager(object):
 
         :param dict credDict: credentials to match
         :param list validProps: List of valid properties
-        :param boolean caseSensitive: Map lower case properties to properties to make the check in
+        :param bool caseSensitive: Map lower case properties to properties to make the check in
                lowercase but return the proper case
         
-        :return: boolean -- specifying whether any property has matched the valid ones
+        :return: bool -- specifying whether any property has matched the valid ones
     """
     if not validProps:
       return True

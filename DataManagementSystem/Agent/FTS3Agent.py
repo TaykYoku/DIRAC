@@ -128,10 +128,10 @@ class FTS3Agent(AgentModule):
         The proxy needs a lifetime of at least 2h, is cached for 1.5h, and
         the lifetime of the context is 45mn
 
-        :param basestring username: name of the user
-        :param basestring group: group of the user
-        :param basestring ftsServer: address of the server
-        :param basestring threadID: thread ID
+        :param str username: name of the user
+        :param str group: group of the user
+        :param str ftsServer: address of the server
+        :param str threadID: thread ID
 
         :returns: S_OK with the context object
     """

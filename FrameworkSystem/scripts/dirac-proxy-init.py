@@ -37,7 +37,7 @@ class Params(ProxyGeneration.CLIParams):
   def setEmail(self, arg):
     """ Set email
 
-        :param basestring arg: email
+        :param str arg: email
 
         :return: S_OK()
     """
@@ -58,7 +58,7 @@ class Params(ProxyGeneration.CLIParams):
   def setProvider(self, arg):
     """ Set provider
 
-        :param basestring arg: provider
+        :param str arg: provider
 
         :return: S_OK()
     """
@@ -108,7 +108,7 @@ class ProxyInit(object):
   def getIssuerCert(self):
     """ Get certificate issuer
         
-        :return: basestring
+        :return: str
     """
     if self.__issuerCert:
       return self.__issuerCert
@@ -333,9 +333,9 @@ class ProxyInit(object):
     def restRequest(url, endpoint='', metod='GET', **kwargs):
       """ Method to do http requests
 
-          :param basestring url: root path of request URL
-          :param basestring endpoint: DIRAC rest endpoint
-          :param basestring method: HTTP method
+          :param str url: root path of request URL
+          :param str endpoint: DIRAC rest endpoint
+          :param str method: HTTP method
           :param `**kwargs`: options that need to add to request
 
           :return: S_OK(Responce)/S_ERROR()
@@ -369,9 +369,9 @@ class ProxyInit(object):
     def qrterminal(url):
       """ Show QR code
 
-          :param basestring url: URL to convert to QRCode
+          :param str url: URL to convert to QRCode
 
-          :return: S_OK(basestring)/S_ERROR()
+          :return: S_OK(str)/S_ERROR()
       """
       try:
         import pyqrcode

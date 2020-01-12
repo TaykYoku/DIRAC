@@ -87,10 +87,10 @@ class JobManagerHandler(RequestHandler):
 
   def initialize(self):
     credDict = self.getRemoteCredentials()
-    self.owner = credDict['username']
     self.ownerDN = credDict['DN']
     self.ownerGroup = credDict['group']
     self.userProperties = credDict['properties']
+    self.owner = credDict['username']
     self.peerUsesLimitedProxy = credDict['isLimitedProxy']
     self.diracSetup = self.serviceInfoDict['clientSetup']
     self.maxParametricJobs = self.srv_getCSOption('MaxParametricJobs', MAX_PARAMETRIC_JOBS)
@@ -130,10 +130,10 @@ class JobManagerHandler(RequestHandler):
         The job can be a single job, or a parametric job.
         If it is a parametric job, then the parameters will need to be unpacked.
 
-        :param basestring jobDesc: job description JDL (of a single or parametric job)
-
+        :param str jobDesc: job description JDL (of a single or parametric job)
         :return: S_OK/S_ERROR, a list of newly created job IDs in case of S_OK.
     """
+
     if self.peerUsesLimitedProxy:
       return S_ERROR(EWMSSUBM, "Can't submit using a limited proxy")
 
@@ -277,7 +277,7 @@ class JobManagerHandler(RequestHandler):
   def __checkIfProxyUploadIsRequired(self):
     """ Check if an upload is required
 
-        :return: boolean
+        :return: bool
     """
     result = gProxyManager.userHasProxy(self.ownerDN, self.ownerGroup, validSeconds=18000)
     if not result['OK']:
@@ -292,9 +292,9 @@ class JobManagerHandler(RequestHandler):
   def __getJobList(jobInput):
     """ Evaluate the jobInput into a list of ints
 
-        :param basestring,int,list jobInput: one or more job IDs in int or str form
-
-        :return: list -- contain int job IDs
+        :param jobInput: one or more job IDs in int or str form
+        :type jobInput: str or int or list
+        :return : a list of int job IDs
     """
 
     if isinstance(jobInput, int):
@@ -402,7 +402,7 @@ class JobManagerHandler(RequestHandler):
     """  Kill one job
 
         :param int jobID: job ID
-        :param boolean sendKillCommand: send kill command
+        :param bool sendKillCommand: send kill command
 
         :return: S_OK()/S_ERROR()
     """
@@ -425,7 +425,7 @@ class JobManagerHandler(RequestHandler):
     """ Kill or delete jobs as necessary
 
         :param list jobIDList: job IDs
-        :param basestring right: right
+        :param str right: right
 
         :return: S_OK()/S_ERROR()
     """

@@ -125,7 +125,8 @@ class BaseTransport(object):
   def setExtraCredentials(self, extraCredentials):
     """ Add extra credentials to peerCredentials
 
-        :param bsaestring,tuple extraCredentials: group or tuple with DN and group
+        :param extraCredentials: group or tuple with DN and group
+        :type extraCredentials: bsaestring or tuple
     """
     self.peerCredentials['extraCredentials'] = extraCredentials
 

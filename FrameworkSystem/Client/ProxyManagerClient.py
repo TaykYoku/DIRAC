@@ -52,7 +52,7 @@ class ProxyManagerClient(object):
   def __deleteTemporalFile(self, filename):
     """ Delete temporal file
 
-        :param basestring filename: path to file
+        :param str filename: path to file
     """
     try:
       os.unlink(filename)
@@ -72,7 +72,7 @@ class ProxyManagerClient(object):
     """ Get time left to expiration in a seconds
 
         :param datetime expiration:
-        :param boolean utc: time in utc
+        :param bool utc: time in utc
 
         :return: datetime
     """
@@ -149,8 +149,8 @@ class ProxyManagerClient(object):
     """ Check if a user(DN-group) has a proxy in the proxy management
         Updates internal cache if needed to minimize queries to the service
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
+        :param str user: user name
+        :param str userGroup: user group
         :param int validSeconds: proxy valid time in a seconds
 
         :return: S_OK()/S_ERROR()
@@ -170,8 +170,8 @@ class ProxyManagerClient(object):
     """ Check if a user(DN-group) has a proxy in the proxy management
         Updates internal cache if needed to minimize queries to the service
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
+        :param str user: user name
+        :param str userGroup: user group
         :param int validSeconds: proxy valid time in a seconds
 
         :return: S_OK()/S_ERROR()
@@ -194,9 +194,9 @@ class ProxyManagerClient(object):
   def setPersistency(self, userDN, userGroup, persistent):
     """ Set the persistency for user/group
 
-        :param basestring userDN: user DN
-        :param basestring userGroup: user group
-        :param boolean persistent: presistent flag
+        :param str userDN: user DN
+        :param str userGroup: user group
+        :param bool persistent: presistent flag
 
         :return: S_OK()/S_ERROR()
     """
@@ -223,7 +223,7 @@ class ProxyManagerClient(object):
 
         :param X509Chain proxy: proxy as a chain
         :param int restrictLifeTime: proxy live time in a seconds
-        :param boolean rfcIfPossible: make rfc proxy if possible
+        :param bool rfcIfPossible: make rfc proxy if possible
 
         :return: S_OK(dict)/S_ERROR() -- dict contain proxies
     """
@@ -275,8 +275,8 @@ class ProxyManagerClient(object):
   def downloadPersonalProxy(self, user, userGroup, requiredTimeLeft=1200, cacheTime=14400, vomsAttr=False):
     """ Get a proxy Chain from the proxy management
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
+        :param str user: user name
+        :param str userGroup: user group
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param int cacheTime: store in a cache time in a seconds
         :param bool vomsAttr: add VOMS attr to the proxy
@@ -305,13 +305,13 @@ class ProxyManagerClient(object):
                     cacheTime=14400, proxyToConnect=None, token=None):
     """ Get a proxy Chain from the proxy management
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
-        :param boolean limited: if need limited proxy
+        :param str user: user name
+        :param str userGroup: user group
+        :param bool limited: if need limited proxy
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param int cacheTime: store in a cache time in a seconds
         :param X509Chain proxyToConnect: proxy as a chain
-        :param basestring token: valid token to get a proxy
+        :param str token: valid token to get a proxy
 
         :return: S_OK(X509Chain)/S_ERROR()
     """
@@ -340,14 +340,14 @@ class ProxyManagerClient(object):
                           cacheTime=14400, filePath=None, proxyToConnect=None, token=None):
     """ Get a proxy Chain from the proxy management and write it to file
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
-        :param boolean limited: if need limited proxy
+        :param str user: user name
+        :param str userGroup: user group
+        :param bool limited: if need limited proxy
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param int cacheTime: store in a cache time in a seconds
-        :param basestring filePath: path to save proxy
+        :param str filePath: path to save proxy
         :param X509Chain proxyToConnect: proxy as a chain
-        :param basestring token: valid token to get a proxy
+        :param str token: valid token to get a proxy
 
         :return: S_OK(X509Chain)/S_ERROR()
     """
@@ -366,13 +366,13 @@ class ProxyManagerClient(object):
                         cacheTime=14400, proxyToConnect=None, token=None):
     """ Download a proxy if needed and transform it into a VOMS one
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
-        :param boolean limited: if need limited proxy
+        :param str user: user name
+        :param str userGroup: user group
+        :param bool limited: if need limited proxy
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param int cacheTime: store in a cache time in a seconds
         :param X509Chain proxyToConnect: proxy as a chain
-        :param basestring token: valid token to get a proxy
+        :param str token: valid token to get a proxy
 
         :return: S_OK(X509Chain)/S_ERROR()
     """
@@ -406,14 +406,14 @@ class ProxyManagerClient(object):
                               cacheTime=14400, filePath=None, proxyToConnect=None, token=None):
     """ Download a proxy if needed, transform it into a VOMS one and write it to file
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
-        :param boolean limited: if need limited proxy
+        :param str user: user name
+        :param str userGroup: user group
+        :param bool limited: if need limited proxy
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param int cacheTime: store in a cache time in a seconds
-        :param basestring filePath: path to save proxy
+        :param str filePath: path to save proxy
         :param X509Chain proxyToConnect: proxy as a chain
-        :param basestring token: valid token to get a proxy
+        :param str token: valid token to get a proxy
 
         :return: S_OK(X509Chain)/S_ERROR()
     """
@@ -432,11 +432,11 @@ class ProxyManagerClient(object):
     """ Download a proxy with VOMS extensions depending on the group or simple proxy
         if group without VOMS extensions
 
-        :param basestring user: user name
-        :param basestring userGroup: user group
+        :param str user: user name
+        :param str userGroup: user group
         :param int requiredTimeLeft: required proxy live time in a seconds
         :param X509Chain proxyToConnect: proxy as a chain
-        :param basestring token: valid token to get a proxy
+        :param str token: valid token to get a proxy
         :param bool personal: get personal proxy
 
         :return: S_OK(X509Chain)/S_ERROR()
@@ -453,10 +453,10 @@ class ProxyManagerClient(object):
     """ Dump a proxy to a file. It's cached so multiple calls won't generate extra files
 
         :param X509Chain chain: proxy as a chain
-        :param basestring destinationFile: path to store proxy
+        :param str destinationFile: path to store proxy
         :param int requiredTimeLeft: required proxy live time in a seconds
 
-        :return: S_OK(basestring)/S_ERROR()
+        :return: S_OK(str)/S_ERROR()
     """
     result = chain.hash()
     if not result['OK']:
@@ -488,8 +488,8 @@ class ProxyManagerClient(object):
     """ Request a number of tokens. usesList must be a list of integers and each integer is the number of uses a token
         must have
 
-        :param basestring requesterDN: user DN
-        :param basestring requesterGroup: user group
+        :param str requesterDN: user DN
+        :param str requesterGroup: user group
         :param int numUses: number of uses
 
         :return: S_OK(tuple)/S_ERROR() -- tuple contain token, number uses
@@ -584,15 +584,15 @@ class ProxyManagerClient(object):
 
         :param X509Chain chain: proxy as a chain
 
-        :return: S_OK(basestring)/S_ERROR()
+        :return: S_OK(str)/S_ERROR()
     """
     return VOMS().getVOMSAttributes(chain)
 
   def getUploadedProxyLifeTime(self, DN, group):
     """ Get the remaining seconds for an uploaded proxy
 
-        :param basestring DN: user DN
-        :param basestring group: group
+        :param str DN: user DN
+        :param str group: group
 
         :return: S_OK(int)/S_ERROR()
     """

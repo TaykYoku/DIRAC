@@ -37,7 +37,7 @@ class Params(object):
   def setProxyLocation(self, args):
     """ Set proxy location
 
-        :param basestring args: proxy path
+        :param str args: proxy path
 
         :return: S_OK()/S_ERROR()
     """

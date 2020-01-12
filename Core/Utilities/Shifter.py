@@ -16,8 +16,8 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 def getShifterProxy(shifterType, fileName=False):
   """ This method returns a shifter's proxy
 
-      :param basestring shifterType: ProductionManager / DataManager...
-      :param basestring fileName: file name
+      :param str shifterType: ProductionManager / DataManager...
+      :param str fileName: file name
 
       :return: S_OK(dict)/S_ERROR()
   """
@@ -68,8 +68,8 @@ def setupShifterProxyInEnv(shifterType, fileName=False):
       proxy via changing the environment.
       This method returns a shifter's proxy
 
-      :param basestring shifterType: ProductionManager / DataManager...
-      :param basestring fileName: file name
+      :param str shifterType: ProductionManager / DataManager...
+      :param str fileName: file name
 
       :return: S_OK(dict)/S_ERROR()
   """

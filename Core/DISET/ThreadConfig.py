@@ -45,56 +45,56 @@ class ThreadConfig(threading.local):
   def setDN(self, DN):
     """ Set DN
 
-        :param basestring DN: DN
+        :param str DN: DN
     """
     self.__DN = DN
 
   def getDN(self):
     """ Return DN
 
-        :return: basestring
+        :return: str
     """
     return self.__DN
   
   def setID(self, ID):
     """ Set user ID
 
-        :param basestring ID: user ID
+        :param str ID: user ID
     """
     self.__ID = ID
 
   def getID(self):
     """ Return user ID
 
-        :return: basestring
+        :return: str
     """
     return self.__ID
 
   def setGroup(self, group):
     """ Set group
 
-        :param basestring group: group name
+        :param str group: group name
     """
     self.__group = group
 
   def getGroup(self):
     """ Return group name
 
-        :return basestring
+        :return str
     """
     return self.__group
 
   def setSetup(self, setup):
     """ Set setup name
 
-        :param basestring setup: setup name
+        :param str setup: setup name
     """
     self.__setup = setup
 
   def getSetup(self):
     """ Return setup name
 
-        :return: basestring
+        :return: str
     """
     return self.__setup
 
@@ -127,8 +127,6 @@ def threadDeco(method):
   @functools.wraps(method)
   def wrapper(*args, **kwargs):
     """ Wrapper
-
-        :param `*args, **kwargs`: arguments of wrapped method
 
         :return: wrapped method
     """

@@ -47,9 +47,9 @@ class JobPolicy(object):
   def __init__(self, username, userGroup, allInfo=True):
     """ C'tor
 
-        :param basestring username: user name
-        :param basestring userGroup: group name
-        :param boolean allInfo: all information
+        :param str username: user name
+        :param str userGroup: group name
+        :param bool allInfo: all information
     """
     self.jobDB = None
     self.allInfo = allInfo
@@ -62,9 +62,9 @@ class JobPolicy(object):
   def getUserRightsForJob(self, jobID, owner=None, group=None):
     """ Get access rights to job with jobID for the user specified by username/userGroup
 
-        :param basestring jobID: job ID
-        :param basestring owner: user name
-        :param basestring group: group name
+        :param str jobID: job ID
+        :param str owner: user name
+        :param str group: group name
 
         :return: S_OK()/S_ERROR()
     """
@@ -116,8 +116,8 @@ class JobPolicy(object):
         for a user with username/userGroup.
         Returns a dictionary of various operations rights
 
-        :param basestring jobOwner: user name
-        :param basestring jobOwnerGroup: group name
+        :param str jobOwner: user name
+        :param str jobOwnerGroup: group name
 
         :return: S_OK(dict)/S_ERROR()
     """
@@ -139,9 +139,9 @@ class JobPolicy(object):
     """ Get access rights to jobID for the user owner/ownerGroup
 
         :param list jobList: job list
-        :param basestring right: right
+        :param str right: right
 
-        :return: list, list, list, list
+        :return: tuple -- contain valid, invalid, nonauth, owner jobs
     """
     validJobList = []
     invalidJobList = []
@@ -183,7 +183,7 @@ class JobPolicy(object):
   def getControlledUsers(self, right):
     """ Get users and groups which jobs are subject to the given access right
 
-        :param basestring right: right
+        :param str right: right
 
         :return: S_OK()/S_ERROR()
     """
