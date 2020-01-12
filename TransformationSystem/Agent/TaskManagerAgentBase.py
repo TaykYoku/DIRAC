@@ -648,7 +648,10 @@ class TaskManagerAgentBase(AgentModule, TransformationAgentsUtilities):
     owner = resCred['Value']['User']
     ownerGroup = resCred['Value']['Group']
     # returns  a list
-    ownerDN = getDNForUsernameInGroup(owner, ownerGroup).get('Value') or ''
+    result = getDNForUsernameInGroup(owner, ownerGroup)
+    if not result['OK']:
+      return result
+    ownerDN = result['Value']
     self.credTuple = (owner, ownerGroup, ownerDN)
     self.log.info("Cred: Tasks will be submitted with the credentials %s:%s" % (owner, ownerGroup))
     return S_OK()

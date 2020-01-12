@@ -157,7 +157,10 @@ class RequestTasks(TaskBase):
       ownerGroup = proxyInfo['group']
 
     if not ownerDN:
-      ownerDN = getDNForUsernameInGroup(owner, ownerGroup).get('Value') or ''
+      result = getDNForUsernameInGroup(owner, ownerGroup)
+      if not result['OK']:
+        return result
+      ownerDN = result['Value']
 
     try:
       transJson = json.loads(transBody)
@@ -495,7 +498,10 @@ class WorkflowTasks(TaskBase):
       ownerGroup = proxyInfo['group']
 
     if not ownerDN:
-      ownerDN = getDNForUsernameInGroup(owner, ownerGroup).get('Value') or ''
+      result = getDNForUsernameInGroup(owner, ownerGroup)
+      if not result['OK']:
+        return result
+      ownerDN = result['Value']
 
     if bulkSubmissionFlag:
       return self.__prepareTasksBulk(transBody, taskDict, owner, ownerGroup, ownerDN)
