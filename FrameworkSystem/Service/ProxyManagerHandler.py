@@ -232,7 +232,7 @@ class ProxyManagerHandler(RequestHandler):
     return S_OK(self.__generateUserProxiesInfo())
 
   # WARN: Since v7r1 requestDelegationUpload method not use arguments!
-  types_requestDelegationUpload = [[int, long, type(None)], [basestring, bool, type(None)]]
+  types_requestDelegationUpload = []
 
   def export_requestDelegationUpload(self, requestedUploadTime=None, diracGroup=None):
     """ Request a delegation. Send a delegation request to client
@@ -379,25 +379,34 @@ class ProxyManagerHandler(RequestHandler):
 
   types_setPersistency = [basestring, basestring, bool]
 
-  def export_setPersistency(self, userDN, userGroup, persistentFlag):
+  def export_setPersistency(self, user, userGroup, persistentFlag):
     """ Set the persistency for a given DN/group
 
-        :param basestring userDN: user DN
+        :param basestring user: user name
         :param basestring userGroup: DIRAC group
         :param boolean persistentFlag: if proxy persistent
 
         :return: S_OK()/S_ERROR()
     """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    username = result['Value']
+    userDN = user
+    # WARN: Next block for compatability
+    if not user.find("/"):  # Is it DN?
+      result = Registry.getUsernameForDN(user)
+      if not result['OK']:
+        return result
+      user = result['Value']
+    else:
+      result = Registry.getDNForUsernameInGroup(user, userGroup)
+      if not result['OK']:
+        return result
+      userDN = result['Value']
+
     retVal = self.__proxyDB.setPersistencyFlag(userDN, userGroup, persistentFlag)
     if not retVal['OK']:
       return retVal
     credDict = self.getRemoteCredentials()
     self.__proxyDB.logAction("set persistency to %s" % bool(persistentFlag),
-                             credDict['username'], credDict['group'], username, userGroup)
+                             credDict['username'], credDict['group'], user, userGroup)
     return S_OK()
 
   types_deleteProxyBundle = [(list, tuple)]
