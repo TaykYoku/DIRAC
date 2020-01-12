@@ -123,7 +123,7 @@ class Matcher(object):
     if resOpt['OK']:
       for key, value in resOpt['Value'].items():
         resultDict[key] = value
-    resAtt = self.jobDB.getJobAttributes(jobID, ['OwnerDN', 'OwnerGroup'])
+    resAtt = self.jobDB.getJobAttributes(jobID, ['Owner', 'OwnerDN', 'OwnerGroup'])
     if not resAtt['OK']:
       raise RuntimeError('Could not retrieve job attributes')
     if not resAtt['Value']:
@@ -138,6 +138,7 @@ class Matcher(object):
     self._updatePilotJobMapping(resourceDict, jobID)
 
     resultDict['DN'] = resAtt['Value']['OwnerDN']
+    resultDict['User'] = resAtt['Value']['Owner']
     resultDict['Group'] = resAtt['Value']['OwnerGroup']
     resultDict['PilotInfoReportedFlag'] = True
 
