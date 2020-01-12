@@ -427,7 +427,7 @@ class ProxyManagerClient(object):
     retVal['chain'] = chain
     return retVal
 
-  def downloadDueProxy(self, user, userGroup, requiredTimeLeft=43200, proxyToConnect=None, token=None, personal=False):
+  def downloadCorrectProxy(self, user, userGroup, requiredTimeLeft=43200, proxyToConnect=None, token=None, personal=False):
     """ Download a proxy with VOMS extensions depending on the group or simple proxy
         if group without VOMS extensions
 

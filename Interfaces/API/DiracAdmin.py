@@ -409,7 +409,7 @@ class DiracAdmin(API):
                                            requiredTimeLeft=validity)
 
   #############################################################################
-  def getPilotProxy(self, userDN, userGroup, validity=43200):
+  def getPilotProxy(self, userName, userGroup, validity=43200):
     """Retrieves a pilot proxy with default 12hr validity and stores
        this in a file in the local directory by default.
 
@@ -422,7 +422,7 @@ class DiracAdmin(API):
 
     """
 
-    return gProxyManager.getPilotProxyFromDIRACGroup(userDN, userGroup, requiredTimeLeft=validity)
+    return gProxyManager.downloadCorrectProxy(userName, userGroup, requiredTimeLeft=validity)
 
   #############################################################################
   def resetJob(self, jobID):
