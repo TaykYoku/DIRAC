@@ -78,7 +78,8 @@ def getGridJobOutput(pilotReference):
     return S_ERROR('Failed to get info for pilot ' + pilotReference)
 
   pilotDict = result['Value'][pilotReference]
-  owner = pilotDict['OwnerDN']
+  owner = pilotDict['Owner']
+  ownerDN = pilotDict['OwnerDN']
   group = pilotDict['OwnerGroup']
 
   # FIXME: What if the OutputSandBox is not StdOut and StdErr, what do we do with other files?
@@ -90,7 +91,8 @@ def getGridJobOutput(pilotReference):
       resultDict = {}
       resultDict['StdOut'] = stdout
       resultDict['StdErr'] = error
-      resultDict['OwnerDN'] = owner
+      resultDict['Owner'] = owner
+      resultDict['OwnerDN'] = ownerDN
       resultDict['OwnerGroup'] = group
       resultDict['FileList'] = []
       return S_OK(resultDict)
@@ -140,7 +142,8 @@ def getGridJobOutput(pilotReference):
   resultDict = {}
   resultDict['StdOut'] = stdout
   resultDict['StdErr'] = error
-  resultDict['OwnerDN'] = owner
+  resultDict['Owner'] = owner
+  resultDict['OwnerDN'] = ownerDN
   resultDict['OwnerGroup'] = group
   resultDict['FileList'] = []
   shutil.rmtree(queueDict['WorkingDirectory'])
@@ -174,7 +177,7 @@ def killPilotsInQueues(pilotRefDict):
       if not vomsAttr:
         self.log.error("No voms attribute assigned to group %s when requested pilot proxy." % group)
         return S_ERROR("Failed to get the pilot's owner proxy")
-      ret = gProxyManager.downloadVOMSProxy(owner, group, requiredVOMSAttribute=vomsAttr)
+      ret = gProxyManager.downloadVOMSProxy(owner, group)
       if not ret['OK']:
         gLogger.error('Could not get proxy:',
                       'User "%s" Group "%s" : %s' % (owner, group, ret['Message']))

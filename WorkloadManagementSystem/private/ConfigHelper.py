@@ -48,4 +48,4 @@ def findGenericPilotCredentials(vo=None, group=None, pilotDN=None, pilotGroup=No
   result = gProxyManager.userHasProxy(pilotUser, pilotGroup, 86400)
   if not result['OK']:
     return S_ERROR("%s@%s has no proxy in ProxyManager" % (pilotUser, pilotGroup))
-  return S_OK((pilotDN, pilotGroup))
+  return S_OK((pilotUser, pilotGroup, pilotDN))

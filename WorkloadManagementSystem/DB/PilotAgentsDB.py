@@ -311,6 +311,7 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
         pilotDict[parameters[i]] = row[i]
         if parameters[i] == 'PilotID':
           pilotIDs.append(row[i])
+      pilotDict['Owner'] = getUsernameForDN(pilotDict['OwnerDN']).get('Value') or ""
       resDict[row[0]] = pilotDict
 
     result = self.getJobsForPilot(pilotIDs)
