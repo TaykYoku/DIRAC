@@ -156,7 +156,7 @@ class RequestTask(object):
     if not shifterProxies["OK"]:
       self.log.error(shifterProxies["Message"])
 
-    ownerDN = self.request.OwnerDN 
+    ownerDN = self.request.OwnerDN
     ownerGroup = self.request.OwnerGroup
     result = Registry.getUsernameForDN(ownerDN)
     if not result['OK']:

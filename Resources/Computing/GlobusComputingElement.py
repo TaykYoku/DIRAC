@@ -211,7 +211,7 @@ class GlobusComputingElement(ComputingElement):
     if not result['OK'] or not result['Value']:
       return S_ERROR('Failed to determine owner for pilot ' + pilotRef)
     pilotDict = result['Value'][pilotRef]
-    owner = pilotDict['OwnerDN']
+    owner = pilotDict['Owner']
     group = pilotDict['OwnerGroup']
     vomsAttr = Registry.getVOMSAttributeForGroup(group)
     if not vomsAttr:
