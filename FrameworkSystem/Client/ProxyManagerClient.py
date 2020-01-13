@@ -6,7 +6,7 @@ import six
 import datetime
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSAttributeForGroup
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSAttributeForGroup, getUsernameForDN
 from DIRAC.Core.Utilities import ThreadSafe, DIRACSingleton
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Security.ProxyFile import multiProxyArgument, deleteMultiProxy
@@ -440,7 +440,7 @@ class ProxyManagerClient(object):
         :return: S_OK(X509Chain)/S_ERROR()
     """
     if not getVOMSAttributeForGroup(userGroup):
-      gLogger.verbose("No voms attribute assigned to group %s when requested pilot proxy" % userGroup)
+      gLogger.verbose("No voms attribute assigned to group %s when requested proxy" % userGroup)
       return self.downloadProxy(user, userGroup, limited=False, requiredTimeLeft=requiredTimeLeft,
                                 proxyToConnect=proxyToConnect, personal=personal)
     else:
@@ -531,6 +531,10 @@ class ProxyManagerClient(object):
       deleteMultiProxy(proxyToConnectDict)
       return retVal
     userGroup = retVal['Value']
+    result = getUsernameForDN(userDN)
+    if not result['OK']:
+      return result
+    userName = result['Value']
     limited = proxyToRenewDict['chain'].isLimitedProxy()['Value']
 
     voms = VOMS()
@@ -539,16 +543,15 @@ class ProxyManagerClient(object):
       deleteMultiProxy(proxyToRenewDict)
       deleteMultiProxy(proxyToConnectDict)
       return retVal
-    vomsAttrs = retVal['Value']
-    if vomsAttrs:
-      retVal = self.downloadVOMSProxy(userDN,
+
+    if retVal['Value']:
+      retVal = self.downloadVOMSProxy(userName,
                                       userGroup,
                                       limited=limited,
                                       requiredTimeLeft=newProxyLifeTime,
-                                      requiredVOMSAttribute=vomsAttrs[0],
                                       proxyToConnect=proxyToConnectDict['chain'])
     else:
-      retVal = self.downloadProxy(userDN,
+      retVal = self.downloadProxy(userName,
                                   userGroup,
                                   limited=limited,
                                   requiredTimeLeft=newProxyLifeTime,
