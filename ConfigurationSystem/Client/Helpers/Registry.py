@@ -144,19 +144,15 @@ def getAllUsers():
       :return: list
   """
   retVal = gConfig.getSections("%s/Users" % gBaseRegistrySection)
-  if not retVal['OK']:
-    return []
-  return retVal['Value']
+  return retVal['Value'] if retVal['OK'] else []
 
 def getAllGroups():
-  """ Get all users
+  """ Get all groups
 
       :return: list
   """
   retVal = gConfig.getSections("%s/Groups" % gBaseRegistrySection)
-  if not retVal['OK']:
-    return []
-  return retVal['Value']
+  return retVal['Value'] if retVal['OK'] else []
 
 def getPropertiesForGroup(groupName, defaultValue=None):
   """ Return group properties
@@ -338,21 +334,19 @@ def getVOMSVOForGroup(group):
     vomsVO = getVOOption(vo, 'VOMSName', '')
   return vomsVO
 
-def getGroupsWithVOMSAttribute(vomsAttr):
+def getGroupsWithVOMSAttribute(vomsAttr, groups=[]):
   """ Search groups with VOMS attribute
 
       :param str vomsAttr: VOMS attribute
+      :param list groups: groups where need to search
 
       :return: list
   """
-  retVal = gConfig.getSections("%s/Groups" % (gBaseRegistrySection))
-  if not retVal['OK']:
-    return []
-  groups = []
-  for group in retVal['Value']:
+  res = []
+  for group in groups or getAllGroups():
     if vomsAttr == gConfig.getValue("%s/Groups/%s/VOMSRole" % (gBaseRegistrySection, group), ""):
-      groups.append(group)
-  return groups
+      res.append(group)
+  return res
 
 def getVOs():
   """ Get all the configured VOs
