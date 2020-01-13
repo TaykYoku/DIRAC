@@ -376,7 +376,7 @@ class DiracAdmin(API):
     return S_OK(result)
 
   #############################################################################
-  def getProxy(self, userDN, userGroup, validity=43200, limited=False):
+  def getProxy(self, user, userGroup, validity=43200, limited=False):
     """Retrieves a proxy with default 12hr validity and stores
        this in a file in the local directory by default.
 
@@ -388,11 +388,11 @@ class DiracAdmin(API):
        :return: S_OK,S_ERROR
 
     """
-    return gProxyManager.downloadProxy(userDN, userGroup, limited=limited,
+    return gProxyManager.downloadProxy(user, userGroup, limited=limited,
                                        requiredTimeLeft=validity)
 
   #############################################################################
-  def getVOMSProxy(self, userDN, userGroup, vomsAttr=False, validity=43200, limited=False):
+  def getVOMSProxy(self, user, userGroup, vomsAttr=False, validity=43200, limited=False):
     """Retrieves a proxy with default 12hr validity and VOMS extensions and stores
        this in a file in the local directory by default.
 
@@ -404,7 +404,7 @@ class DiracAdmin(API):
        :return: S_OK,S_ERROR
 
     """
-    return gProxyManager.downloadVOMSProxy(userDN, userGroup, limited=limited,
+    return gProxyManager.downloadVOMSProxy(user, userGroup, limited=limited,
                                            requiredVOMSAttribute=vomsAttr,
                                            requiredTimeLeft=validity)
 
