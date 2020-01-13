@@ -195,7 +195,7 @@ class SiteDirector(AgentModule):
     # Which credentials to use?
     # are they specific to the SD? (if not, get the generic ones)
     self.pilotDN = self.am_getOption("PilotDN", self.pilotDN)
-    self.pilotUser = self.am_getOption("PilotOwner", self.pilotUser)
+    self.pilotUser = self.am_getOption("PilotUser", self.pilotUser)
     self.pilotGroup = self.am_getOption("PilotGroup", self.pilotGroup)
     result = findGenericPilotCredentials(vo=self.vo, pilotUser=self.pilotUser, pilotDN=self.pilotDN, pilotGroup=self.pilotGroup)
     if not result['OK']:
