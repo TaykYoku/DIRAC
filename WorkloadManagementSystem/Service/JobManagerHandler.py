@@ -43,7 +43,12 @@ MAX_PARAMETRIC_JOBS = 20
 
 
 def initializeJobManagerHandler(serviceInfo):
+  """ Initialize
 
+      :param dict serviceInfo: service information dictionary
+
+      :return: S_OK()
+  """
   global gJobDB, gJobLoggingDB, gtaskQueueDB, enablePilotsLogging, gPilotAgentsDB, gPilotsLoggingDB
   gJobDB = JobDB()
   gJobLoggingDB = JobLoggingDB()
@@ -89,7 +94,7 @@ class JobManagerHandler(RequestHandler):
     self.peerUsesLimitedProxy = credDict['isLimitedProxy']
     self.diracSetup = self.serviceInfoDict['clientSetup']
     self.maxParametricJobs = self.srv_getCSOption('MaxParametricJobs', MAX_PARAMETRIC_JOBS)
-    self.jobPolicy = JobPolicy(self.ownerDN, self.ownerGroup, self.userProperties)
+    self.jobPolicy = JobPolicy(self.owner, self.ownerGroup, self.userProperties)
     self.jobPolicy.jobDB = gJobDB
     return S_OK()
 
@@ -113,6 +118,8 @@ class JobManagerHandler(RequestHandler):
 
   def export_getMaxParametricJobs(self):
     """ Get the maximum number of parametric jobs
+
+        :return: S_OK()/S_ERROR()
     """
     return S_OK(self.maxParametricJobs)
 
@@ -196,9 +203,9 @@ class JobManagerHandler(RequestHandler):
       jobIDList.append(jobID)
 
     # Set persistency flag
-    retVal = gProxyManager.getUserPersistence(self.ownerDN, self.ownerGroup)
-    if 'Value' not in retVal or not retVal['Value']:
-      gProxyManager.setPersistency(self.ownerDN, self.ownerGroup, True)
+    retVal = gProxyManager.getUserPersistence(self.owner, self.ownerGroup)
+    if not retVal.get('Value'):
+      gProxyManager.setPersistency(self.owner, self.ownerGroup, True)
 
     if parametricJob:
       result = S_OK(jobIDList)
@@ -216,12 +223,12 @@ class JobManagerHandler(RequestHandler):
   types_confirmBulkSubmission = [list]
 
   def export_confirmBulkSubmission(self, jobIDs):
-    """
-       Confirm the possibility to proceed with processing of the jobs specified
-       by the jobIDList
+    """ Confirm the possibility to proceed with processing of the jobs specified
+        by the jobIDList
 
-       :param jobIDList: list of job IDs
-       :return: confirmed job IDs
+        :param list jobIDs: list of job IDs
+        
+        :return: S_OK(list)/S_ERROR() -- confirmed job IDs
     """
     jobList = self.__getJobList(jobIDs)
     if not jobList:
@@ -268,7 +275,11 @@ class JobManagerHandler(RequestHandler):
 
 ###########################################################################
   def __checkIfProxyUploadIsRequired(self):
-    result = gProxyManager.userHasProxy(self.ownerDN, self.ownerGroup, validSeconds=18000)
+    """ Check if an upload is required
+
+        :return: bool
+    """
+    result = gProxyManager.userHasProxy(self.owner, self.ownerGroup, validSeconds=18000)
     if not result['OK']:
       self.log.error("Can't check if the user has proxy uploaded", result['Message'])
       return True
@@ -310,8 +321,9 @@ class JobManagerHandler(RequestHandler):
     """  Reschedule a single job. If the optional proxy parameter is given
          it will be used to refresh the proxy in the Proxy Repository
 
-         :param jobIDList: list of job IDs
-         :return: confirmed job IDs
+         :param list jobIDList: list of job IDs
+
+         :return: S_OK()/S_ERROR() -- confirmed job IDs
     """
 
     jobList = self.__getJobList(jobIDs)
@@ -345,6 +357,10 @@ class JobManagerHandler(RequestHandler):
 
   def __deleteJob(self, jobID):
     """ Delete one job
+
+        :param int jobID: job ID
+
+        :return: S_OK()/S_ERROR()
     """
     result = gJobDB.setJobStatus(jobID, 'Deleted', 'Checking accounting')
     if not result['OK']:
@@ -384,6 +400,11 @@ class JobManagerHandler(RequestHandler):
 
   def __killJob(self, jobID, sendKillCommand=True):
     """  Kill one job
+
+        :param int jobID: job ID
+        :param bool sendKillCommand: send kill command
+
+        :return: S_OK()/S_ERROR()
     """
     if sendKillCommand:
       result = gJobDB.setJobCommand(jobID, 'Kill')
@@ -401,9 +422,13 @@ class JobManagerHandler(RequestHandler):
     return S_OK()
 
   def __kill_delete_jobs(self, jobIDList, right):
-    """  Kill or delete jobs as necessary
-    """
+    """ Kill or delete jobs as necessary
 
+        :param list jobIDList: job IDs
+        :param str right: right
+
+        :return: S_OK()/S_ERROR()
+    """
     jobList = self.__getJobList(jobIDList)
     if not jobList:
       return S_ERROR('Invalid job specification: ' + str(jobIDList))
@@ -476,10 +501,10 @@ class JobManagerHandler(RequestHandler):
   def export_deleteJob(self, jobIDs):
     """ Delete jobs specified in the jobIDs list
 
-        :param jobIDList: list of job IDs
+        :param list jobIDs: list of job IDs
+
         :return: S_OK/S_ERROR
     """
-
     return self.__kill_delete_jobs(jobIDs, RIGHT_DELETE)
 
 ###########################################################################
@@ -488,10 +513,10 @@ class JobManagerHandler(RequestHandler):
   def export_killJob(self, jobIDs):
     """ Kill jobs specified in the jobIDs list
 
-        :param jobIDList: list of job IDs
+        :param list jobIDs: list of job IDs
+
         :return: S_OK/S_ERROR
     """
-
     return self.__kill_delete_jobs(jobIDs, RIGHT_KILL)
 
 ###########################################################################
@@ -500,10 +525,10 @@ class JobManagerHandler(RequestHandler):
   def export_resetJob(self, jobIDs):
     """ Reset jobs specified in the jobIDs list
 
-        :param jobIDList: list of job IDs
+        :param list jobIDs: list of job IDs
+
         :return: S_OK/S_ERROR
     """
-
     jobList = self.__getJobList(jobIDs)
     if not jobList:
       return S_ERROR('Invalid job specification: ' + str(jobIDs))
