@@ -928,6 +928,8 @@ class ProxyDB(DB):
 
         :return: S_OK(dict)/S_ERROR() -- dict contain fields, record list, total records
     """
+    users = []
+    groups = []
     if 'UserName' in selDict:
       users = selDict['UserName']
       if not isinstance(users, (list, tuple)):
