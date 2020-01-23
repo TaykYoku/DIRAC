@@ -44,7 +44,7 @@ from DIRAC.WorkloadManagementSystem.DB.SandboxMetadataDB import SandboxMetadataD
 gLogger.setLevel('DEBUG')
 
 
-def test_SSCChain(self):
+def test_SSCChain():
   """ full test of functionalities
   """
   ssc = SandboxStoreClient()
@@ -53,19 +53,25 @@ def test_SSCChain(self):
   exeScriptLocation = find_all('exe-script.py', '..', '/DIRAC/tests/Integration')[0]
   fileList = [exeScriptLocation]
   res = ssc.uploadFilesAsSandbox(fileList)
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
 #     SEPFN = res['Value'].split( '|' )[1]
   res = ssc.uploadFilesAsSandboxForJob(fileList, 1, 'Input')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = ssc.downloadSandboxForJob(1, 'Input')  # to run this we need the RSS on
   print(res)  # for debug...
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
 
   # only ones needing the DB
   res = smDB.getUnusedSandboxes()
   print(res)
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   # smDB.getSandboxId(SEName, SEPFN, requesterName, requesterGroup)
   # # cleaning
   # res = smDB.deleteSandboxes(SBIdList)
   # assert res['OK'] is True
+
+test_SSCChain()
