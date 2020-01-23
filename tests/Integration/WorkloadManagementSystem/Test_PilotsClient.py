@@ -26,73 +26,108 @@ def test_PilotsDB():
   pilots = PilotManagerClient()
 
   res = pilots.addPilotTQReference(['aPilot'], 1, '/a/ownerDN', 'a/owner/Group')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getCurrentPilotCounters({})
-  assert res['OK'] is True
-  assert res['Value'] == {'Submitted': 1}
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value'] == {'Submitted': 1}:
+    raise Exception(res)
   res = pilots.deletePilots('aPilot')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getCurrentPilotCounters({})
-  assert res['OK'] is True
-  assert res['Value'] == {}
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value'] == {}:
+    raise Exception(res)
 
   res = pilots.addPilotTQReference(['anotherPilot'], 1, '/a/ownerDN', 'a/owner/Group')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.storePilotOutput('anotherPilot', 'This is an output', 'this is an error')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getPilotOutput('anotherPilot')
-  assert res['OK'] is True
-  assert res['Value'] == {'OwnerDN': '/a/ownerDN',
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value'] == {'OwnerDN': '/a/ownerDN',
                                      'OwnerGroup': 'a/owner/Group',
                                      'StdErr': 'this is an error',
                                      'FileList': [],
-                                     'StdOut': 'This is an output'}
+                                     'StdOut': 'This is an output'}:
+    raise Exception(res)
   res = pilots.getPilotInfo('anotherPilot')
-  assert res['OK'] is True
-  assert res['Value']['anotherPilot']['AccountingSent'] == 'False'
-  assert res['Value']['anotherPilot']['PilotJobReference'] == 'anotherPilot'
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value']['anotherPilot']['AccountingSent'] == 'False':
+    raise Exception(res)
+  if not res['Value']['anotherPilot']['PilotJobReference'] == 'anotherPilot':
+    raise Exception(res)
 
   res = pilots.selectPilots({})
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getPilotSummary('', '')
-  assert res['OK'] is True
-  assert res['Value']['Total']['Submitted'] == 1
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value']['Total']['Submitted'] == 1:
+    raise Exception(res)
   res = pilots.getPilotMonitorWeb({}, [], 0, 100)
-  assert res['OK'] is True
-  assert res['Value']['TotalRecords'] == 1
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value']['TotalRecords'] == 1:
+    raise Exception(res)
   res = pilots.getPilotMonitorSelectors()
-  assert res['OK'] is True
-  assert res['Value'] == {'GridType': ['DIRAC'],
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value'] == {'GridType': ['DIRAC'],
                           'OwnerGroup': ['a/owner/Group'],
                           'DestinationSite': ['NotAssigned'],
                           'Broker': ['Unknown'], 'Status': ['Submitted'],
                           'OwnerDN': ['/a/ownerDN'],
                           'GridSite': ['Unknown'],
-                          'Owner': []}
+                          'Owner': []}:
+    raise Exception(res)
   res = pilots.getPilotSummaryWeb({}, [], 0, 100)
-  assert res['OK'] is True
-  assert res['Value']['TotalRecords'] == 1
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value']['TotalRecords'] == 1:
+    raise Exception(res)
 
   res = pilots.setAccountingFlag('anotherPilot', 'True')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.setPilotStatus('anotherPilot', 'Running')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getPilotInfo('anotherPilot')
-  assert res['OK'] is True
-  assert res['Value']['anotherPilot']['AccountingSent'] == 'True'
-  assert res['Value']['anotherPilot']['Status'] == 'Running'
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value']['anotherPilot']['AccountingSent'] == 'True':
+    raise Exception(res)
+  if not res['Value']['anotherPilot']['Status'] == 'Running':
+    raise Exception(res)
 
   res = pilots.setJobForPilot(123, 'anotherPilot')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.setPilotBenchmark('anotherPilot', 12.3)
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.countPilots({})
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
 #     res = pilots.getCounters()
 #     # getPilotStatistics
 
   res = pilots.deletePilots('anotherPilot')
-  assert res['OK'] is True
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = pilots.getCurrentPilotCounters({})
-  assert res['OK'] is True
-  assert res['Value'] == {}
+  if not res['OK']:
+    raise Exception(res['Message'])
+  if not res['Value'] == {}:
+    raise Exception(res)
+
+test_PilotsDB()
