@@ -77,7 +77,7 @@ def test_PilotsDB():
   res = pilots.getPilotMonitorWeb({}, [], 0, 100)
   if not res['OK']:
     raise Exception(res['Message'])
-  if es['Value']['TotalRecords'] != 1:
+  if res['Value']['TotalRecords'] != 1:
     raise Exception(res)
   res = pilots.getPilotMonitorSelectors()
   if not res['OK']:
