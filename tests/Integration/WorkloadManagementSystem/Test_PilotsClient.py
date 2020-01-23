@@ -51,11 +51,12 @@ def test_PilotsDB():
   res = pilots.getPilotOutput('anotherPilot')
   if not res['OK']:
     raise Exception(res['Message'])
-  if not res['Value'] == {'OwnerDN': '/a/ownerDN',
-                                     'OwnerGroup': 'a/owner/Group',
-                                     'StdErr': 'this is an error',
-                                     'FileList': [],
-                                     'StdOut': 'This is an output'}:
+  expectedDict = {'FileList': [],
+                  'OwnerDN': '/a/ownerDN',
+                  'OwnerGroup': 'a/owner/Group',
+                  'StdErr': 'this is an error',
+                  'StdOut': 'This is an output'}
+  if not all([res['Value'][k] == v for k, v in expectedDict.items()]):
     raise Exception(res)
   res = pilots.getPilotInfo('anotherPilot')
   if not res['OK']:
