@@ -46,10 +46,15 @@ def test_addAndRemove():
   record.setStartTime()
   record.setEndTime()
   res = gDataStoreClient.addRegister(record)
-  assert res['OK']
+  if not res['OK']:
+    raise Exception(res['Message'])
   res = gDataStoreClient.commit()
-  assert res['OK']
+  if not res['OK']:
+    raise Exception(res['Message'])
 
   # now removing that record
   res = gDataStoreClient.remove(record)
-  assert res['OK']
+  if not res['OK']:
+    raise Exception(res['Message'])
+
+test_addAndRemove()
