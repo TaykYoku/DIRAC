@@ -894,8 +894,11 @@ class ProxyDB(DB):
       # If it's not in the db and we're removing the persistency then do nothing
       if not persistent:
         return S_OK()
-      cmd = "INSERT INTO `ProxyDB_Proxies` ( UserDN, UserGroup, Pem, ExpirationTime, PersistentFlag ) VALUES "
-      cmd += "( %s, %s, '', UTC_TIMESTAMP(), 'True' )" % (sUserDN, sUserGroup)
+      result = Registry.getUsernameForDN(userDN)
+      if not result['OK']:
+        return result
+      cmd = "INSERT INTO `ProxyDB_Proxies` (UserName, UserDN, UserGroup, Pem, ExpirationTime, PersistentFlag)"
+      cmd += " VALUES ('%s', %s, %s, '', UTC_TIMESTAMP(), 'True' )" % (result['Value'], sUserDN, sUserGroup)
     else:
       cmd = "UPDATE `ProxyDB_Proxies` SET PersistentFlag='%s' WHERE UserDN=%s AND UserGroup=%s" % (sqlFlag,
                                                                                                    sUserDN,
