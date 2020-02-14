@@ -896,9 +896,11 @@ class ProxyDB(DB):
         return S_OK()
       result = Registry.getUsernameForDN(userDN)
       if not result['OK']:
+        self.log.error("setPersistencyFlag: Can not retrieve username for DN", userDN)
         return result
+      userName = result['Value']
       cmd = "INSERT INTO `ProxyDB_Proxies` (UserName, UserDN, UserGroup, Pem, ExpirationTime, PersistentFlag)"
-      cmd += " VALUES ('%s', %s, %s, '', UTC_TIMESTAMP(), 'True' )" % (result['Value'], sUserDN, sUserGroup)
+      cmd += " VALUES ('%s', %s, %s, '', UTC_TIMESTAMP(), 'True' )" % (userName, sUserDN, sUserGroup)
     else:
       cmd = "UPDATE `ProxyDB_Proxies` SET PersistentFlag='%s' WHERE UserDN=%s AND UserGroup=%s" % (sqlFlag,
                                                                                                    sUserDN,
