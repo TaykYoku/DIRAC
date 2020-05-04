@@ -139,9 +139,11 @@ class API(object):
     gLogger.debug(formatProxyInfoAsString(proxyInfo))
     if 'group' not in proxyInfo:
       return self._errorReport('Proxy information does not contain the group', res['Message'])
-    res = getDNForUsername(proxyInfo['username'])
-    if not res['OK']:
-      return self._errorReport('Failed to get proxies for user', res['Message'])
+    result = getDNsForUsername(proxyInfo['username'])
+    if not result['OK']:
+      return self._errorReport('Failed to get proxies for user', result['Message'])
+    if not result['Value']:
+      return self._errorReport('Failed to get proxies for user', "No DNs found for %s" % proxyInfo['username'])
     return S_OK(proxyInfo['username'])
 
   #############################################################################

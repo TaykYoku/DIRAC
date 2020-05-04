@@ -698,14 +698,14 @@ def getElasticDBParameters(fullname):
   return S_OK(parameters)
 
 
-def getOAuthAPI(instance='Production'):
+def getAuthAPI(instance='Production'):
   """ Get OAuth API url
 
       :param str instance: instance
 
       :return: str
   """
-  return gConfig.getValue("/Systems/Framework/%s/URLs/OAuthAPI" % instance)
+  return gConfig.getValue("/Systems/Framework/%s/URLs/AuthAPI" % instance)
 
 
 def getDIRACGOCDictionary():
