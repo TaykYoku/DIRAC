@@ -31,6 +31,19 @@ gVOMSFileSync = ThreadSafe.Synchronizer()
 
 
 class ProxyManagerHandler(RequestHandler):
+  """ Proxy manager service
+
+      Contain __VOMSesUsersCache cache, with next structure:
+        Key: VOMS VO name
+        Value: error message or dictionary:
+            { <user DN>: {
+                Roles: [<list of roles>],
+                suspended: bool
+                certSuspended: bool,
+                ...
+              }
+            }
+  """
 
   __notify = NotificationClient()
   __VOMSesUsersCache = DictCache()
@@ -87,23 +100,24 @@ class ProxyManagerHandler(RequestHandler):
     return cls.__VOMSesUsersCache.get(vo) if vo else cls.__VOMSesUsersCache.getDict()
 
   @classmethod
-  def __refreshVOMSesUsersCache(cls, vos=None):
+  def __refreshVOMSesUsersCache(cls, voList=None):
     """ Update cache with information about active users from supported VOs
 
-        :param list vos: list of VOs that need to update, if None - update all VOs
+        :param list voList: VOs to update
 
         :return: S_OK()/S_ERROR()
     """
     def getVOInfo(vo):
-      """ Process to get information from VOMS
+      """ Process to get information from VOMS API
 
-          :param str vo: vo name
+          :param str vo: VO name
       """
       usersDict = {}
       result = S_ERROR('Cannot found administrators for %s VOMS VO' % vo)
+      voAdmins = getVOOption(vo, "VOAdmin", [])
 
       for group in getGroupsForVO(vo).get('Value') or []:
-        for user in getVOOption(vo, "VOAdmin", []):
+        for user in voAdmins:
           # Try to get proxy for any VO admin
           result = cls.__proxyDB.getProxy(user, group, 1800)
           if result['OK']:
@@ -119,16 +133,16 @@ class ProxyManagerHandler(RequestHandler):
       gLogger.error(result['Message'])
       if not isinstance(cls.getVOMSInfoFromCache(vo), dict):
         cls.saveVOMSInfoToCache(vo, result['Message'])
-      # ##### getVOInfo #############################
+      # ################# getVOInfo ###################### #
 
     gLogger.info('Update VOMSes information..')
-    if not vos:
+    if not voList:
       result = getVOsWithVOMS()
       if not result['OK']:
         return result
-      vos = result['Value']
+      voList = result['Value']
 
-    for vo in vos:
+    for vo in voList:
       processThread = threading.Thread(target=getVOInfo, args=[vo])
       processThread.start()
 
