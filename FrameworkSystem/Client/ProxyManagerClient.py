@@ -26,10 +26,16 @@ gVOMSUsersSync = ThreadSafe.Synchronizer()
 class ProxyManagerClient(object):
   """ Proxy manager client
 
-      Contain __VOMSesUsersCache cache with keys - VOMS VO name and
-      value as dictionary with keys - user DNs, values - dictionary with keys
-      VOMSRoles, that contain list of roles,
-      suspendedRoles, that contain list suspended roles, etc.
+      Contain __VOMSesUsersCache cache, with next structure:
+        Key: VOMS VO name
+        Value: error message or dictionary:
+            { <user DN>: {
+                Suspended: bool,
+                VOMSRoles: [<all roles>],
+                ActuelRoles: [<active roles>],
+                SuspendedRoles: [<suspended roles>]
+              }
+            }
   """
   __metaclass__ = DIRACSingleton.DIRACSingleton
 
@@ -131,20 +137,28 @@ class ProxyManagerClient(object):
         return result
       vomsUsers = result['Value']
     vomsUsers.pop('Fresh', None)
-    vomsActualDNsDict = {}
+    resDict = {}
     if not vomsUsers:
       # use simulation here for tests
       return S_ERROR('VOMSes is not updated.')
     for vo, voInfo in vomsUsers.items():
-      for dn, dnDict in voInfo.items() if isinstance(voInfo, dict) else {}:
-        if DNs and dn not in DNs:
-          continue
-        if dn not in vomsActualDNsDict:
-          vomsActualDNsDict[dn] = {'VOMSRoles': [], 'SuspendedRoles': [], 'Emails': []}
-        vomsActualDNsDict[dn]['VOMSRoles'] = list(set(vomsActualDNsDict[dn]['VOMSRoles'] + dnDict['Roles']))
-        if dnDict['certSuspended'] or dnDict['suspended']:
-          vomsActualDNsDict[dn]['SuspendedRoles'] = list(set(vomsActualDNsDict[dn]['SuspendedRoles'] + dnDict['Roles']))
-    return S_OK(vomsActualDNsDict)
+      resDict[vo] = {}
+      if not isinstance(voInfo, dict):
+        resDict[vo] = voInfo
+        continue
+      for dn, data in voInfo.items():
+        if not DNs or dn in DNs:
+          if dn not in resDict[vo]:
+            resDict[vo][dn] = {'Suspended': data['suspended'],
+                               'VOMSRoles': [],
+                               'ActuelRoles': [],
+                               'SuspendedRoles': []}
+          resDict[vo][dn]['VOMSRoles'] = list(set(resDict[vo][dn]['VOMSRoles'] + data['Roles']))
+          if data['certSuspended'] or data['suspended']:
+            resDict[vo][dn]['SuspendedRoles'] = list(set(resDict[vo][dn]['SuspendedRoles'] + data['Roles']))
+          else:
+            resDict[vo][dn]['ActuelRoles'] = list(set(resDict[vo][dn]['ActuelRoles'] + data['Roles']))
+    return S_OK(resDict)
 
   @gUsersSync
   def userHasProxy(self, user, group, validSeconds=0):
