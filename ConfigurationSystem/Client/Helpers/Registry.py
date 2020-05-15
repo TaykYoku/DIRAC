@@ -29,7 +29,7 @@ __RCSID__ = "$Id$"
 gBaseRegistrySection = "/Registry"
 
 
-def getVOMSInfo(dn=None):
+def getVOMSInfo(vo=None, dn=None):
   """ Get cached information from VOMS API
   
       :param list dn: requested DN
@@ -40,7 +40,7 @@ def getVOMSInfo(dn=None):
     gProxyManager
   except Exception:
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  return gProxyManager.getActualVOMSesDNs([dn] if dn else None)
+  return gProxyManager.getActualVOMSesDNs(voList=[vo] if vo else vo, dnList=[dn] if dn else dn)
 
 
 def getUsernameForDN(dn, usersList=None):
@@ -59,8 +59,26 @@ def getUsernameForDN(dn, usersList=None):
   for username in usersList:
     if dn in gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), []):
       return S_OK(username)
-  # TODO_AL: Get ID for DN
-  #          Get User for ID (in users list)
+  
+  try:
+    gSessionManager
+  except Exception:
+    try:
+      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager  # pylint: disable=import-error
+    except Exception as ex:
+      return S_ERROR("No username found for dn %s" % dn)
+  
+  result = gSessionManager.getIdPsCache()
+  if not result['OK']:
+    return result
+  idPsDict = result['Value']
+
+  for oid, data in idPsDict.items():
+    if dn in data['DNs']:
+      result = getUsernameForID(oid)
+      if result['OK']:
+        return result
+
   return S_ERROR("No username found for dn %s" % dn)
 
 
@@ -95,41 +113,24 @@ def getGroupsForDN(dn, groupsList=None):
     return result
   user = result['Value']
 
-  resVOMSInfo = getVOMSInfo(dn)
-  # dnDict = resVOMSInfo['Value'] or {} if resVOMSInfo['OK'] else {}
+  result = getVOMSInfo(dn=dn)
+  if not result['OK']:
+    return result
+  vomsData = result['Value']
 
-  # if result['OK'] and result['Value']:
-  #   for vo, voDict in result['Value'].items():
-  #     result = getGroupsForVO(vo)
-  #     if not result['OK']:
-  #       return result
-  #     for group in result['Value']:
-  #       if group in groupsList:
-  #         role = getGroupOption(group, 'VOMSRole')
-  #         if not role or role in voDict[dn]['VOMSRoles']:
-  #           if user in getGroupOption(group, 'Users', []):
-  #             groups.append(group)
-  # #     # Get groups for role
-  # #     for dn, data in voDict.items():
-  # #       for vomsGroup in getGroupsWithVOMSAttribute(data['VOMSRoles']):
-
-  # # # for role in dnDict.get('VOMSRoles', []):
-  # # #   for vomsGroup in getGroupsWithVOMSAttribute(role):
-
-  # #         if vomsGroup in groupsList:
-  # #           groups.append(vomsGroup)
   result = getVOsWithVOMS()
   if not result['OK']:
     return result
   vomsVOs = result['Value']
+
   for group in groupsList:
     if user in getGroupOption(group, 'Users', []):
       vo = getGroupOption(group, 'VO')
-      if vo in vomsVOs and resVOMSInfo['OK']:
-        if vo, data in resVOMSInfo['Value'].items():
-          role = getGroupOption(group, 'VOMSRole')
-          if not role or role in data[vo][dn]['VOMSRoles']:
-            groups.append(group)
+      if vo in vomsVOs and vomsData[vo]['OK']:
+        voData = vomsData[vo]['Value']
+        role = getGroupOption(group, 'VOMSRole')
+        if not role or role in voData[dn]['VOMSRoles']:
+          groups.append(group)
       else:
         # What we know more about VO?
         groups.append(group)
@@ -173,18 +174,9 @@ def getGroupsForUser(username, groupsList=None):
     groupsList = retVal['Value']
 
   groups = []
-  # result = getDNsForUsername(username)
-  # if not result['OK']:
-  #   return result
-  # userDNs = result['Value']
-  # userIDs = getIDsForUsername(username)
   for group in groupsList:
     if username in getGroupOption(group, 'Users', []):
       groups.append(group)
-    # elif any(dn in getGroupOption(group, 'DNs', []) for dn in userDNs):
-    #   groups.append(group) 
-    # elif any(userID in getGroupOption(group, 'IDs', []) for userID in userIDs):
-    #   groups.append(group)
 
   groups.sort()
   return S_OK(list(set(groups))) if groups else S_ERROR('No groups found for %s user' % username)
@@ -196,7 +188,7 @@ def getGroupsForVO(vo):
 
       :return: S_OK(list)/S_ERROR()
   """
-  if getVO(): ???
+  if getVO(): 
     return gConfig.getSections("%s/Groups" % gBaseRegistrySection)
   return __getGroupsWithAttr('VO', vo)
 
@@ -242,7 +234,7 @@ def findDefaultGroupForDN(dn):
       :param str dn: DN
 
       :return: S_OK()/S_ERROR()
-  """???
+  """
   result = getUsernameForDN(dn)
   if not result['OK']:
     return result
@@ -295,14 +287,6 @@ def getUsersInGroup(group, defaultValue=None):
       :return: list
   """
   users = getGroupOption(group, 'Users', [])
-  # for userID in getGroupOption(group, 'IDs', []):
-  #   result = getUsernameForID(userID)
-  #   if result['OK']:
-  #     users.append(result['Value'])
-  # for dn in getGroupOption(group, 'DNs', []):
-  #   result = getUsernameForDN(dn)
-  #   if result['OK']:
-  #     users.append(result['Value'])
   users.sort()
   return list(set(users)) or [] if defaultValue is None else defaultValue
 
@@ -333,43 +317,32 @@ def getDNsInGroup(group, checkStatus=False):
 
       :return: list
   """
-  resVOMSInfo = getVOMSInfo()
   vo = getGroupOption(group, 'VO')
-  role = getGroupOption(group, 'VOMSRole')
+  
+  result = getVOMSInfo(vo=vo)
+  if not result['OK']:
+    return result
+  vomsData = result['Value']
 
   result = getVOsWithVOMS()
   if not result['OK']:
     return result
   vomsVOs = result['Value']
 
-  DNs = [] # getGroupOption(group, 'DNs', [])
+  DNs = []
   for username in getGroupOption(group, 'Users', []):
     result = getDNsForUsername(username)
     if not result['OK']:
       return result
     userDNs = result['Value']
-    if vo in vomsVOs and resVOMSInfo['OK']:
-      if vo, data in resVOMSInfo['Value'].keys():
-        for dn in userDNs:
-          if not role or role in data[dn]['ActuelRoles' if checkStatus else 'VOMSRoles']:
-            DNs.append(dn)
+    if vo in vomsVOs and vomsData[vo]['OK']:
+      voData = vomsData[vo]['Value']
+      role = getGroupOption(group, 'VOMSRole')
+      for dn in userDNs:
+        if not role or role in voData[dn]['ActuelRoles' if checkStatus else 'VOMSRoles']:
+          DNs.append(dn)
     else:
       DNs += userDNs
-
-  #   # if not any(dn in result['Value'] for dn in DNs):
-  #   if 
-  #     result = findSomeDNToUseForGroupsThatNotNeedDN(username)
-  #     if not result['OK']:
-  #       return result
-  #     DNs.append(result['Value'])
-
-  # DNs = list(set(DNs))
-  # vomsRole = getGroupOption(group, 'VOMSRole', '')
-  # for dn, infoDict in vomsInfo.items():
-  #   if checkStatus and dn in DNs and ((vomsRole in infoDict.get('SuspendedRoles', [])) or infoDict.get('suspended')):
-  #     DNs.remove(dn)
-  #   elif vomsRole in infoDict['VOMSRoles']:
-  #     DNs.append(dn)
 
   return list(set(DNs))
 
@@ -875,55 +848,6 @@ def getProxyProviderForDN(userDN):
   return S_OK('Certificate')
 
 
-# def getGroupsForDN(dn, groupsList=None):
-#   """ Get all possible groups for DN
-
-#       :param str dn: user DN
-#       :param str groupsList: group name
-
-#       :return: S_OK(list)/S_ERROR() -- contain list of groups
-#   """
-#   if not groupsList:
-#     result = gConfig.getSections("%s/Groups" % gBaseRegistrySection)
-#     if not result['OK']:
-#       return result
-#     groupsList = result['Value']
-
-#   try:
-#     gProxyManager
-#   except Exception:
-#     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-#   resVOMSInfo = gProxyManager.getActualVOMSesDNs([dn])
-#   dnDict = resVOMSInfo['Value'].get(dn, {}) if resVOMSInfo['OK'] else {}
-
-#   groups = []
-#   if dnDict.get('VO'):
-#     result = __getGroupsWithAttr('VO', dnDict['VO'])
-#     if not result['OK']:
-#       return result
-#     for vomsGroup in result['Value']:
-#       if vomsGroup in groupsList and not getGroupOption(vomsGroup, 'VOMSRoles', []):
-#         groups.append(vomsGroup)
-#     for role in dnDict.get('VOMSRoles', []):
-#       for vomsGroup in getGroupsWithVOMSAttribute(role):
-#         if vomsGroup in groupsList:
-#           groups.append(vomsGroup)
-
-#   result = getUsernameForDN(dn)
-#   if not result['OK']:
-#     return result
-#   username = result['Value']
-
-#   for group in groupsList:
-#     # if dn in getGroupOption(group, 'DNs', []):
-#     #   groups.append(group)
-#     if username in getGroupOption(group, 'Users', []):
-#       groups.append(group)
-
-#   groups.sort()
-#   return S_OK(list(set(groups))) if groups else S_ERROR('No groups found for %s' % dn)
-
-
 def getDNForUsernameInGroup(username, group, checkStatus=False):
   """ Get user DN for user in group
 
@@ -970,7 +894,7 @@ def getStatusGroupByUsername(group, username):
 
       :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
                {'Status': <status of group>, 'Comment': <information what need to do>}
-  """???
+  """
   result = getDNForUsernameInGroup(username, group)
   if not result['OK']:
     return result
@@ -985,22 +909,32 @@ def getStatusGroupByUsername(group, username):
   if result['Value']:
     role = getGroupOption(group, 'VOMSRole')
     
-    resVOMSInfo = getVOMSInfo(dn)
-    if not resVOMSInfo['OK']:
+    result = getVOMSInfo(vo=vo, dn=dn)
+    if not result['OK']:
+      return result
+    vomsData = result['Value']
+
+      # return S_OK({'Status': 'unknown',
+      #              'Comment': 'Research process crashed: %s.' % resVOMSInfo['Message']})
+    # data = resVOMSInfo['Value']
+    if vo in vomsData:
+      if not vomsData[vo]['OK']:
+        return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Messages']})
+    else:
       return S_OK({'Status': 'unknown',
-                   'Comment': 'Research process crashed: %s.' % resVOMSInfo['Message']})
-    data = resVOMSInfo['Value']
-    if not data.get(vo) or dn not in data[vo].keys():
+                   'Comment': 'Fail to get %s VOMS VO information depended for this group' % vo})
+    voData = vomsData[vo]['Value']
+    if dn not in voData:
       return S_OK({'Status': 'failed',
                    'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo})
     if not role:
-      if data[vo][dn]['Suspended']:
+      if voData[dn]['Suspended']:
         return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
     else: 
-      if role not in data[vo][dn]['VOMSRoles']:
+      if role not in voData[dn]['VOMSRoles']:
         return S_OK({'Status': 'failed',
                      'Comment': 'You have no %s VOMS role depended for this group' % role})
-      if role in data[vo][dn]['SuspendedRoles']:
+      if role in voData[dn]['SuspendedRoles']:
         return S_OK({'Status': 'suspended',
                      'Comment': 'User suspended for %s VOMS role.' % role})
 
