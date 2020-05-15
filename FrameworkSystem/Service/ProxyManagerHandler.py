@@ -35,7 +35,7 @@ class ProxyManagerHandler(RequestHandler):
 
       Contain __VOMSesUsersCache cache, with next structure:
         Key: VOMS VO name
-        Value: error message or dictionary:
+        Value: S_OK(dict)/S_ERROR() -- dictionary contain:
             { <user DN>: {
                 Roles: [<list of roles>],
                 suspended: bool
@@ -127,12 +127,13 @@ class ProxyManagerHandler(RequestHandler):
               # Get users from VOMS
               result = VOMSService(vo=vo).getUsers(result['Value'])
               if result['OK']:
-                cls.saveVOMSInfoToCache(vo, result['Value'])
-                cls.saveVOMSInfoToFile(vo, result['Value'])
+                cls.saveVOMSInfoToCache(vo, result)
+                cls.saveVOMSInfoToFile(vo, result)
                 return
+
       gLogger.error(result['Message'])
-      if not isinstance(cls.getVOMSInfoFromCache(vo), dict):
-        cls.saveVOMSInfoToCache(vo, result['Message'])
+      if not cls.getVOMSInfoFromCache(vo) or not cls.getVOMSInfoFromCache(vo)['OK']:
+        cls.saveVOMSInfoToCache(vo, result)
       # ################# getVOInfo ###################### #
 
     gLogger.info('Update VOMSes information..')
@@ -195,9 +196,9 @@ class ProxyManagerHandler(RequestHandler):
       if vo not in VOMSesUsers:
         result = self.getVOMSInfoFromFile(vo)
         if result['OK']:
-          VOMSesUsers[vo] = result['Value']
+          VOMSesUsers[vo] = result
           continue
-        VOMSesUsers[vo] = 'No information from "%s" VOMS VO' % vo
+        VOMSesUsers[vo] = S_ERROR('No information from "%s" VOMS VO' % vo)
     return S_OK(VOMSesUsers)
 
   def __generateUserProxiesInfo(self):
