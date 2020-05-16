@@ -7,7 +7,7 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getInfoAboutProviders
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 
 try:
   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory

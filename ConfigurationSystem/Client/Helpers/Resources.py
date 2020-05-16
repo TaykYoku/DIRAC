@@ -462,16 +462,47 @@ def getFilterConfig(filterID):
   return gConfig.getOptionsDict('Resources/LogFilters/%s' % filterID)
 
 
+def getProvidersForInstance(instance):
+  """ Get providers for instance
+
+      :param str instance: instance of what this providers
+
+      :return: S_OK(list)/S_ERROR()
+  """
+  return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, instance))
+
+
+def getProviderInfo(provider):
+  """ Get provider info
+  
+      :param str provider: provider
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  result = gConfig.getSections(gBaseResourcesSection)
+  if not result['OK']:
+    return result
+  for section in result['Value']:
+    if section[-9:] == 'Providers':
+      result = getProvidersForInstance(section)
+      if not result['OK']:
+        return result
+      if provider in result['Value']:
+        return gConfig.getOptionsDictRecursively("%s/%sProviders/%s/" % (gBaseResourcesSection,
+                                                                         section, provider))
+  return S_ERROR('%s provider not found.' % provider)
+
+
 def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
   """ Get the information about providers
 
-      :param basestring of: provider of what(Id, Proxy or etc.) need to look,
+      :param str of: provider of what(Id, Proxy or etc.) need to look,
              None, "all" to get list of instance of what this providers
-      :param basestring providerName: provider name,
+      :param str providerName: provider name,
              None, "all" to get list of providers names
-      :param basestring option: option name that need to get,
+      :param str option: option name that need to get,
              None, "all" to get all options in a section
-      :param basestring section: section path in root section of provider,
+      :param str section: section path in root section of provider,
              "all" to get options in all sections
 
       :return: S_OK()/S_ERROR()
@@ -486,18 +517,10 @@ def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
   if not option or option == 'all':
     if not section:
       return gConfig.getOptionsDict("%s/%sProviders/%s" % (gBaseResourcesSection, of, providerName))
-    elif section == "all":
-      resDict = {}
-      relPath = "%s/%sProviders/%s/" % (gBaseResourcesSection, of, providerName)
-      result = gConfig.getConfigurationTree(relPath)
-      if not result['OK']:
-        return result
-      for key, value in result['Value'].items():  # can be an iterator
-        if value:
-          resDict[key.replace(relPath, '')] = value
-      return S_OK(resDict)
-    else:
-      return gConfig.getSections('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, of, providerName, section))
+    if section == "all":
+      return gConfig.getOptionsDictRecursively("%s/%sProviders/%s/" % (gBaseResourcesSection,
+                                                                         of, providerName))
+    return gConfig.getSections('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, of, providerName, section))
   else:
     return S_OK(gConfig.getValue('%s/%sProviders/%s/%s/%s' % (gBaseResourcesSection, of, providerName,
                                                               section, option)))

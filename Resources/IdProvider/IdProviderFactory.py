@@ -12,7 +12,7 @@ from __future__ import print_function
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import ObjectLoader
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getInfoAboutProviders
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 
 __RCSID__ = "$Id$"
 
@@ -34,7 +34,7 @@ class IdProviderFactory(object):
 
         :return: S_OK(IdProvider)/S_ERROR()
     """
-    result = getInfoAboutProviders(of='Id', providerName=idProvider, option="all", section="all")
+    result = getProviderInfo(idProvider)
     if not result['OK']:
       return result
     pDict = result['Value']
