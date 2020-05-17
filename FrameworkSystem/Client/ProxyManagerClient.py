@@ -6,7 +6,7 @@ import six
 import datetime
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.FrameforkSystem.Client.ProxyManagerData import gProxyManagerData
+from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSAttributeForGroup, getUsernameForDN
 from DIRAC.Core.Utilities import ThreadSafe, DIRACSingleton
 from DIRAC.Core.Utilities.DictCache import DictCache
