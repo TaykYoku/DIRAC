@@ -5,7 +5,6 @@ import datetime
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import ThreadSafe, DIRACSingleton
 from DIRAC.Core.Utilities.DictCache import DictCache
-from DIRAC.Core.DISET.RPCClient import RPCClient
 
 __RCSID__ = "$Id$"
 
@@ -53,6 +52,12 @@ class ProxyManagerData(object):
       td = expiration - datetime.datetime.now()
     return td.days * 86400 + td.seconds
 
+  def __getRPC():
+    """ Get RPC
+    """
+    from DIRAC.Core.DISET.RPCClient import RPCClient
+    return RPCClient("Framework/ProxyManager", timeout=120)
+
   def __refreshUserCache(self, validSeconds=0):
     """ Refresh user cache
 
@@ -60,8 +65,7 @@ class ProxyManagerData(object):
 
         :return: S_OK()/S_ERROR()
     """
-    rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
-    retVal = rpcClient.getRegisteredUsers(validSeconds)
+    retVal = __getRPC.getRegisteredUsers(validSeconds)
     if not retVal['OK']:
       return retVal
     # Update the cache
@@ -95,7 +99,7 @@ class ProxyManagerData(object):
 
         :return: S_OK()/S_ERROR()
     """
-    result = RPCClient("Framework/ProxyManager", timeout=120).getVOMSesUsers()
+    result = __getRPC.getVOMSesUsers()
     if result['OK']:
       self.__setVOMSUsersDict(result['Value'])
     return result
@@ -201,8 +205,7 @@ class ProxyManagerData(object):
     persistentFlag = True
     if not persistent:
       persistentFlag = False
-    rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
-    retVal = rpcClient.setPersistency(user, group, persistentFlag)
+    retVal = __getRPC.setPersistency(user, group, persistentFlag)
     if not retVal['OK']:
       return retVal
     # Update internal persistency cache
