@@ -129,15 +129,15 @@ class ProxyManagerData(object):
       if not voInfo['OK']:
         res[vo] = voInfo
         continue
-      res[vo] = S_OK()
+      res[vo] = S_OK({})
       for dn, data in voInfo['Value'].items():
         if dnList and dn not in dnList:
           continue
         if dn not in res[vo]['Value']:
           res[vo]['Value'][dn] = {'Suspended': data['suspended'],
-                                      'VOMSRoles': [],
-                                      'ActuelRoles': [],
-                                      'SuspendedRoles': []}
+                                  'VOMSRoles': [],
+                                  'ActuelRoles': [],
+                                  'SuspendedRoles': []}
         res[vo]['Value'][dn]['VOMSRoles'] = list(set(res[vo]['Value'][dn]['VOMSRoles'] + data['Roles']))
         if data['certSuspended'] or data['suspended']:
           res[vo]['Value'][dn]['SuspendedRoles'] = list(set(res[vo]['Value'][dn]['SuspendedRoles'] + data['Roles']))
