@@ -484,43 +484,10 @@ def getProviderInfo(provider):
     return result
   for section in result['Value']:
     if section[-9:] == 'Providers':
-      result = getProvidersForInstance(section)
+      result = getProvidersForInstance(section[:-9])
       if not result['OK']:
         return result
       if provider in result['Value']:
-        return gConfig.getOptionsDictRecursively("%s/%sProviders/%s/" % (gBaseResourcesSection,
-                                                                         section, provider))
+        return gConfig.getOptionsDictRecursively("%s/%s/%s/" % (gBaseResourcesSection,
+                                                                section, provider))
   return S_ERROR('%s provider not found.' % provider)
-
-
-def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
-  """ Get the information about providers
-
-      :param str of: provider of what(Id, Proxy or etc.) need to look,
-             None, "all" to get list of instance of what this providers
-      :param str providerName: provider name,
-             None, "all" to get list of providers names
-      :param str option: option name that need to get,
-             None, "all" to get all options in a section
-      :param str section: section path in root section of provider,
-             "all" to get options in all sections
-
-      :return: S_OK()/S_ERROR()
-  """
-  if not of or of == "all":
-    result = gConfig.getSections(gBaseResourcesSection)
-    if not result['OK']:
-      return result
-    return S_OK([i.replace('Providers', '') for i in result['Value']])
-  if not providerName or providerName == "all":
-    return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, of))
-  if not option or option == 'all':
-    if not section:
-      return gConfig.getOptionsDict("%s/%sProviders/%s" % (gBaseResourcesSection, of, providerName))
-    if section == "all":
-      return gConfig.getOptionsDictRecursively("%s/%sProviders/%s/" % (gBaseResourcesSection,
-                                                                         of, providerName))
-    return gConfig.getSections('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, of, providerName, section))
-  else:
-    return S_OK(gConfig.getValue('%s/%sProviders/%s/%s/%s' % (gBaseResourcesSection, of, providerName,
-                                                              section, option)))

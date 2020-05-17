@@ -8,17 +8,18 @@ from DIRAC.Core.Utilities import DErrno
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
+from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
 
 try:
   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 except ImportError:
   pass
+# try:
+#   from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
+# except ImportError:
+#   pass
 try:
-  from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-except ImportError:
-  pass
-try:
-  from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
+  from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
 except ImportError:
   pass
 
@@ -37,10 +38,10 @@ def getVOMSInfo(vo=None, dn=None):
       :return: S_OK(dict)/S_ERROR()
   """
   try:
-    gProxyManager
+    gProxyManagerData
   except Exception:
-    from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-  return gProxyManager.getActualVOMSesDNs(voList=[vo] if vo else vo, dnList=[dn] if dn else dn)
+    from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
+  return gProxyManagerData.getActualVOMSesDNs(voList=[vo] if vo else vo, dnList=[dn] if dn else dn)
 
 
 def getUsernameForDN(dn, usersList=None):
@@ -61,14 +62,14 @@ def getUsernameForDN(dn, usersList=None):
       return S_OK(username)
   
   try:
-    gSessionManager
+    gOAuthManagerData
   except Exception:
     try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager  # pylint: disable=import-error
+      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
     except Exception as ex:
       return S_ERROR("No username found for dn %s" % dn)
   
-  result = gSessionManager.getIdPsCache()
+  result = gOAuthManagerData.getIdPsCache()
   if not result['OK']:
     return result
   idPsDict = result['Value']
@@ -741,13 +742,13 @@ def getProviderForID(userID):
       :return: S_OK(list)/S_ERROR()
   """
   try:
-    gSessionManager
+    gOAuthManagerData
   except Exception:
     try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager  # pylint: disable=import-error
+      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
     except Exception as ex:
       return S_ERROR('Session manager not found:', ex)
-  result = gSessionManager.getIdPsCache([userID])
+  result = gOAuthManagerData.getIdPsCache([userID])
   if not result['OK']:
     return result
   providers = []
@@ -766,14 +767,14 @@ def getDNsForUsername(username):
       :return: S_OK(list)/S_ERROR() -- contain DNs
   """
   try:
-    gSessionManager
+    gOAuthManagerData
   except Exception:
     try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager  # pylint: disable=import-error
+      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
     except Exception:
       pass
   try:
-    result = gSessionManager.getIdPsCache(getIDsForUsername(username))
+    result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
     if not result['OK']:
       return result
     IdPsDict = result['Value']
@@ -806,14 +807,14 @@ def getProxyProviderForDN(userDN):
   username = result['Value']
 
   try:
-    gSessionManager
+    gOAuthManagerData
   except Exception:
     try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager  # pylint: disable=import-error
+      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
     except Exception:
       pass
   try:
-    result = gSessionManager.getIdPsCache(getIDsForUsername(username))
+    result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
     if not result['OK']:
       return result
     IDsDict = result['Value']
@@ -940,7 +941,7 @@ def getStatusGroupByUsername(group, username):
 
   # vomsRole = getGroupOption(group, 'VOMSRole')
   # if vomsRole:
-  #   result = gProxyManager.getActualVOMSesDNs([dn])
+  #   result = gProxyManagerData.getActualVOMSesDNs([dn])
   #   dnDict = result['Value'].get(dn, {}) if result['OK'] else {}
   #   if vomsRole not in dnDict.get('VOMSRoles', []):
   #     return S_OK({'Status': 'failed',
@@ -948,7 +949,7 @@ def getStatusGroupByUsername(group, username):
   #   if (vomsRole in dnDict.get('SuspendedRoles', [])) or dnDict.get('suspended'):
   #     return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
 
-  result = gProxyManager.userHasProxy(username, group)
+  result = gProxyManagerData.userHasProxy(username, group)
   if not result['OK']:
     return result
   if not result['Value']:
