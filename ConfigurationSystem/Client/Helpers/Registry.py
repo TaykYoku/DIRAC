@@ -340,8 +340,9 @@ def getDNsInGroup(group, checkStatus=False):
       voData = vomsData[vo]['Value']
       role = getGroupOption(group, 'VOMSRole')
       for dn in userDNs:
-        if not role or role in voData[dn]['ActuelRoles' if checkStatus else 'VOMSRoles']:
-          DNs.append(dn)
+        if dn in voData:
+          if not role or role in voData[dn]['ActuelRoles' if checkStatus else 'VOMSRoles']:
+            DNs.append(dn)
     else:
       DNs += userDNs
 
