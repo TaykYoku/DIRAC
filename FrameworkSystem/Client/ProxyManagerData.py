@@ -218,4 +218,4 @@ class ProxyManagerData(object):
                             record)
     return retVal
 
-gProxyManager = ProxyManagerData()
+gProxyManagerData = ProxyManagerData()
