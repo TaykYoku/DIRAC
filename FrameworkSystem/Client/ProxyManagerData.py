@@ -65,7 +65,7 @@ class ProxyManagerData(object):
 
         :return: S_OK()/S_ERROR()
     """
-    retVal = self.__getRPC.getRegisteredUsers(validSeconds)
+    retVal = self.__getRPC().getRegisteredUsers(validSeconds)
     if not retVal['OK']:
       return retVal
     # Update the cache
@@ -99,7 +99,7 @@ class ProxyManagerData(object):
 
         :return: S_OK()/S_ERROR()
     """
-    result = self.__getRPC.getVOMSesUsers()
+    result = self.__getRPC().getVOMSesUsers()
     if result['OK']:
       self.__setVOMSUsersDict(result['Value'])
     return result
@@ -205,7 +205,7 @@ class ProxyManagerData(object):
     persistentFlag = True
     if not persistent:
       persistentFlag = False
-    retVal = self.__getRPC.setPersistency(user, group, persistentFlag)
+    retVal = self.__getRPC().setPersistency(user, group, persistentFlag)
     if not retVal['OK']:
       return retVal
     # Update internal persistency cache
