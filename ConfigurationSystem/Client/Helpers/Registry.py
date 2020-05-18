@@ -926,7 +926,7 @@ def getStatusGroupByUsername(group, username):
     # data = resVOMSInfo['Value']
     if vo in vomsData:
       if not vomsData[vo]['OK']:
-        return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Messages']})
+        return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Message']})
     else:
       return S_OK({'Status': 'unknown',
                    'Comment': 'Fail to get %s VOMS VO information depended for this group' % vo})

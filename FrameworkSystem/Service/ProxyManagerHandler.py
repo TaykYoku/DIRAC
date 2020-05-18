@@ -196,7 +196,7 @@ class ProxyManagerHandler(RequestHandler):
       if vo not in VOMSesUsers:
         result = self.getVOMSInfoFromFile(vo)
         if result['OK']:
-          VOMSesUsers[vo] = result
+          VOMSesUsers[vo] = result['Value']
           continue
         VOMSesUsers[vo] = S_ERROR('No information from "%s" VOMS VO' % vo)
     return S_OK(VOMSesUsers)
