@@ -3,7 +3,7 @@
 import six
 import errno
 
-from DIRAC import S_OK, S_ERROR
+from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
@@ -52,6 +52,7 @@ def getUsernameForDN(dn, usersList=None):
 
       :return: S_OK(str)/S_ERROR()
   """
+  gLogger.info('====>  REGISTRY getUsernameForDN')
   if not usersList:
     result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
     if not result['OK']:
@@ -102,6 +103,7 @@ def getGroupsForDN(dn, groupsList=None):
 
       :return: S_OK(list)/S_ERROR() -- contain list of groups
   """
+  gLogger.info('====>  REGISTRY getGroupsForDN')
   groups = []
   if not groupsList:
     result = gConfig.getSections("%s/Groups" % gBaseRegistrySection)
@@ -236,6 +238,7 @@ def findDefaultGroupForDN(dn):
 
       :return: S_OK()/S_ERROR()
   """
+  gLogger.info('====>  REGISTRY findDefaultGroupForDN')
   result = getUsernameForDN(dn)
   if not result['OK']:
     return result
@@ -796,6 +799,7 @@ def getProxyProviderForDN(userDN):
 
       :return: S_OK(str)/S_ERROR()
   """
+  gLogger.info('====>  REGISTRY getProxyProviderForDN')
   result = getDNProperty(userDN, 'ProxyProviders')
   if not result['OK']:
     return result
@@ -996,6 +1000,7 @@ def getDNProperty(dn, prop, defaultValue=None):
 
       :return: S_OK()/S_ERROR()
   """
+  gLogger.info('====>  REGISTRY getDNProperty')
   result = getUsernameForDN(dn)
   if not result['OK']:
     return result

@@ -981,6 +981,10 @@ class X509Chain(object):
                   * username: like for proxy
                   * validDN: like proxy
     """
+    
+    from DIRAC import gLogger
+    gLogger.info('============>  X509CHAIN getCredentials')
+
     credDict = {'subject': str(self._certList[0].getSubjectDN()['Value']),  # ['Value'] :(
                 'issuer': self._certList[0].getIssuerDN()['Value'],  # ['Value'] :(
                 'secondsLeft': self.getRemainingSecs()['Value'],

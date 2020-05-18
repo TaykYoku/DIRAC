@@ -616,6 +616,10 @@ class X509Chain(object):
     return S_OK(False)
 
   def getCredentials(self, ignoreDefault=False):
+
+    from DIRAC import gLogger
+    gLogger.info('============>  X509CHAIN getCredentials')
+
     if not self.__loadedChain:
       return S_ERROR(DErrno.ENOCHAIN)
     credDict = {'subject': self.__certList[0].get_subject().one_line(),

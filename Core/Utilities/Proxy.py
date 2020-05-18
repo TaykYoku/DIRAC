@@ -224,6 +224,9 @@ def _putProxy(userDN=None, userName=None, userGroup=None, vomsFlag=None, proxyFi
   Parameters like `userProxy` or `executeWithUserProxy`.
   :returns: Tuple of originalUserProxy, useServerCertificate, executionLock
   """
+
+  gLogger.info('============>  PROXY _putProxy')
+
   # Setup user proxy
   if not userName:
     result = getUsernameForDN(userDN)
