@@ -9,6 +9,7 @@ from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
+from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
 
 try:
   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
@@ -18,10 +19,10 @@ except ImportError:
 #   from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
 # except ImportError:
 #   pass
-try:
-  from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
-except ImportError:
-  pass
+# try:
+#   from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
+# except ImportError:
+#   pass
 
 __RCSID__ = "$Id$"
 
@@ -62,13 +63,13 @@ def getUsernameForDN(dn, usersList=None):
     if dn in gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), []):
       return S_OK(username)
   
-  try:
-    gOAuthManagerData
-  except Exception:
-    try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-    except Exception as ex:
-      return S_ERROR("No username found for dn %s" % dn)
+  # try:
+  #   gOAuthManagerData
+  # except Exception:
+  #   try:
+  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
+  #   except Exception as ex:
+  #     return S_ERROR("No username found for dn %s" % dn)
   
   result = gOAuthManagerData.getIdPsCache()
   if not result['OK']:
@@ -745,13 +746,13 @@ def getProviderForID(userID):
 
       :return: S_OK(list)/S_ERROR()
   """
-  try:
-    gOAuthManagerData
-  except Exception:
-    try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-    except Exception as ex:
-      return S_ERROR('Session manager not found:', ex)
+  # try:
+  #   gOAuthManagerData
+  # except Exception:
+  #   try:
+  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
+  #   except Exception as ex:
+  #     return S_ERROR('Session manager not found:', ex)
   result = gOAuthManagerData.getIdPsCache([userID])
   if not result['OK']:
     return result
@@ -770,20 +771,20 @@ def getDNsForUsername(username):
 
       :return: S_OK(list)/S_ERROR() -- contain DNs
   """
-  try:
-    gOAuthManagerData
-  except Exception:
-    try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-    except Exception:
-      pass
-  try:
-    result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
-    if not result['OK']:
-      return result
-    IdPsDict = result['Value']
-  except Exception:
-    IdPsDict = {}
+  # try:
+  #   gOAuthManagerData
+  # except Exception:
+  #   try:
+  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
+  #   except Exception:
+  #     pass
+  # try:
+  result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
+  if not result['OK']:
+    return result
+  IdPsDict = result['Value']
+  # except Exception:
+  #   IdPsDict = {}
 
   DNs = getDNsForUsernameFromSC(username)
   for userID, idDict in IdPsDict.items():
@@ -811,20 +812,20 @@ def getProxyProviderForDN(userDN):
     return result
   username = result['Value']
 
-  try:
-    gOAuthManagerData
-  except Exception:
-    try:
-      from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-    except Exception:
-      pass
-  try:
-    result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
-    if not result['OK']:
-      return result
-    IDsDict = result['Value']
-  except Exception:
-    IDsDict = {}
+  # try:
+  #   gOAuthManagerData
+  # except Exception:
+  #   try:
+  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
+  #   except Exception:
+  #     pass
+  # try:
+  result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
+  if not result['OK']:
+    return result
+  IDsDict = result['Value']
+  # except Exception:
+  #   IDsDict = {}
 
   # provider = None
   for userID, idDict in IDsDict.items():
