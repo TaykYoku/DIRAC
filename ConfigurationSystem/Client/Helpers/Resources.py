@@ -488,13 +488,13 @@ def getProviderByAlias(alias, instance=None):
     for section in result['Value']:
       if section[-9:] == 'Providers':
         instances.append(section[:-9])
-  for i in instances:
-    result = getProvidersForInstance(section[:-9])
+  for instance in instances:
+    result = getProvidersForInstance(instance)
     if not result['OK']:
       return result
     for provider in result['Value']:
-      if alias in gConfig.getValue("%s/%s/%s/Aliases" % (gBaseResourcesSection,
-                                                          section, provider), []):
+      if alias in gConfig.getValue("%s/%sProviders/%s/Aliases" % (gBaseResourcesSection,
+                                                         instance, provider), []):
         return S_OK(provider)
   return S_ERROR('No found any provider for %s' % alias)
 
