@@ -15,14 +15,6 @@ try:
   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 except ImportError:
   pass
-# try:
-#   from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
-# except ImportError:
-#   pass
-# try:
-#   from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
-# except ImportError:
-#   pass
 
 __RCSID__ = "$Id$"
 
@@ -63,14 +55,6 @@ def getUsernameForDN(dn, usersList=None):
     if dn in gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), []):
       return S_OK(username)
   
-  # try:
-  #   gOAuthManagerData
-  # except Exception:
-  #   try:
-  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-  #   except Exception as ex:
-  #     return S_ERROR("No username found for dn %s" % dn)
-  
   result = gOAuthManagerData.getIdPsCache()
   if not result['OK']:
     return result
@@ -104,7 +88,6 @@ def getGroupsForDN(dn, groupsList=None):
 
       :return: S_OK(list)/S_ERROR() -- contain list of groups
   """
-  gLogger.info('====>  REGISTRY getGroupsForDN')
   groups = []
   if not groupsList:
     result = gConfig.getSections("%s/Groups" % gBaseRegistrySection)
@@ -239,7 +222,6 @@ def findDefaultGroupForDN(dn):
 
       :return: S_OK()/S_ERROR()
   """
-  gLogger.info('====>  REGISTRY findDefaultGroupForDN')
   result = getUsernameForDN(dn)
   if not result['OK']:
     return result
@@ -746,13 +728,6 @@ def getProviderForID(userID):
 
       :return: S_OK(list)/S_ERROR()
   """
-  # try:
-  #   gOAuthManagerData
-  # except Exception:
-  #   try:
-  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-  #   except Exception as ex:
-  #     return S_ERROR('Session manager not found:', ex)
   result = gOAuthManagerData.getIdPsCache([userID])
   if not result['OK']:
     return result
@@ -771,20 +746,10 @@ def getDNsForUsername(username):
 
       :return: S_OK(list)/S_ERROR() -- contain DNs
   """
-  # try:
-  #   gOAuthManagerData
-  # except Exception:
-  #   try:
-  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-  #   except Exception:
-  #     pass
-  # try:
   result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
   if not result['OK']:
     return result
   IdPsDict = result['Value']
-  # except Exception:
-  #   IdPsDict = {}
 
   DNs = getDNsForUsernameFromSC(username)
   for userID, idDict in IdPsDict.items():
@@ -800,38 +765,25 @@ def getProxyProviderForDN(userDN):
 
       :return: S_OK(str)/S_ERROR()
   """
-  gLogger.info('====>  REGISTRY getProxyProviderForDN')
-  result = getDNProperty(userDN, 'ProxyProviders')
-  if not result['OK']:
-    return result
-  if result['Value']:
-    return S_OK(result['Value'])
-
   result = getUsernameForDN(userDN)
   if not result['OK']:
     return result
   username = result['Value']
 
-  # try:
-  #   gOAuthManagerData
-  # except Exception:
-  #   try:
-  #     from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData  # pylint: disable=import-error
-  #   except Exception:
-  #     pass
-  # try:
+  result = getDNProperty(userDN, 'ProxyProviders', username=username)
+  if not result['OK']:
+    return result
+  if result['Value']:
+    return S_OK(result['Value'])
+
   result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
   if not result['OK']:
     return result
   IDsDict = result['Value']
-  # except Exception:
-  #   IDsDict = {}
-
-  # provider = None
   for userID, idDict in IDsDict.items():
-    if userDN in (idDict.get('DNs') or []):
-      if idDict['DNs'][userDN].get('ProxyProvider'):
-        return S_OK(idDict['DNs'][userDN]['ProxyProvider'])
+    if userDN in idDict.get('DNs', []):
+      if idDict['DNs'][userDN].get('PROVIDER'):
+        return S_OK(idDict['DNs'][userDN]['PROVIDER'])
 
   # if not provider:
   #   result = getDNProperty(userDN, 'ProxyProvider')
@@ -921,9 +873,6 @@ def getStatusGroupByUsername(group, username):
       return result
     vomsData = result['Value']
 
-      # return S_OK({'Status': 'unknown',
-      #              'Comment': 'Research process crashed: %s.' % resVOMSInfo['Message']})
-    # data = resVOMSInfo['Value']
     if vo in vomsData:
       if not vomsData[vo]['OK']:
         return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Message']})
@@ -992,20 +941,23 @@ def findSomeDNToUseForGroupsThatNotNeedDN(username):
     return S_OK(result['Value'][0]) if result['OK'] else result
   return S_OK(defDNs[0])
 
-def getDNProperty(dn, prop, defaultValue=None):
+def getDNProperty(dn, prop, defaultValue=None, username=None):
   """ Get user DN property
 
       :param str dn: user DN
       :param str prop: property name
       :param defaultValue: default value
+      :param str username: username
 
       :return: S_OK()/S_ERROR()
   """
-  gLogger.info('====>  REGISTRY getDNProperty')
-  result = getUsernameForDN(dn)
-  if not result['OK']:
-    return result
-  root = "%s/Users/%s/DNProperties" % (gBaseRegistrySection, result['Value'])
+  if not username:
+    result = getUsernameForDN(dn)
+    if not result['OK']:
+      return result
+    username = result['Value']
+
+  root = "%s/Users/%s/DNProperties" % (gBaseRegistrySection, username)
   result = gConfig.getSections(root)
   if not result['OK']:
     return result

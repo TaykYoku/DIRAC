@@ -72,7 +72,6 @@ def initializationOfCertificate(credDict, logObj=gLogger):
 
       :return: bool -- specifying whether the username was found
   """
-  logObj.info('========> AUTHMANAGER initializationOfCertificate')
   # Search host
   result = Registry.getHostnameForDN(credDict[KW_DN])
   if result['OK'] and result['Value']:

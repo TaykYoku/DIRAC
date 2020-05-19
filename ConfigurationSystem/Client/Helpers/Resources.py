@@ -472,6 +472,33 @@ def getProvidersForInstance(instance):
   return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, instance))
 
 
+def getProviderByAlias(alias, instance=None):
+  """ Find provider name by alias
+
+      :param str alias: other registered provider name
+      :param str instance: provider of what
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  instances = [instance] or []
+  if not instances:
+    result = gConfig.getSections(gBaseResourcesSection)
+    if not result['OK']:
+      return result
+    for section in result['Value']:
+      if section[-9:] == 'Providers':
+        instances.append(section[:-9])
+  for i in instances:
+    result = getProvidersForInstance(section[:-9])
+    if not result['OK']:
+      return result
+    for provider in result['Value']:
+      if alias in gConfig.getValue("%s/%s/%s/Aliases" % (gBaseResourcesSection,
+                                                          section, provider), []):
+        return S_OK(provider)
+  return S_ERROR('No found any provider for %s' % alias)
+
+
 def getProviderInfo(provider):
   """ Get provider info
   
