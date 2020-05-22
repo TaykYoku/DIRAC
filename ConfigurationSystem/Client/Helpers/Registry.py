@@ -45,7 +45,6 @@ def getUsernameForDN(dn, usersList=None):
 
       :return: S_OK(str)/S_ERROR()
   """
-  gLogger.info('====>  REGISTRY getUsernameForDN')
   if not usersList:
     result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
     if not result['OK']:
