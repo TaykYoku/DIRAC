@@ -732,7 +732,7 @@ def getProviderForID(userID):
     return result
   providers = []
   for userID, idDict in result['Value'].items():
-    providers += idDict.get('Providers') or []
+    providers += idDict['Providers'].keys()
   if not providers:
     return S_ERROR('Cannot find identity providers for %s' % userID)
   return S_OK(list(set(providers)))
