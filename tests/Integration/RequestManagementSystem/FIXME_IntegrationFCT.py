@@ -32,7 +32,7 @@ from DIRAC import gLogger
 from DIRAC.Core.Utilities.Adler import fileAdler
 from DIRAC.Core.Utilities.File import makeGuid
 from DIRAC.Interfaces.API.DiracAdmin import DiracAdmin
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getGroupsForUser, getDNForUsername
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getGroupsForUser, getDNForUsernameInGroup
 # # from RMS and DMS
 from DIRAC.RequestManagementSystem.Client.Request import Request
 from DIRAC.RequestManagementSystem.Client.Operation import Operation
@@ -182,11 +182,11 @@ if __name__ == "__main__":
     gLogger.error( "'%s' is not a member of the '%s' group" % ( userName, userGroup ) )
     sys.exit( -1 )
 
-  userDN = getDNForUsername( userName )
-  if not userDN["OK"]:
-    gLogger.error( userDN["Message"] )
-    sys.exit( -1 )
-  userDN = userDN["Value"][0]
+  result = getDNForUsernameInGroup(userName, userGroup)
+  if not result['OK']:
+    gLogger.error(result['Message'])
+    sys.exit(-1)
+  userDN = result['Value']
   gLogger.always( "userDN is %s" % userDN )
 
   fct = FullChainTest()
