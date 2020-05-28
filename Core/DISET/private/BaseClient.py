@@ -14,7 +14,7 @@ from DIRAC.Core.Utilities import List, Network
 from DIRAC.Core.Utilities.ReturnValues import S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.PathFinder import getServiceURL, getServiceFailoverURL
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getGroupsForDN
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import skipCACheck
 from DIRAC.Core.DISET.private.TransportPool import getGlobalTransportPool
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
@@ -255,13 +255,14 @@ class BaseClient(object):
     # Are we delegating something?
     delegatedDN = self.kwargs.get(self.KW_DELEGATED_DN) or self.__threadConfig.getDN()
     delegatedGroup = self.kwargs.get(self.KW_DELEGATED_GROUP) or self.__threadConfig.getGroup()
+
     if delegatedDN:
       self.kwargs[self.KW_DELEGATED_DN] = delegatedDN
       if not delegatedGroup:
-        result = Registry.findDefaultGroupForDN(delegatedDN)
+        result = getGroupsForDN(delegatedDN)
         if not result['OK']:
           return result
-        delegatedGroup = result['Value']
+        delegatedGroup = result['Value'][0]
       self.kwargs[self.KW_DELEGATED_GROUP] = delegatedGroup
       self.__extraCredentials = (delegatedDN, delegatedGroup)
     return S_OK()
