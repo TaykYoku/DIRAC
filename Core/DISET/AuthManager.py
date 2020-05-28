@@ -37,7 +37,10 @@ def forwardingCredentials(credDict, logObj=gLogger):
     if Properties.TRUSTED_HOST not in Registry.getPropertiesForHost(hostname, []):
       logObj.debug("The credentials forwarded by a %s host, but it is not a trusted one" % hostname)
       return False
-    credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
+    if credDict[KW_EXTRA_CREDENTIALS][0][0] == '/':
+      credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
+    else:
+      credDict[KW_ID] = credDict[KW_EXTRA_CREDENTIALS][0]
     credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS][1]
     del credDict[KW_EXTRA_CREDENTIALS]
     return True
