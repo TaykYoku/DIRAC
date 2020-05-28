@@ -95,7 +95,7 @@ class JobManagerHandler(RequestHandler):
     self.peerUsesLimitedProxy = credDict['isLimitedProxy']
     self.diracSetup = self.serviceInfoDict['clientSetup']
     self.maxParametricJobs = self.srv_getCSOption('MaxParametricJobs', MAX_PARAMETRIC_JOBS)
-    self.jobPolicy = JobPolicy(self.ownerDN, self.ownerGroup, self.userProperties)
+    self.jobPolicy = JobPolicy(self.owner, self.ownerGroup, self.userProperties)
     self.jobPolicy.jobDB = gJobDB
     return S_OK()
 
@@ -204,9 +204,9 @@ class JobManagerHandler(RequestHandler):
       jobIDList.append(jobID)
 
     # Set persistency flag
-    retVal = gProxyManager.getUserPersistence(self.ownerDN, self.ownerGroup)
-    if 'Value' not in retVal or not retVal['Value']:
-      gProxyManager.setPersistency(self.ownerDN, self.ownerGroup, True)
+    retVal = gProxyManager.getUserPersistence(self.owner, self.ownerGroup)
+    if not retVal.get('Value'):
+      gProxyManager.setPersistency(self.owner, self.ownerGroup, True)
 
     if parametricJob:
       result = S_OK(jobIDList)
@@ -280,7 +280,7 @@ class JobManagerHandler(RequestHandler):
 
         :return: bool
     """
-    result = gProxyManager.userHasProxy(self.ownerDN, self.ownerGroup, validSeconds=18000)
+    result = gProxyManager.userHasProxy(self.owner, self.ownerGroup, validSeconds=18000)
     if not result['OK']:
       self.log.error("Can't check if the user has proxy uploaded", result['Message'])
       return True
