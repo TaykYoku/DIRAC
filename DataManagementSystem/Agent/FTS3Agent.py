@@ -33,7 +33,7 @@ from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.Time import fromString
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getFTS3ServerDict
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations as opHelper
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.DataManagementSystem.private import FTS3Utilities
@@ -158,11 +158,10 @@ class FTS3Agent(AgentModule):
     # We keep a context in the cache for 45 minutes
     # (so it needs to be valid at least 15 since we add it for one hour)
     if not contextes.exists(idTuple, 15 * 60):
-      res = getDNForUsername(username)
-      if not res['OK']:
-        return res
-      # We take the first DN returned
-      userDN = res['Value'][0]
+      result = getDNForUsernameInGroup(username, group)
+      if not result['OK']:
+        return result
+      userDN = result['Value']
 
       log.debug("UserDN %s" % userDN)
 
@@ -172,7 +171,7 @@ class FTS3Agent(AgentModule):
       # we should make our cache a bit less than 2/3rd of the lifetime
       cacheTime = int(2 * self.proxyLifetime / 3) - 600
       res = gProxyManager.downloadVOMSProxyToFile(
-          userDN, group, requiredTimeLeft=self.proxyLifetime, cacheTime=cacheTime)
+          username, group, requiredTimeLeft=self.proxyLifetime, cacheTime=cacheTime)
       if not res['OK']:
         return res
 
