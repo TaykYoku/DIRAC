@@ -26,7 +26,7 @@ class IdProviderFactory(object):
     self.log = gLogger.getSubLogger('IdProviderFactory')
 
   #############################################################################
-  def getIdProvider(self, idProvider):
+  def getIdProvider(self, idProvider, sessionManager=None):
     """ This method returns a IdProvider instance corresponding to the supplied
         name.
 
@@ -54,6 +54,7 @@ class IdProviderFactory(object):
     try:
       provider = pClass()
       provider.setParameters(pDict)
+      provider.setManager(sessionManager)
     except Exception as x:
       msg = 'IdProviderFactory could not instantiate %s object: %s' % (subClassName, str(x))
       self.log.exception()
