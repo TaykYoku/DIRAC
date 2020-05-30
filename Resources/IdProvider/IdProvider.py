@@ -11,12 +11,7 @@ class IdProvider(object):
   def __init__(self, parameters=None, sessionManager=None):
     self.log = gLogger.getSubLogger(self.__class__.__name__)
     self.parameters = parameters
-    if not self.sessionManager:
-      try:
-        from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerClient import gSessionManager
-        self.sessionManager = gSessionManager
-      except Exception as e:
-        return S_ERROR('Session manager not able: %s' % e)
+    self.sessionManager = sessionManager
 
   def setParameters(self, parameters):
     self.parameters = parameters
