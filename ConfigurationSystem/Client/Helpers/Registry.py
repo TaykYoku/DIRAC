@@ -30,10 +30,6 @@ def getVOMSInfo(vo=None, dn=None):
 
       :return: S_OK(dict)/S_ERROR()
   """
-  try:
-    gProxyManagerData
-  except Exception:
-    from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
   return gProxyManagerData.getActualVOMSesDNs(voList=[vo] if vo else vo, dnList=[dn] if dn else dn)
 
 
@@ -117,7 +113,7 @@ def getGroupsForDN(dn, groupsList=None):
   for group in groupsList:
     if user in getGroupOption(group, 'Users', []):
       vo = getGroupOption(group, 'VO')
-      if vo in vomsVOs and vomsData[vo]['OK']:
+      if vo in vomsVOs and vomsData[vo]['OK'] and vomsData[vo]['Value']:
         voData = vomsData[vo]['Value']
         role = getGroupOption(group, 'VOMSRole')
         if not role or role in voData[dn]['VOMSRoles']:
