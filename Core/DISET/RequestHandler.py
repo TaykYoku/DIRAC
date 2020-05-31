@@ -97,9 +97,12 @@ class RequestHandler(object):
     :return: Credentials dictionary of remote peer.
     """
     credDict = self.__trPool.get(self.__trid).getConnectingCredentials()
-    forwardingCredentials(credDict)
-    initializationOfCertificate(credDict)
-    initializationOfGroup(credDict)
+    forwardingCredentials(credDict, logObj=self.log)
+    if credDict.get('ID'):
+      initializationOfSession(credDict, logObj=self.log)
+    else:
+      initializationOfCertificate(credDict, logObj=self.log)
+    initializationOfGroup(credDict, logObj=self.log)
     return credDict
 
   @classmethod
