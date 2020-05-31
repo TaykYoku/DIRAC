@@ -54,16 +54,10 @@ def getUsernameForDN(dn, usersList=None):
     if dn in gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), []):
       return S_OK(username)
   
-  result = gOAuthManagerData.getIdPsCache()
-  if not result['OK']:
-    return result
-  idPsDict = result['Value']
-
-  for oid, data in idPsDict.items():
-    if dn in data['DNs']:
-      result = getUsernameForID(oid)
-      if result['OK']:
-        return result
+  for uid in gOAuthManagerData.getIDsForDN(dn):
+    result = getUsernameForID(uid)
+    if result['OK']:
+      return result
 
   return S_ERROR("No username found for dn %s" % dn)
 
@@ -710,33 +704,10 @@ def getProxyProviderForDN(userDN):
   if result['Value']:
     return S_OK(result['Value'])
 
-  result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
-  if not result['OK']:
-    return result
-  IDsDict = result['Value']
-  for userID, idDict in IDsDict.items():
-    if userDN in idDict.get('DNs', []):
-      if idDict['DNs'][userDN].get('PROVIDER'):
-        return S_OK(idDict['DNs'][userDN]['PROVIDER'])
-
-  # if not provider:
-  #   result = getDNProperty(userDN, 'ProxyProvider')
-  #   if not result['OK']:
-  #     return result
-    
-    # # Get providers
-    # result = getInfoAboutProviders(of='Proxy')
-    # if result['OK']:
-    #   try:
-    #     ProxyProviderFactory()
-    #   except Exception:
-    #     from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
-    #   for providerName in result['Value']:
-    #     providerObj = ProxyProviderFactory().getProxyProvider(providerName)
-    #     if providerObj['OK'] and 'getUserDN' in dir(providerObj['Value']):
-    #       result = providerObj['Value'].getUserDN(userDN=userDN)
-    #       if result['OK']:
-    #         return S_OK(providerName)
+  for userID in getIDsForUsername(username):
+    provider = gOAuthManagerData.getDNOption(userID)
+    if provider:
+      return S_OK(provider)
 
   return S_OK('Certificate')
 
@@ -801,17 +772,12 @@ def getProviderForID(userID):
 
       :param str ID: user ID
 
-      :return: S_OK(list)/S_ERROR()
+      :return: S_OK(str)/S_ERROR()
   """
-  result = gOAuthManagerData.getIdPsCache([userID])
-  if not result['OK']:
-    return result
-  providers = []
-  for userID, idDict in result['Value'].items():
-    providers += idDict['Providers'].keys()
-  if not providers:
-    return S_ERROR('Cannot find identity providers for %s' % userID)
-  return S_OK(list(set(providers)))
+  provider = gOAuthManagerData.getIdPForID(userID)
+  if provider:
+    return S_OK(provider)
+  return S_ERROR('Cannot find identity providers for %s' % userID)
 
 
 def getDNsForUsername(username):
@@ -821,15 +787,9 @@ def getDNsForUsername(username):
 
       :return: S_OK(list)/S_ERROR() -- contain DNs
   """
-  result = gOAuthManagerData.getIdPsCache(getIDsForUsername(username))
-  if not result['OK']:
-    return result
-  IdPsDict = result['Value']
-
-  DNs = getDNsForUsernameFromSC(username)
-  for userID, idDict in IdPsDict.items():
-    if idDict.get('DNs'):
-      DNs += idDict['DNs'].keys()
+  userDNs = getDNsForUsernameFromSC(username)
+  for uid in getIDsForUsername(username):
+    userDNs += gOAuthManagerData.getDNsForID(uid)
   return S_OK(list(set(DNs)))
 
 
