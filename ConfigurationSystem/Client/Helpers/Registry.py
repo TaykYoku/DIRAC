@@ -790,7 +790,7 @@ def getDNsForUsername(username):
   userDNs = getDNsForUsernameFromSC(username)
   for uid in getIDsForUsername(username):
     userDNs += gOAuthManagerData.getDNsForID(uid)
-  return S_OK(list(set(DNs)))
+  return S_OK(list(set(userDNs)))
 
 
 def getDNForUsernameInGroup(username, group, checkStatus=False):
