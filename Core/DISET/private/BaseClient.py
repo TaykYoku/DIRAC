@@ -253,9 +253,10 @@ class BaseClient(object):
       self.__extraCredentials = self.kwargs[self.KW_EXTRA_CREDENTIALS]
 
     # Are we delegating something?
+    delegatedID = self.__threadConfig.getID()
     delegatedDN = self.kwargs.get(self.KW_DELEGATED_DN) or self.__threadConfig.getDN()
     delegatedGroup = self.kwargs.get(self.KW_DELEGATED_GROUP) or self.__threadConfig.getGroup()
-
+    
     if delegatedDN:
       self.kwargs[self.KW_DELEGATED_DN] = delegatedDN
       if not delegatedGroup:
