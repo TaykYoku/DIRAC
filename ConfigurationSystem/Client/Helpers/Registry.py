@@ -701,7 +701,7 @@ def getProxyProviderForDN(userDN):
     return S_OK(result['Value'])
 
   for userID in getIDsForUsername(username):
-    provider = gOAuthManagerData.getDNOption(userID)
+    provider = gOAuthManagerData.getDNOptionForID(userID, userDN, 'Provider')
     if provider:
       return S_OK(provider)
 
