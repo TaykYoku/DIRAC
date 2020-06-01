@@ -697,9 +697,7 @@ def getProxyProviderForDN(userDN):
   username = result['Value']
 
   result = getDNProperty(userDN, 'ProxyProviders', username=username)
-  if not result['OK']:
-    return result
-  if result['Value']:
+  if result['OK'] and result['Value']:
     return S_OK(result['Value'])
 
   for userID in getIDsForUsername(username):
@@ -805,13 +803,40 @@ def getDNForUsernameInGroup(username, group, checkStatus=False):
 
       :return: S_OK(str)/S_ERROR()
   """
-  result = getDNsForUsername(username)  #{'OK': True, 'Value': ['CallStack', 'Message', 'OK', 'rpcStub', 'Errno']}
+  if username not in getGroupOption(group, 'Users', []):
+    return S_ERROR('%s group not have %s user.' % (group, username))
+
+  result = getVOsWithVOMS()
   if not result['OK']:
     return result
-  userDNs = result['Value']  
-  for dn in getDNsInGroup(group, checkStatus):
-    if dn in userDNs:
-      return S_OK(dn)
+  vomsVOs = result['Value']
+
+  DNs = []
+  result = getDNsForUsername(username)
+  if not result['OK']:
+    return result
+  userDNs = result['Value']
+
+  vo = getGroupOption(group, 'VO')
+  if vo in vomsVOs:
+    result = getVOMSInfo(vo=vo)
+    if not result['OK']:
+      return result
+    vomsData = result['Value']
+    if vomsData[vo]['OK']:
+      voData = vomsData[vo]['Value']
+      role = getGroupOption(group, 'VOMSRole')
+      for dn in userDNs:
+        if dn in voData:
+          if not role or role in voData[dn]['ActuelRoles' if checkStatus else 'VOMSRoles']:
+            DNs.append(dn)
+    else:
+      DNs += userDNs
+  else:
+    DNs += userDNs
+  
+  if DNs:
+    return S_OK(list(set(DNs)))
   return S_ERROR('For %s@%s not found DN%s.' % (username, group, ' or it suspended' if checkStatus else ''))
 
 
