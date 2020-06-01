@@ -50,10 +50,12 @@ def getUsernameForDN(dn, usersList=None):
     if dn in gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), []):
       return S_OK(username)
   
-  for uid in gOAuthManagerData.getIDsForDN(dn):
-    result = getUsernameForID(uid)
-    if result['OK']:
-      return result
+  result = gOAuthManagerData.getIDsForDN(dn)
+  if result['OK']:
+    for uid in result['Value']:
+      result = getUsernameForID(uid)
+      if result['OK']:
+        return result
 
   return S_ERROR("No username found for dn %s" % dn)
 
@@ -701,9 +703,11 @@ def getProxyProviderForDN(userDN):
     return S_OK(result['Value'])
 
   for userID in getIDsForUsername(username):
-    provider = gOAuthManagerData.getDNOptionForID(userID, userDN, 'Provider')
-    if provider:
-      return S_OK(provider)
+    result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'Provider')
+    if result['OK']:
+      provider = result['Value']
+      if provider:
+        return S_OK(provider)
 
   return S_OK('Certificate')
 
@@ -770,10 +774,11 @@ def getProviderForID(userID):
 
       :return: S_OK(str)/S_ERROR()
   """
-  provider = gOAuthManagerData.getIdPForID(userID)
-  if provider:
-    return S_OK(provider)
-  return S_ERROR('Cannot find identity providers for %s' % userID)
+  return gOAuthManagerData.getIdPForID(userID)
+  # provider = gOAuthManagerData.getIdPForID(userID)
+  # if provider:
+  #   return S_OK(provider)
+  # return S_ERROR('Cannot find identity providers for %s' % userID)
 
 
 def getDNsForUsername(username):
@@ -785,7 +790,9 @@ def getDNsForUsername(username):
   """
   userDNs = getDNsForUsernameFromSC(username)
   for uid in getIDsForUsername(username):
-    userDNs += gOAuthManagerData.getDNsForID(uid)
+    result = gOAuthManagerData.getDNsForID(uid)
+    if result['OK']:
+      userDNs += result['Value']
   return S_OK(list(set(userDNs)))
 
 
@@ -798,10 +805,10 @@ def getDNForUsernameInGroup(username, group, checkStatus=False):
 
       :return: S_OK(str)/S_ERROR()
   """
-  result = getDNsForUsername(username)
+  result = getDNsForUsername(username)  #{'OK': True, 'Value': ['CallStack', 'Message', 'OK', 'rpcStub', 'Errno']}
   if not result['OK']:
     return result
-  userDNs = result['Value']
+  userDNs = result['Value']  
   for dn in getDNsInGroup(group, checkStatus):
     if dn in userDNs:
       return S_OK(dn)
