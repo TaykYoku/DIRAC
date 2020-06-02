@@ -793,8 +793,19 @@ def getDNsForUsername(username):
       userDNs += result['Value']
   return S_OK(list(set(userDNs)))
 
-
 def getDNForUsernameInGroup(username, group, checkStatus=False):
+  """ Get user DN for user in group
+
+      :param str username: user name
+      :param str group: group name
+      :param bool checkStatus: don't add suspended DNs
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  result = getDNsForUsernameInGroup(username, group, checkStatus)
+  return S_OK(result['Value'][0]) if result['OK'] else result
+
+def getDNsForUsernameInGroup(username, group, checkStatus=False):
   """ Get user DN for user in group
 
       :param str username: user name
