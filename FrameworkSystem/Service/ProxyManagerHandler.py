@@ -584,27 +584,27 @@ class ProxyManagerHandler(RequestHandler):
     provDict = {}
     groupDict = {}
     for group in groups:
-      if group not in groupDict:
-        groupDict[group] = []
       result = Registry.getDNsForUsernameInGroup(username, group)
       if not result['OK']:
-        return result
+        if group not in statusDict:
+          statusDict[group] = [{'Status': 'fail', 'Comment': result['Message']}]
+        continue
       for dn in result['Value']:
         result = self.__proxyDB.getProxyProviderForDN(dn, username=username)
         if not result['OK']:
           return result
         pProvider = result['Value']
+        if group not in groupDict:
+          groupDict[group] = []
         if pProvider not in provDict:
           provDict[pProvider] = []
         provDict[pProvider] = list(set(provDict[pProvider] + [dn]))
         groupDict[group] = list(set(groupDict[group] + [dn]))
 
-    statusDict = {username: {}}
-
     # Check VOMS VO
     for group, dns in groupDict.items():
-      if group not in statusDict[username]:
-        statusDict[username][group] = []
+      if group not in statusDict:
+        statusDict[group] = []
 
       vo = Registry.getGroupOption(group, 'VO')
 
@@ -613,8 +613,7 @@ class ProxyManagerHandler(RequestHandler):
         return result
       if not result['Value']:
         continue
-      # result = gProxyManagerData.getActualVOMSesDNs(voList=[vo], dnList=dns)
-      
+
       result = self.getVOMSInfoFromCache(vo)
       if not result:
         result = self.getVOMSInfoFromFile(vo)
@@ -628,7 +627,7 @@ class ProxyManagerHandler(RequestHandler):
           if dn in groupDict[group]:
             groupDict[group].remove(dn)
           st['DN'] = dn  
-          statusDict[username][group].append(st)
+          statusDict[group].append(st)
         continue
       if not result['OK']:
         st = {'Status': 'unknown', "Comment": result['Message']}
@@ -636,7 +635,7 @@ class ProxyManagerHandler(RequestHandler):
           if dn in groupDict[group]:
             groupDict[group].remove(dn)
           st['DN'] = dn  
-          statusDict[username][group].append(st)
+          statusDict[group].append(st)
         continue
 
       voData = result['Value']
@@ -646,7 +645,7 @@ class ProxyManagerHandler(RequestHandler):
             groupDict[group].remove(dn)
           st = {'Status': 'failed', 'DN': dn,
                 'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo}
-          statusDict[username][group].append(st)
+          statusDict[group].append(st)
           continue
         
         role = getGroupOption(group, 'VOMSRole')
@@ -656,7 +655,7 @@ class ProxyManagerHandler(RequestHandler):
               groupDict[group].remove(dn)
             st = {'Status': 'suspended', 'DN': dn,
                   'Comment': 'User suspended'}
-            statusDict[username][group].append(st)
+            statusDict[group].append(st)
             continue
         else: 
           if role not in voData[dn]['VOMSRoles']:
@@ -664,14 +663,14 @@ class ProxyManagerHandler(RequestHandler):
               groupDict[group].remove(dn)
             st = {'Status': 'failed', 'DN': dn,
                   'Comment': 'You have no %s VOMS role depended for this group' % role}
-            statusDict[username][group].append(st)
+            statusDict[group].append(st)
             continue
           if role in voData[dn]['SuspendedRoles']:
             if dn in groupDict[group]:
               groupDict[group].remove(dn)
             st = {'Status': 'suspended', 'DN': dn,
                   'Comment': 'User suspended for %s VOMS role.' % role}
-            statusDict[username][group].append(st)
+            statusDict[group].append(st)
             continue
 
     # Check DNs by proxy providers
@@ -687,20 +686,20 @@ class ProxyManagerHandler(RequestHandler):
               "Comment": 'proxy uploaded end valid to %s' % time}
         for group, dns in groupDict.items():
           if not _group or _group == group:
-            if group not in statusDict[username]:
-              statusDict[username][group] = []
+            if group not in statusDict:
+              statusDict[group] = []
             if dn in dns:
-              statusDict[username][group].append(st)
+              statusDict[group].append(st)
       
       if prov == 'Certificate':
         for dn in dns:
           st = {'Status': 'not ready', 'DN': dn,
                 "Comment": 'proxy need to upload'}
           for group, dns in groupDict.items():
-            if group not in statusDict[username]:
-              statusDict[username][group] = []
+            if group not in statusDict:
+              statusDict[group] = []
             if dn in dns:
-              statusDict[username][group].append(st)
+              statusDict[group].append(st)
         continue
       
       result = ProxyProviderFactory().getProxyProvider(proxyProvider)
@@ -712,10 +711,10 @@ class ProxyManagerHandler(RequestHandler):
         st = result['Value'] if result['OK'] else {'Status': 'unknown', "Comment": result['Message']}
         st['DN'] = dn
         for group, dns in groupDict.items():
-          if group not in statusDict[username]:
-            statusDict[username][group] = []
+          if group not in statusDict:
+            statusDict[group] = []
           if dn in dns:
-            statusDict[username][group].append(st)
+            statusDict[group].append(st)
     
     return S_OK(statusDict)
 

@@ -1428,7 +1428,7 @@ Cheers,
         return S_OK(provider)
     return S_OK('Certificate')
   
-  def getValidDNs(self, listDNs):
+  def getValidDNs(self, listDNs, sqlCond=None):
     """ Get valid DNs
 
         :param list listDNs: list DNs
@@ -1442,7 +1442,7 @@ Cheers,
     if sqlCond:
       sqlWhere += (list(sqlCond) if isinstance(sqlCond, (list, tuple)) else [sqlCond])
     for table, exfield in [('ProxyDB_CleanProxies', ''), ('ProxyDB_Proxies', ', UserGroup')]:
-      cmd = "SELECT UserDN, ExpirationTime%s FROM `%s`" % (", ".join(fields), table)
+      cmd = "SELECT UserDN, ExpirationTime%s FROM `%s`" % (exfield, table)
       for field in selDict:
         if field not in fields:
           continue
