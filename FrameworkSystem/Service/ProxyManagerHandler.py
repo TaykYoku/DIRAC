@@ -590,7 +590,7 @@ class ProxyManagerHandler(RequestHandler):
       if not result['OK']:
         return result
       for dn in result['Value']:
-        reuslt = self.__db.getProxyProviderForDN(dn, username=username)
+        reuslt = self.__proxyDB.getProxyProviderForDN(dn, username=username)
         if not result['OK']:
           return result
         pProvider = result['Value']
@@ -677,7 +677,7 @@ class ProxyManagerHandler(RequestHandler):
     # Check DNs by proxy providers
     for prov, dns in provDict.items():
       
-      result = self.__db.getValidDNs(dns)
+      result = self.__proxyDB.getValidDNs(dns)
       if not result['OK']:
         return result
       for dn, time, _group in result['Value']:
