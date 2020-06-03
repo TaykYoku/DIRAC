@@ -590,7 +590,7 @@ class ProxyManagerHandler(RequestHandler):
       if not result['OK']:
         return result
       for dn in result['Value']:
-        reuslt = self.__proxyDB.getProxyProviderForDN(dn, username=username)
+        result = self.__proxyDB.getProxyProviderForDN(dn, username=username)
         if not result['OK']:
           return result
         pProvider = result['Value']
