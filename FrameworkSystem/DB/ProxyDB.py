@@ -1441,19 +1441,9 @@ Cheers,
     sqlWhere = ["Pem is not NULL"]
     if sqlCond:
       sqlWhere += (list(sqlCond) if isinstance(sqlCond, (list, tuple)) else [sqlCond])
+    sqlWhere.append("UserDN in (%s)" % ", ".join([self._escapeString(str(v))['Value'] for v in listDNs]))
     for table, exfield in [('ProxyDB_CleanProxies', ''), ('ProxyDB_Proxies', ', UserGroup')]:
       cmd = "SELECT UserDN, ExpirationTime%s FROM `%s`" % (exfield, table)
-      for field in selDict:
-        if field not in fields:
-          continue
-        fVal = selDict[field]
-        if isinstance(fVal, (dict, tuple, list)):
-          if fVal:
-            sqlWhere.append("%s in (%s)" %
-                            (field, ", ".join([self._escapeString(str(value))['Value'] for value in fVal])))
-        else:
-          sqlWhere.append("%s = %s" % (field, self._escapeString(str(fVal))['Value']))
-
       result = self._query("%s WHERE %s ORDER BY UserDN DESC" % (cmd, " AND ".join(sqlWhere)))
       if not result['OK']:
         return result
