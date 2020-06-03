@@ -19,6 +19,7 @@ from DIRAC.Core.Security.VOMSService import VOMSService
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
+from DIRAC.Core.Utilities.Decorators import deprecated
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ConfigurationSystem.Client import PathFinder
