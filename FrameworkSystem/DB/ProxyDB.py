@@ -1435,8 +1435,7 @@ Cheers,
 
         :return: S_OK()/S_ERROR()
     """
-    selDict = {'UserDN': listDNs}
-    listDNs = []
+    dns = []
     dataRecords = []
     sqlWhere = ["Pem is not NULL"]
     if sqlCond:
@@ -1451,8 +1450,8 @@ Cheers,
         record = list(record)
         if len(record) == 2:
           record.append(None)
-        if record[0] in listDNs:
+        if record[0] in dns:
           continue
-        listDNs.append(record[0])
+        dns.append(record[0])
         dataRecords.append(record)
     return S_OK(dataRecords)
