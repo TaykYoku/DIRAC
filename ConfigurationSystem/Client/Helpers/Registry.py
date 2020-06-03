@@ -11,10 +11,10 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 from DIRAC.FrameworkSystem.Client.ProxyManagerData import gProxyManagerData
 from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
 
-try:
-  from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
-except ImportError:
-  pass
+# try:
+#   from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+# except ImportError:
+#   pass
 
 __RCSID__ = "$Id$"
 
@@ -684,30 +684,30 @@ def getDNProperty(dn, prop, defaultValue=None, username=None):
   return S_OK(defaultValue)
 
 
-def getProxyProviderForDN(userDN):
-  """ Get proxy providers by user DN
+# def getProxyProviderForDN(userDN):
+#   """ Get proxy providers by user DN
 
-      :param str userDN: user DN
+#       :param str userDN: user DN
 
-      :return: S_OK(str)/S_ERROR()
-  """
-  result = getUsernameForDN(userDN)
-  if not result['OK']:
-    return result
-  username = result['Value']
+#       :return: S_OK(str)/S_ERROR()
+#   """
+#   result = getUsernameForDN(userDN)
+#   if not result['OK']:
+#     return result
+#   username = result['Value']
 
-  result = getDNProperty(userDN, 'ProxyProviders', username=username)
-  if result['OK'] and result['Value']:
-    return S_OK(result['Value'])
+#   result = getDNProperty(userDN, 'ProxyProviders', username=username)
+#   if result['OK'] and result['Value']:
+#     return S_OK(result['Value'])
 
-  for userID in getIDsForUsername(username):
-    result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'Provider')
-    if result['OK']:
-      provider = result['Value']
-      if provider:
-        return S_OK(provider)
+#   for userID in getIDsForUsername(username):
+#     result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'Provider')
+#     if result['OK']:
+#       provider = result['Value']
+#       if provider:
+#         return S_OK(provider)
 
-  return S_OK('Certificate')
+#   return S_OK('Certificate')
 
 
 def isDownloadableGroup(groupName):
@@ -765,18 +765,18 @@ def getVOsWithVOMS(voList=None):
   return S_OK(vos)
 
 
-def getProviderForID(userID):
-  """ Search identity provider for user ID
+# def getProviderForID(userID):
+#   """ Search identity provider for user ID
 
-      :param str ID: user ID
+#       :param str ID: user ID
 
-      :return: S_OK(str)/S_ERROR()
-  """
-  return gOAuthManagerData.getIdPForID(userID)
-  # provider = gOAuthManagerData.getIdPForID(userID)
-  # if provider:
-  #   return S_OK(provider)
-  # return S_ERROR('Cannot find identity providers for %s' % userID)
+#       :return: S_OK(str)/S_ERROR()
+#   """
+#   return gOAuthManagerData.getIdPForID(userID)
+#   # provider = gOAuthManagerData.getIdPForID(userID)
+#   # if provider:
+#   #   return S_OK(provider)
+#   # return S_ERROR('Cannot find identity providers for %s' % userID)
 
 
 def getDNsForUsername(username):
@@ -851,105 +851,95 @@ def getDNsForUsernameInGroup(username, group, checkStatus=False):
   return S_ERROR('For %s@%s not found DN%s.' % (username, group, ' or it suspended' if checkStatus else ''))
 
 
-def getGroupsStatusByUsername(username):
-  """ Get status of every group for DIRAC user
+# def getGroupsStatusByUsername(username):
+#   """ Get status of every group for DIRAC user
 
-      :param str username: user name
+#       :param str username: user name
 
-      :return: S_OK(dict)/S_ERROR()
-  """
-  statusDict = {}
-  result = getGroupsForUser(username)
-  if not result['OK']:
-    return result
-  for group in result['Value']:
-    result = getStatusGroupByUsername(group, username)
-    if not result['OK']:
-      return result
-    statusDict[group] = result['Value']
-  return S_OK(statusDict)
+#       :return: S_OK(dict)/S_ERROR()
+#   """
+#   statusDict = {}
+#   result = getGroupsForUser(username)
+#   if not result['OK']:
+#     return result
+#   for group in result['Value']:
+#     result = getStatusGroupByUsername(group, username)
+#     if not result['OK']:
+#       return result
+#     statusDict[group] = result['Value']
+#   return S_OK(statusDict)
 
 
-def getStatusGroupByUsername(group, username):
-  """ Get status of group for DIRAC user
+# def getStatusGroupByUsername(group, username):
+#   """ Get status of group for DIRAC user
 
-      :param str group: group name
-      :param str username: user name
+#       :param str group: group name
+#       :param str username: user name
 
-      :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
-               {'Status': <status of group>, 'Comment': <information what need to do>}
-  """
-  result = getDNForUsernameInGroup(username, group)
-  if not result['OK']:
-    return result
-  dn = result['Value']
+#       :return: S_OK(dict)/S_ERROR() -- dict contain next structure:
+#                {'Status': <status of group>, 'Comment': <information what need to do>}
+#   """
+#   result = getDNForUsernameInGroup(username, group)
+#   if not result['OK']:
+#     return result
+#   dn = result['Value']
   
-  vo = getGroupOption(group, 'VO')
+#   vo = getGroupOption(group, 'VO')
 
-  # Check VOMS VO
-  result = getVOsWithVOMS(voList=[vo])
-  if not result['OK']:
-    return result
-  if result['Value']:
-    role = getGroupOption(group, 'VOMSRole')
+#   # Check VOMS VO
+#   result = getVOsWithVOMS(voList=[vo])
+#   if not result['OK']:
+#     return result
+#   if result['Value']:
+#     role = getGroupOption(group, 'VOMSRole')
     
-    result = getVOMSInfo(vo=vo, dn=dn)
-    if not result['OK']:
-      return result
-    vomsData = result['Value']
+#     result = getVOMSInfo(vo=vo, dn=dn)
+#     if not result['OK']:
+#       return result
+#     vomsData = result['Value']
 
-    if vo in vomsData:
-      if not vomsData[vo]['OK']:
-        return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Message']})
-    else:
-      return S_OK({'Status': 'unknown',
-                   'Comment': 'Fail to get %s VOMS VO information depended for this group' % vo})
-    voData = vomsData[vo]['Value']
-    if dn not in voData:
-      return S_OK({'Status': 'failed',
-                   'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo})
-    if not role:
-      if voData[dn]['Suspended']:
-        return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
-    else: 
-      if role not in voData[dn]['VOMSRoles']:
-        return S_OK({'Status': 'failed',
-                     'Comment': 'You have no %s VOMS role depended for this group' % role})
-      if role in voData[dn]['SuspendedRoles']:
-        return S_OK({'Status': 'suspended',
-                     'Comment': 'User suspended for %s VOMS role.' % role})
+#     if vo in vomsData:
+#       if not vomsData[vo]['OK']:
+#         return S_OK({'Status': 'unknown', 'Comment': vomsData[vo]['Message']})
+#     else:
+#       return S_OK({'Status': 'unknown',
+#                    'Comment': 'Fail to get %s VOMS VO information depended for this group' % vo})
+#     voData = vomsData[vo]['Value']
+#     if dn not in voData:
+#       return S_OK({'Status': 'failed',
+#                    'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo})
+#     if not role:
+#       if voData[dn]['Suspended']:
+#         return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
+#     else: 
+#       if role not in voData[dn]['VOMSRoles']:
+#         return S_OK({'Status': 'failed',
+#                      'Comment': 'You have no %s VOMS role depended for this group' % role})
+#       if role in voData[dn]['SuspendedRoles']:
+#         return S_OK({'Status': 'suspended',
+#                      'Comment': 'User suspended for %s VOMS role.' % role})
 
-  # vomsRole = getGroupOption(group, 'VOMSRole')
-  # if vomsRole:
-  #   result = gProxyManagerData.getActualVOMSesDNs([dn])
-  #   dnDict = result['Value'].get(dn, {}) if result['OK'] else {}
-  #   if vomsRole not in dnDict.get('VOMSRoles', []):
-  #     return S_OK({'Status': 'failed',
-  #                  'Comment': 'You have no %s VOMS role depended for this group' % vomsRole})
-  #   if (vomsRole in dnDict.get('SuspendedRoles', [])) or dnDict.get('suspended'):
-  #     return S_OK({'Status': 'suspended', 'Comment': 'User suspended'})
+#   result = gProxyManagerData.userHasProxy(username, group)
+#   if not result['OK']:
+#     return result
+#   if not result['Value']:
+#     result = getProxyProviderForDN(dn)
+#     if not result['OK']:
+#       return result
+#     proxyProvider = result['Value']
+#     if proxyProvider == 'Certificate':
+#       return S_OK({'Status': 'needToUpload', 'Comment': 'Need to upload %s certificate' % dn})
 
-  result = gProxyManagerData.userHasProxy(username, group)
-  if not result['OK']:
-    return result
-  if not result['Value']:
-    result = getProxyProviderForDN(dn)
-    if not result['OK']:
-      return result
-    proxyProvider = result['Value']
-    if proxyProvider == 'Certificate':
-      return S_OK({'Status': 'needToUpload', 'Comment': 'Need to upload %s certificate' % dn})
+#     try:
+#       ProxyProviderFactory()
+#     except Exception:
+#       from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+#     providerRes = ProxyProviderFactory().getProxyProvider(proxyProvider)
+#     if not providerRes['OK']:
+#       return providerRes
+#     return providerRes['Value'].checkStatus(dn)
 
-    try:
-      ProxyProviderFactory()
-    except Exception:
-      from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
-    providerRes = ProxyProviderFactory().getProxyProvider(proxyProvider)
-    if not providerRes['OK']:
-      return providerRes
-    return providerRes['Value'].checkStatus(dn)
-
-  return S_OK({'Status': 'ready', 'Comment': 'Proxy uploaded'})
+#   return S_OK({'Status': 'ready', 'Comment': 'Proxy uploaded'})
 
 
 def findSomeDNToUseForGroupsThatNotNeedDN(username):
