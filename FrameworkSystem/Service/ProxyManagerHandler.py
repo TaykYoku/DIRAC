@@ -606,7 +606,7 @@ class ProxyManagerHandler(RequestHandler):
       if group not in statusDict[username]:
         statusDict[username][group] = []
 
-      vo = getGroupOption(group, 'VO')
+      vo = Registry.getGroupOption(group, 'VO')
 
       result = Registry.getVOsWithVOMS(voList=[vo])
       if not result['OK']:
