@@ -462,14 +462,23 @@ def getFilterConfig(filterID):
   return gConfig.getOptionsDict('Resources/LogFilters/%s' % filterID)
 
 
-def getProvidersForInstance(instance):
+def getProvidersForInstance(instance, providerType=None):
   """ Get providers for instance
 
       :param str instance: instance of what this providers
+      ;param str providerType: provider type
 
       :return: S_OK(list)/S_ERROR()
   """
-  return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, instance))
+  result = gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, instance))
+  if not result['OK'] or not result['Value'] or (result['OK'] and not providerType):
+    return result
+  data = []
+  for prov in result['Value']:
+    if providerType == gConfig.getValue('%s/%sProviders/%s/ProviderType' %
+                                        (gBaseResourcesSection, instance, prov)):
+      data.append(prov)
+  return S_OK(data)
 
 
 def getProviderByAlias(alias, instance=None):
