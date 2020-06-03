@@ -510,7 +510,7 @@ class ProxyDB(DB):
         :return: S_OK(tuple)/S_ERROR() -- tuple with proxy as chain and proxy live time in a seconds
     """
     # Try to get proxy
-    result = Registry.getProxyProviderForDN(userDN)
+    result = self.getProxyProviderForDN(userDN)
     if not result['OK']:
       return result
     if result['Value'] == 'Certificate':
@@ -1015,7 +1015,7 @@ class ProxyDB(DB):
           gLogger.error(result['Message'])
           continue
         groups = result['Value']
-        result = Registry.getProxyProviderForDN(record[0])
+        result = self.getProxyProviderForDN(record[0])
         if not result['OK']:
           gLogger.error(result['Message'])
           continue
@@ -1401,7 +1401,7 @@ Cheers,
     self.logAction("store proxy", userName, userGroup, userName, userGroup)
     return self._update(cmd)
 
-  def getProxyProviderForUserDN(self, userDN, username=None):
+  def getProxyProviderForDN(self, userDN, username=None):
     """ Get proxy providers by user DN
 
         :param str userDN: user DN
