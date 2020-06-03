@@ -24,6 +24,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
+from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
 
 
 class ProxyDB(DB):
@@ -1399,3 +1400,69 @@ Cheers,
 
     self.logAction("store proxy", userName, userGroup, userName, userGroup)
     return self._update(cmd)
+
+  def getProxyProviderForUserDN(self, userDN, username=None):
+    """ Get proxy providers by user DN
+
+        :param str userDN: user DN
+        :param str username: user name
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    if not username:
+      result = Registry.getUsernameForDN(userDN)
+      if not result['OK']:
+        return result
+      username = result['Value']
+
+    result = Registry.getDNProperty(userDN, 'ProxyProviders', username=username)
+    if result['OK'] and result['Value']:
+      return S_OK(result['Value'])
+
+    for userID in Registry.getIDsForUsername(username):
+      result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'PROVIDER')
+      if not result['OK']:
+        return result
+      provider = result['Value']
+      if provider:
+        return S_OK(provider)
+    return S_OK('Certificate')
+  
+  def getValidDNs(self, listDNs):
+    """ Get valid DNs
+
+        :param list listDNs: list DNs
+
+        :return: S_OK()/S_ERROR()
+    """
+    selDict = {'UserDN': listDNs}
+    listDNs = []
+    dataRecords = []
+    sqlWhere = ["Pem is not NULL"]
+    if sqlCond:
+      sqlWhere += (list(sqlCond) if isinstance(sqlCond, (list, tuple)) else [sqlCond])
+    for table, exfield in [('ProxyDB_CleanProxies', ''), ('ProxyDB_Proxies', ', UserGroup')]:
+      cmd = "SELECT UserDN, ExpirationTime%s FROM `%s`" % (", ".join(fields), table)
+      for field in selDict:
+        if field not in fields:
+          continue
+        fVal = selDict[field]
+        if isinstance(fVal, (dict, tuple, list)):
+          if fVal:
+            sqlWhere.append("%s in (%s)" %
+                            (field, ", ".join([self._escapeString(str(value))['Value'] for value in fVal])))
+        else:
+          sqlWhere.append("%s = %s" % (field, self._escapeString(str(fVal))['Value']))
+
+      result = self._query("%s WHERE %s ORDER BY UserDN DESC" % (cmd, " AND ".join(sqlWhere)))
+      if not result['OK']:
+        return result
+      for record in result['Value']:
+        record = list(record)
+        if len(record) == 2:
+          record.append(None)
+        if record[0] in listDNs:
+          continue
+        listDNs.append(record[0])
+        dataRecords.append(record)
+    return S_OK(dataRecords)

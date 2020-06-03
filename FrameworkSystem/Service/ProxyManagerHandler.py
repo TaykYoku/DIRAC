@@ -27,7 +27,6 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 # from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOsWithVOMS, getVOOption, getGroupsForVO,\
 #     getVOs, getPropertiesForGroup, isDownloadableGroup, getUsernameForDN
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
-from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
 from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 
 gVOMSCacheSync = ThreadSafe.Synchronizer()
@@ -550,35 +549,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, vomsAttribute=vomsAttribute)
 
-
-  def __getProxyProviderForUserDN(self, userDN, username=None):
-    """ Get proxy providers by user DN
-
-        :param str userDN: user DN
-        :param str username: user name
-
-        :return: S_OK(str)/S_ERROR()
-    """
-    if not username:
-      result = Registry.getUsernameForDN(userDN)
-      if not result['OK']:
-        return result
-      username = result['Value']
-
-    result = Registry.getDNProperty(userDN, 'ProxyProviders', username=username)
-    if result['OK'] and result['Value']:
-      return S_OK(result['Value'])
-
-    for userID in Registry.getIDsForUsername(username):
-      result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'PROVIDER')
-      if not result['OK']:
-        return result
-      provider = result['Value']
-      if provider:
-        return S_OK(provider)
-    return S_OK('Certificate')
-
-  types_getGroupsStatusByUsername = []
+  types_getGroupsStatusByUsername = [str]
 
   def export_getGroupsStatusByUsername(self, username, groups=None):
     """ Get status of every group for DIRAC user:
@@ -615,11 +586,11 @@ class ProxyManagerHandler(RequestHandler):
     for group in groups:
       if group not in groupDict:
         groupDict[group] = []
-      result = getDNsForUsernameInGroup(username, group)
+      result = Registry.getDNsForUsernameInGroup(username, group)
       if not result['OK']:
         return result
       for dn in result['Value']:
-        reuslt = self.__getProxyProviderForUserDN(dn, username)
+        reuslt = self.__db.getProxyProviderForUserDN(dn, username=username)
         if not result['OK']:
           return result
         pProvider = result['Value']
@@ -642,72 +613,86 @@ class ProxyManagerHandler(RequestHandler):
         return result
       if not result['Value']:
         continue
+      # result = gProxyManagerData.getActualVOMSesDNs(voList=[vo], dnList=dns)
+      
+      result = self.getVOMSInfoFromCache(vo)
+      if not result:
+        result = self.getVOMSInfoFromFile(vo)
+        if result['OK']:
+          result = result['Value']
+        result = S_ERROR('No information from "%s" VOMS VO' % vo)
 
-      role = getGroupOption(group, 'VOMSRole')
-      result = gProxyManagerData.getActualVOMSesDNs(voList=[vo], dnList=dns)
-      if not result['OK']:
-        return result
-      vomsData = result['Value']
-
-      if vo not in vomsData:
+      if not result:
         st = {'Status': 'unknown', "Comment": 'Fail to get %s VOMS VO information depended for this group' % vo}
         for dn in dns:
-          groupDict[group].delete(dn)
+          if dn in groupDict[group]:
+            groupDict[group].remove(dn)
           st['DN'] = dn  
           statusDict[username][group].append(st)
         continue
-      if not vomsData[vo]['OK']:
-        st = {'Status': 'unknown', "Comment": vomsData[vo]['Message']}
+      if not result['OK']:
+        st = {'Status': 'unknown', "Comment": result['Message']}
         for dn in dns:
-          groupDict[group].delete(dn)
+          if dn in groupDict[group]:
+            groupDict[group].remove(dn)
           st['DN'] = dn  
           statusDict[username][group].append(st)
         continue
 
-        voData = vomsData[vo]['Value']
-        for dn in dns:
-          if dn not in voData:
-            groupDict[group].delete(dn)
-            st = {'Status': 'failed', 'DN': dn,
-                  'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo}
+      voData = result['Value']
+      for dn in dns:
+        if dn not in voData:
+          if dn in groupDict[group]:
+            groupDict[group].remove(dn)
+          st = {'Status': 'failed', 'DN': dn,
+                'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo}
+          statusDict[username][group].append(st)
+          continue
+        
+        role = getGroupOption(group, 'VOMSRole')
+        if not role:
+          if voData[dn]['Suspended']:
+            if dn in groupDict[group]:
+              groupDict[group].remove(dn)
+            st = {'Status': 'suspended', 'DN': dn,
+                  'Comment': 'User suspended'}
             statusDict[username][group].append(st)
             continue
-          if not role:
-            if voData[dn]['Suspended']:
-              groupDict[group].delete(dn)
-              st = {'Status': 'suspended', 'DN': dn,
-                    'Comment': 'User suspended'}
-              statusDict[username][group].append(st)
-              continue
-          else: 
-            if role not in voData[dn]['VOMSRoles']:
-              groupDict[group].delete(dn)
-              st = {'Status': 'failed', 'DN': dn,
-                    'Comment': 'You have no %s VOMS role depended for this group' % role}
-              statusDict[username][group].append(st)
-              continue
-            if role in voData[dn]['SuspendedRoles']:
-              groupDict[group].delete(dn)
-              st = {'Status': 'suspended', 'DN': dn,
-                    'Comment': 'User suspended for %s VOMS role.' % role}
-              statusDict[username][group].append(st)
-              continue
+        else: 
+          if role not in voData[dn]['VOMSRoles']:
+            if dn in groupDict[group]:
+              groupDict[group].remove(dn)
+            st = {'Status': 'failed', 'DN': dn,
+                  'Comment': 'You have no %s VOMS role depended for this group' % role}
+            statusDict[username][group].append(st)
+            continue
+          if role in voData[dn]['SuspendedRoles']:
+            if dn in groupDict[group]:
+              groupDict[group].remove(dn)
+            st = {'Status': 'suspended', 'DN': dn,
+                  'Comment': 'User suspended for %s VOMS role.' % role}
+            statusDict[username][group].append(st)
+            continue
 
     # Check DNs by proxy providers
     for prov, dns in provDict.items():
-      if prov == 'Certificate':
-        # TODO: ===> select DN, Time in proxy_table where DN IN ("%s" % ", ".join(dns));
-        
-        for data in result['Value']:
-          dns.delete(dn)
-          dn = data['DN']
-          st = {'Status': 'ready', 'DN': dn,
-                "Comment": 'proxy uploaded end valid to %s' % data['expiredtime']}
-          for group, dns in groupDict.items():
+      
+      result = self.__db.getValidDNs(dns)
+      if not result['OK']:
+        return result
+      for dn, time, _group in result['Value']:
+        if dn in dns:
+          dns.remove(dn)
+        st = {'Status': 'ready', 'DN': dn,
+              "Comment": 'proxy uploaded end valid to %s' % time}
+        for group, dns in groupDict.items():
+          if not _group or _group == group:
             if group not in statusDict[username]:
               statusDict[username][group] = []
             if dn in dns:
               statusDict[username][group].append(st)
+      
+      if prov == 'Certificate':
         for dn in dns:
           st = {'Status': 'not ready', 'DN': dn,
                 "Comment": 'proxy need to upload'}
