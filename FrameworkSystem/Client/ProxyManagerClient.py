@@ -447,7 +447,7 @@ class ProxyManagerClient(object):
     return RPCClient("Framework/ProxyManager", timeout=120).deleteProxyBundle(listIDs)
   
   def getGroupsStatusByUsername(self, username, groups=None):
-        """ Get status of every group for DIRAC user:
+    """ Get status of every group for DIRAC user:
           {
             <user>: {
               <group>: [
