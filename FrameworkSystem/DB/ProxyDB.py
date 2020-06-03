@@ -1415,9 +1415,9 @@ Cheers,
         return result
       username = result['Value']
 
-    result = Registry.getDNProperty(userDN, 'ProxyProviders', username=username)
+    result = Registry.getDNProperty(userDN, 'ProxyProviders', username=username, defaultValue=[])
     if result['OK'] and result['Value']:
-      return S_OK(result['Value'])
+      return S_OK(result['Value'][0])
 
     for userID in Registry.getIDsForUsername(username):
       result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'PROVIDER')
