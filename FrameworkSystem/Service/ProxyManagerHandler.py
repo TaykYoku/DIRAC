@@ -118,9 +118,9 @@ class ProxyManagerHandler(RequestHandler):
       """
       usersDict = {}
       result = S_ERROR('Cannot found administrators for %s VOMS VO' % vo)
-      voAdmins = getVOOption(vo, "VOAdmin", [])
+      voAdmins = Registry.getVOOption(vo, "VOAdmin", [])
 
-      for group in getGroupsForVO(vo).get('Value') or []:
+      for group in Registry.getGroupsForVO(vo).get('Value') or []:
         for user in voAdmins:
           # Try to get proxy for any VO admin
           result = cls.__proxyDB.getProxy(user, group, 1800)
@@ -142,7 +142,7 @@ class ProxyManagerHandler(RequestHandler):
 
     gLogger.info('Update VOMSes information..')
     if not voList:
-      result = getVOsWithVOMS()
+      result = Registry.getVOsWithVOMS()
       if not result['OK']:
         return result
       voList = result['Value']
@@ -193,7 +193,7 @@ class ProxyManagerHandler(RequestHandler):
         :return: S_OK(dict)/S_ERROR()
     """
     VOMSesUsers = self.getVOMSInfoFromCache()
-    result = getVOs()
+    result = Registry.getVOs()
     if not result['OK']:
       return result
     for vo in result['Value']:
@@ -323,7 +323,7 @@ class ProxyManagerHandler(RequestHandler):
     if Properties.PRIVATE_LIMITED_DELEGATION in credDict['properties']:
       if credDict['username'] != requestedUsername:
         return S_ERROR("You are not allowed to download any proxy")
-      if Properties.PRIVATE_LIMITED_DELEGATION not in getPropertiesForGroup(requestedUserGroup):
+      if Properties.PRIVATE_LIMITED_DELEGATION not in Registry.getPropertiesForGroup(requestedUserGroup):
         return S_ERROR("You can't download proxies for that group")
       return S_OK(True)
     # Not authorized!
@@ -354,12 +354,12 @@ class ProxyManagerHandler(RequestHandler):
         :return: S_OK(str)/S_ERROR()
     """
     # Test that group enable to download
-    if not isDownloadableGroup(group):
+    if not Registry.isDownloadableGroup(group):
       return S_ERROR('"%s" group is disable to download.' % group)
 
     # WARN: Next block for compatability
     if not user.find("/"):  # Is it DN?
-      result = getUsernameForDN(user)
+      result = Registry.getUsernameForDN(user)
       if not result['OK']:
         return result
       user = result['Value']
@@ -424,7 +424,7 @@ class ProxyManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    result = getUsernameForDN(userDN)
+    result = Registry.getUsernameForDN(userDN)
     if not result['OK']:
       return result
     username = result['Value']
@@ -491,7 +491,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     # WARN: Next block for compatability
     if not requesterUsername.find("/"):  # Is it DN?
-      result = getUsernameForDN(requesterUsername)
+      result = Registry.getUsernameForDN(requesterUsername)
       if not result['OK']:
         return result
       requesterUsername = result['Value']
@@ -637,7 +637,7 @@ class ProxyManagerHandler(RequestHandler):
 
       vo = getGroupOption(group, 'VO')
 
-      result = getVOsWithVOMS(voList=[vo])
+      result = Registry.getVOsWithVOMS(voList=[vo])
       if not result['OK']:
         return result
       if not result['Value']:
