@@ -688,7 +688,7 @@ class ProxyManagerHandler(RequestHandler):
             if role in voData[dn]['SuspendedRoles']:
               groupDict[group].delete(dn)
               st = {'Status': 'suspended', 'DN': dn,
-                    'Comment': 'User suspended for %s VOMS role.' % role})
+                    'Comment': 'User suspended for %s VOMS role.' % role}
               statusDict[username][group].append(st)
               continue
 
