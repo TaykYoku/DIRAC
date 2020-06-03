@@ -22,9 +22,12 @@ from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ConfigurationSystem.Client import PathFinder
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOsWithVOMS, getVOOption, getGroupsForVO,\
-    getVOs, getPropertiesForGroup, isDownloadableGroup, getUsernameForDN, getDNForUsernameInGroup
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+# from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOsWithVOMS, getVOOption, getGroupsForVO,\
+#     getVOs, getPropertiesForGroup, isDownloadableGroup, getUsernameForDN
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
+from OAuthDIRAC.FrameworkSystem.Client.OAuthManagerData import gOAuthManagerData
+from DIRAC.Resources.ProxyProvider.ProxyProviderFactory import ProxyProviderFactory
 
 gVOMSCacheSync = ThreadSafe.Synchronizer()
 gVOMSFileSync = ThreadSafe.Synchronizer()
@@ -327,19 +330,12 @@ class ProxyManagerHandler(RequestHandler):
 
   types_getProxy = [basestring, basestring, basestring, six.integer_types]
 
-  def export_getProxy(
-          self,
-          user,
-          userGroup,
-          requestPem,
-          requiredLifetime,
-          token=None,
-          vomsAttribute=None,
-          personal=False):
-    """ Get a proxy for a user/userGroup
+  def export_getProxy(self, user, group, requestPem, requiredLifetime,
+                      token=None, vomsAttribute=None, personal=False):
+    """ Get a proxy for a user/group
 
         :param str user: user name
-        :param str userGroup: DIRAC group
+        :param str group: DIRAC group
         :param str requestPem: PEM encoded request object for delegation
         :param int requiredLifetime: Argument for length of proxy
         :param str token: token that need to use
@@ -357,8 +353,8 @@ class ProxyManagerHandler(RequestHandler):
         :return: S_OK(str)/S_ERROR()
     """
     # Test that group enable to download
-    if not isDownloadableGroup(userGroup):
-      return S_ERROR('"%s" group is disable to download.' % userGroup)
+    if not isDownloadableGroup(group):
+      return S_ERROR('"%s" group is disable to download.' % group)
 
     # WARN: Next block for compatability
     if not user.find("/"):  # Is it DN?
@@ -376,15 +372,15 @@ class ProxyManagerHandler(RequestHandler):
       if not result['Value']:
         return S_ERROR("Proxy token is invalid")
 
-    result = self.__checkProperties(user, userGroup, credDict, personal)
+    result = self.__checkProperties(user, group, credDict, personal)
     if not result['OK']:
       return result
     forceLimited = True if token else result['Value']
 
     log = "download %sproxy%s" % ('VOMS ' if vomsAttribute else '', 'with token' if token else '')
-    self.__proxyDB.logAction(log, credDict['username'], credDict['group'], user, userGroup)
+    self.__proxyDB.logAction(log, credDict['username'], credDict['group'], user, group)
 
-    retVal = self.__proxyDB.getProxy(user, userGroup, requiredLifeTime=requiredLifetime, voms=vomsAttribute)
+    retVal = self.__proxyDB.getProxy(user, group, requiredLifeTime=requiredLifetime, voms=vomsAttribute)
     if not retVal['OK']:
       return retVal
     chain, secsLeft = retVal['Value']
@@ -392,38 +388,6 @@ class ProxyManagerHandler(RequestHandler):
     requiredLifetime = int(min(secsLeft, requiredLifetime * self.__maxExtraLifeFactor))
     return chain.generateChainFromRequestString(requestPem, lifetime=requiredLifetime,
                                                 requireLimited=forceLimited)
-
-  types_setPersistency = [basestring, basestring, bool]
-
-  def export_setPersistency(self, user, userGroup, persistentFlag):
-    """ Set the persistency for a given DN/group
-
-        :param basestring user: user name
-        :param basestring userGroup: DIRAC group
-        :param bool persistentFlag: if proxy persistent
-
-        :return: S_OK()/S_ERROR()
-    """
-    userDN = user
-    # WARN: Next block for compatability
-    if not user.find("/"):  # Is it DN?
-      result = getUsernameForDN(user)
-      if not result['OK']:
-        return result
-      user = result['Value']
-    else:
-      result = getDNForUsernameInGroup(user, userGroup)
-      if not result['OK']:
-        return result
-      userDN = result['Value']
-
-    retVal = self.__proxyDB.setPersistencyFlag(userDN, userGroup, persistentFlag)
-    if not retVal['OK']:
-      return retVal
-    credDict = self.getRemoteCredentials()
-    self.__proxyDB.logAction("set persistency to %s" % bool(persistentFlag),
-                             credDict['username'], credDict['group'], user, userGroup)
-    return S_OK()
 
   types_deleteProxyBundle = [(list, tuple)]
 
@@ -584,3 +548,194 @@ class ProxyManagerHandler(RequestHandler):
         :return: S_OK(str)/S_ERROR()
     """
     return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, vomsAttribute=vomsAttribute)
+
+
+  def __getProxyProviderForUserDN(self, userDN, username=None):
+    """ Get proxy providers by user DN
+
+        :param str userDN: user DN
+        :param str username: user name
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    if not username:
+      result = Registry.getUsernameForDN(userDN)
+      if not result['OK']:
+        return result
+      username = result['Value']
+
+    result = Registry.getDNProperty(userDN, 'ProxyProviders', username=username)
+    if result['OK'] and result['Value']:
+      return S_OK(result['Value'])
+
+    for userID in Registry.getIDsForUsername(username):
+      result = gOAuthManagerData.getDNOptionForID(userID, userDN, 'PROVIDER')
+      if not result['OK']:
+        return result
+      provider = result['Value']
+      if provider:
+        return S_OK(provider)
+    return S_OK('Certificate')
+
+  types_getGroupsStatusByUsername = []
+
+  def export_getGroupsStatusByUsername(self, username, groups=None):
+    """ Get status of every group for DIRAC user:
+          {
+            <user>: {
+              <group>: [
+                {
+                  Status: ..,
+                  Comment: ..,
+                  DN: ..,
+                  Action: {
+                    <fn>: { <opns> }
+                  }
+                },
+                { ... }
+              ],
+              <group2>: [ ... ]
+            }
+          }
+
+        :param str username: user name
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    statusDict = {}
+    if not groups:
+      result = Registry.getGroupsForUser(username)
+      if not result['OK']:
+        return result
+      groups = result['Value']
+
+    provDict = {}
+    groupDict = {}
+    for group in groups:
+      if group not in groupDict:
+        groupDict[group] = []
+      result = getDNsForUsernameInGroup(username, group)
+      if not result['OK']:
+        return result
+      for dn in result['Value']:
+        reuslt = self.__getProxyProviderForUserDN(dn, username)
+        if not result['OK']:
+          return result
+        pProvider = result['Value']
+        if pProvider not in provDict:
+          provDict[pProvider] = []
+        provDict[pProvider] = list(set(provDict[pProvider] + [dn]))
+        groupDict[group] = list(set(groupDict[group] + [dn]))
+
+    statusDict = {username: {}}
+
+    # Check VOMS VO
+    for group, dns in groupDict.items():
+      if group not in statusDict[username]:
+        statusDict[username][group] = []
+
+      vo = getGroupOption(group, 'VO')
+
+      result = getVOsWithVOMS(voList=[vo])
+      if not result['OK']:
+        return result
+      if not result['Value']:
+        continue
+
+      role = getGroupOption(group, 'VOMSRole')
+      result = gProxyManagerData.getActualVOMSesDNs(voList=[vo], dnList=dns)
+      if not result['OK']:
+        return result
+      vomsData = result['Value']
+
+      if vo not in vomsData:
+        st = {'Status': 'unknown', "Comment": 'Fail to get %s VOMS VO information depended for this group' % vo}
+        for dn in dns:
+          groupDict[group].delete(dn)
+          st['DN'] = dn  
+          statusDict[username][group].append(st)
+        continue
+      if not vomsData[vo]['OK']:
+        st = {'Status': 'unknown', "Comment": vomsData[vo]['Message']}
+        for dn in dns:
+          groupDict[group].delete(dn)
+          st['DN'] = dn  
+          statusDict[username][group].append(st)
+        continue
+
+        voData = vomsData[vo]['Value']
+        for dn in dns:
+          if dn not in voData:
+            groupDict[group].delete(dn)
+            st = {'Status': 'failed', 'DN': dn,
+                  'Comment': 'You are not a member of %s VOMS VO depended for this group' % vo}
+            statusDict[username][group].append(st)
+            continue
+          if not role:
+            if voData[dn]['Suspended']:
+              groupDict[group].delete(dn)
+              st = {'Status': 'suspended', 'DN': dn,
+                    'Comment': 'User suspended'}
+              statusDict[username][group].append(st)
+              continue
+          else: 
+            if role not in voData[dn]['VOMSRoles']:
+              groupDict[group].delete(dn)
+              st = {'Status': 'failed', 'DN': dn,
+                    'Comment': 'You have no %s VOMS role depended for this group' % role}
+              statusDict[username][group].append(st)
+              continue
+            if role in voData[dn]['SuspendedRoles']:
+              groupDict[group].delete(dn)
+              st = {'Status': 'suspended', 'DN': dn,
+                    'Comment': 'User suspended for %s VOMS role.' % role})
+              statusDict[username][group].append(st)
+              continue
+
+    # Check DNs by proxy providers
+    for prov, dns in provDict.items():
+      if prov == 'Certificate':
+        # TODO: ===> select DN, Time in proxy_table where DN IN ("%s" % ", ".join(dns));
+        
+        for data in result['Value']:
+          dns.delete(dn)
+          dn = data['DN']
+          st = {'Status': 'ready', 'DN': dn,
+                "Comment": 'proxy uploaded end valid to %s' % data['expiredtime']}
+          for group, dns in groupDict.items():
+            if group not in statusDict[username]:
+              statusDict[username][group] = []
+            if dn in dns:
+              statusDict[username][group].append(st)
+        for dn in dns:
+          st = {'Status': 'not ready', 'DN': dn,
+                "Comment": 'proxy need to upload'}
+          for group, dns in groupDict.items():
+            if group not in statusDict[username]:
+              statusDict[username][group] = []
+            if dn in dns:
+              statusDict[username][group].append(st)
+        continue
+      
+      result = ProxyProviderFactory().getProxyProvider(proxyProvider)
+      if not result['OK']:
+        return result
+      pProvObj = result['Value']
+      for dn in dns:
+        result = pProvObj.checkStatus(dn)
+        st = result['Value'] if result['OK'] else {'Status': 'unknown', "Comment": result['Message']}
+        st['DN'] = dn
+        for group, dns in groupDict.items():
+          if group not in statusDict[username]:
+            statusDict[username][group] = []
+          if dn in dns:
+            statusDict[username][group].append(st)
+    
+    return S_OK(statusDict)
+
+
+  types_setPersistency = [basestring, basestring, bool]
+  @deprecated("Unuse")
+  def export_setPersistency(self, user, userGroup, persistentFlag):
+    """ Set the persistency for a given DN/group """
+    return S_OK(True)

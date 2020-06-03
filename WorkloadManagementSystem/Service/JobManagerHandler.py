@@ -203,11 +203,6 @@ class JobManagerHandler(RequestHandler):
 
       jobIDList.append(jobID)
 
-    # Set persistency flag
-    retVal = gProxyManager.getUserPersistence(self.owner, self.ownerGroup)
-    if not retVal.get('Value'):
-      gProxyManager.setPersistency(self.owner, self.ownerGroup, True)
-
     if parametricJob:
       result = S_OK(jobIDList)
     else:

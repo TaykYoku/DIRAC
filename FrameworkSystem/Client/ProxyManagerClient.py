@@ -58,29 +58,6 @@ class ProxyManagerClient(object):
     """
     return gProxyManagerData.userHasProxy(user, group, validSeconds)
 
-  def getUserPersistence(self, user, group, validSeconds=0):
-    """ Check if a user(DN-group) has a proxy in the proxy management
-        Updates internal cache if needed to minimize queries to the service
-
-        :param str user: user name
-        :param str group: user group
-        :param int validSeconds: proxy valid time in a seconds
-
-        :return: S_OK()/S_ERROR()
-    """
-    return gProxyManagerData.getUserPersistence(user, group, validSeconds)
-
-  def setPersistency(self, user, group, persistent):
-    """ Set the persistency for user/group
-
-        :param str user: user name
-        :param str group: user group
-        :param bool persistent: presistent flag
-
-        :return: S_OK()/S_ERROR()
-    """
-    return gProxyManagerData.setPersistency(user, group, persistent)
-
   def uploadProxy(self, proxy=None, restrictLifeTime=0, rfcIfPossible=False):
     """ Upload a proxy to the proxy management service using delegation
 

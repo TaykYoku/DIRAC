@@ -941,7 +941,7 @@ class ProxyDB(DB):
       if groups and users:
         for user in users:
           for group in groups:
-            result = Registry.getDNForUsernameInGroup(user, group)
+            result = Registry.getDNsForUsernameInGroup(user, group)
             if result['OK']:
               DNs.append(result['Value'])
       elif users:
@@ -969,7 +969,7 @@ class ProxyDB(DB):
       else:
         selDict["UserDN"] = DNs
 
-    dataDict = []
+    listData = []
     dataRecords = []
     sqlWhere = ["Pem is not NULL"]
     if sqlCond:
@@ -1020,19 +1020,19 @@ class ProxyDB(DB):
           continue
         provider = result['Value']
 
-        record[3] = record[3] == 'True'
-        dataDict.append({'DN': record[0],
+        #record[3] = record[3] == 'True'
+        listData.append({'DN': record[0],
                          'user': user,
                          'groups': [record[1]] if record[1] else groups,
                          'expirationtime': record[2],
-                         'persistent': record[3],
+                         #'persistent': record[3],
                          'provider': provider})
 
         record.insert(0, user)
         record.append(provider)
         dataRecords.append(record)
     return S_OK({'ParameterNames': paramNames, 'Records': dataRecords, 'TotalRecords': len(dataRecords),
-                 'Dictionaries': dataDict})
+                 'Dictionaries': listData})
 
   def logAction(self, action, issuerUsername, issuerGroup, targetUsername, targetGroup):
     """ Add an action to the log

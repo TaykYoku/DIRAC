@@ -15,9 +15,21 @@ gVOMSUsersSync = ThreadSafe.Synchronizer()
 class ProxyManagerData(object):
   """ Proxy manager client
 
-      Contain __VOMSesUsersCache cache, with next structure:
+      __usersCache cache, with following:
+        Key: (username, group)
+        Value: dict
+            { 
+              'DN': <certificate DN>,
+              'user': <user name>,
+              'groups': [<list of groups>], <--TODO: current group
+              'expirationtime': <date time>,
+              'provider': <proxy provider>
+            }
+
+      __VOMSesUsersCache cache, with next structure:
         Key: VOMS VO name
-        Value: S_OK(dict)/S_ERROR() -- dictionary contain:
+        Value: S_OK(dict)/S_ERROR() -- request VOMS information result that contain
+          dictionary with following:
             { <user DN>: {
                 Suspended: bool,
                 VOMSRoles: [<all roles>],
@@ -32,11 +44,36 @@ class ProxyManagerData(object):
     self.__usersCache = DictCache()
     self.__VOMSesUsersCache = DictCache()
 
+  @gUsersSync
+  @gVOMSUsersSync
   def clearCaches(self):
     """ Clear caches
     """
     self.__usersCache.purgeAll()
     self.__VOMSesUsersCache.purgeAll()
+  
+  @gUsersSync
+  def __getUsersCache(self, mask=None, time=None):
+    """ Get cache information
+
+        :param str mask: user ID
+        :param int time: lifetime
+
+        :return: dict
+    """
+    if mask:
+      return self.__usersCache.get(mask, time) or {}
+    return self.__usersCache.getDict()
+  
+  @gUsersSync
+  def __addUsersCache(self, data, time=3600 * 24):
+    """ Add cache information
+
+        :param dict data: ID information data
+        :param int time: lifetime
+    """
+    for oid, info in data.items():
+      self.__cacheProfiles.add(oid, time, value=info)
 
   def __getSecondsLeftToExpiration(self, expiration, utc=True):
     """ Get time left to expiration in a seconds
@@ -69,12 +106,13 @@ class ProxyManagerData(object):
     if not retVal['OK']:
       return retVal
     # Update the cache
+    resDict = {}
     for record in retVal['Value']:
       for group in record['groups']:
         cacheKey = (record['user'], group)
-        self.__usersCache.add(cacheKey, self.__getSecondsLeftToExpiration(record['expirationtime']),
-                              record)
-    return S_OK()
+        resDict[cacheKey] = record
+        self.__addUsersCache({cacheKey: record}, self.__getSecondsLeftToExpiration(record['expirationtime']))
+    return S_OK(resDict)
 
   @gVOMSUsersSync
   def __getVOMSUsersDict(self):
@@ -145,7 +183,6 @@ class ProxyManagerData(object):
           res[vo]['Value'][dn]['ActuelRoles'] = list(set(res[vo]['Value'][dn]['ActuelRoles'] + data['Roles']))
     return S_OK(res)
 
-  @gUsersSync
   def userHasProxy(self, user, group, validSeconds=0):
     """ Check if a user-group has a proxy in the proxy management
         Updates internal cache if needed to minimize queries to the service
@@ -157,65 +194,13 @@ class ProxyManagerData(object):
         :return: S_OK()/S_ERROR()
     """
     cacheKey = (user, group)
-    if self.__usersCache.exists(cacheKey, validSeconds):
+    if self.__getUsersCache(cacheKey, validSeconds):
       return S_OK(True)
     # Get list of users from the DB with proxys at least 300 seconds
     gLogger.verbose("Updating list of users in proxy management")
     retVal = self.__refreshUserCache(validSeconds)
     if not retVal['OK']:
       return retVal
-    return S_OK(self.__usersCache.exists(cacheKey, validSeconds))
-
-  @gUsersSync
-  def getUserPersistence(self, user, group, validSeconds=0):
-    """ Check if a user(DN-group) has a proxy in the proxy management
-        Updates internal cache if needed to minimize queries to the service
-
-        :param str user: user name
-        :param str group: user group
-        :param int validSeconds: proxy valid time in a seconds
-
-        :return: S_OK()/S_ERROR()
-    """
-    cacheKey = (user, group)
-    userData = self.__usersCache.get(cacheKey, validSeconds)
-    if userData:
-      if userData['persistent']:
-        return S_OK(True)
-    # Get list of users from the DB with proxys at least 300 seconds
-    gLogger.verbose("Updating list of users in proxy management")
-    retVal = self.__refreshUserCache(validSeconds)
-    if not retVal['OK']:
-      return retVal
-    userData = self.__usersCache.get(cacheKey, validSeconds)
-    if userData:
-      return S_OK(userData['persistent'])
-    return S_OK(False)
-
-  def setPersistency(self, user, group, persistent):
-    """ Set the persistency for user/group
-
-        :param str user: user name
-        :param str group: user group
-        :param bool persistent: presistent flag
-
-        :return: S_OK()/S_ERROR()
-    """
-    # Hack to ensure bool in the rpc call
-    persistentFlag = True
-    if not persistent:
-      persistentFlag = False
-    retVal = self.__getRPC().setPersistency(user, group, persistentFlag)
-    if not retVal['OK']:
-      return retVal
-    # Update internal persistency cache
-    cacheKey = (user, group)
-    record = self.__usersCache.get(cacheKey, 0)
-    if record:
-      record['persistent'] = persistentFlag
-      self.__usersCache.add(cacheKey,
-                            self.__getSecondsLeftToExpiration(record['expirationtime']),
-                            record)
-    return retVal
+    return S_OK(bool(result['Value'].get(cacheKey)))
 
 gProxyManagerData = ProxyManagerData()
