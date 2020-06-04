@@ -554,20 +554,16 @@ class ProxyManagerHandler(RequestHandler):
   def export_getGroupsStatusByUsername(self, username, groups=None):
     """ Get status of every group for DIRAC user:
           {
-            <user>: {
-              <group>: [
-                {
-                  Status: ..,
-                  Comment: ..,
-                  DN: ..,
-                  Action: {
-                    <fn>: { <opns> }
-                  }
-                },
-                { ... }
-              ],
-              <group2>: [ ... ]
-            }
+            <group>: {
+              Status: ..,
+              Comment: ..,
+              DN: ..,
+              Action: {
+                <fn>: { <opns> }
+              }
+            },
+            { ... }
+            <group2>: {} ... }
           }
 
         :param str username: user name
@@ -584,13 +580,12 @@ class ProxyManagerHandler(RequestHandler):
     provDict = {}
     groupDict = {}
     for group in groups:
-      # Will use getDNsForUsernameInGroup in some future
-      result = Registry.getDNForUsernameInGroup(username, group)
+      result = Registry.getDNsForUsernameInGroup(username, group)
       if not result['OK']:
         if group not in statusDict:
           statusDict[group] = [{'Status': 'fail', 'Comment': result['Message']}]
         continue
-      for dn in result['Value']:
+      for dn in [result['Value'][0]]:  # we get only fist DN for now
         result = self.__proxyDB.getProxyProviderForDN(dn, username=username)
         if not result['OK']:
           return result
