@@ -693,7 +693,7 @@ class ProxyManagerHandler(RequestHandler):
               statusDict[group].append(st)
         continue
       
-      result = ProxyProviderFactory().getProxyProvider(proxyProvider)
+      result = ProxyProviderFactory().getProxyProvider(prov)
       if not result['OK']:
         return result
       pProvObj = result['Value']
