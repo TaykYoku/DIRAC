@@ -675,21 +675,22 @@ class ProxyManagerHandler(RequestHandler):
 
     # Check DNs by proxy providers
     for prov, dns in provDict.items():
-      
+      dns = list(set(dns))
+
       result = self.__proxyDB.getValidDNs(dns)
       if not result['OK']:
         return result
-      for dn, time, _group in result['Value']:
+      for dn, time, group in result['Value']:
         if dn in dns:
           dns.remove(dn)
         st = {'Status': 'ready', 'DN': dn,
               "Comment": 'proxy uploaded end valid to %s' % time}
-        for group, dns in groupDict.items():
-          if not _group or _group == group:
-            if group not in statusDict:
-              statusDict[group] = []
-            if dn in dns:
-              statusDict[group].append(st)
+        for _group, _dns in groupDict.items():
+          if not group or group == _group:
+            if _group not in statusDict:
+              statusDict[_group] = []
+            if dn in _dns:
+              statusDict[_group].append(st)
       
       if prov == 'Certificate':
         for dn in dns:
