@@ -621,16 +621,10 @@ class ProxyManagerHandler(RequestHandler):
           result = result['Value']
         result = S_ERROR('No information from "%s" VOMS VO' % vo)
 
-      if not result:
-        st = {'Status': 'unknown', "Comment": 'Fail to get %s VOMS VO information depended for this group' % vo}
-        for dn in dns:
-          if dn in groupDict[group]:
-            groupDict[group].remove(dn)
-          st['DN'] = dn  
-          statusDict[group].append(st)
-        continue
-      if not result['OK']:
-        st = {'Status': 'unknown', "Comment": result['Message']}
+      if not result or not result['OK']:
+        err = '' if not result else result.get('Message', '')
+        st = {'Status': 'unknown',
+              "Comment": 'Fail to get %s VOMS VO information depended for this group: %s' % (vo, err)}
         for dn in dns:
           if dn in groupDict[group]:
             groupDict[group].remove(dn)
