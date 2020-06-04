@@ -125,12 +125,21 @@ def initializationOfGroup(credDict, logObj=gLogger):
     return False
 
   # Get DN for user/group
-  result = Registry.getDNForUsernameInGroup(credDict[KW_USERNAME], credDict[KW_GROUP], checkStatus=True)
+  result = Registry.getDNsForUsernameInGroup(credDict[KW_USERNAME], credDict[KW_GROUP], checkStatus=True)
   if not result['OK']:
     logObj.error(result['Message'])
     credDict[KW_GROUP] = "visitor"
     return False
-  credDict[KW_DN] = result['Value']
+  
+  # Set DN if authorization not througth certificate
+  if not credDict.get(KW_DN):
+     credDict[KW_DN] = result['Value'][0]
+  
+  # Check if DN match for group
+  if credDict[KW_DN] not in result["Value"]:
+    logObj.error('%s DN is not match for %s group.' % (credDict[KW_DN], credDict[KW_GROUP]))
+    credDict[KW_GROUP] = "visitor"
+    return False
 
   # Fill group properties
   credDict[KW_PROPERTIES] = Registry.getPropertiesForGroup(credDict[KW_GROUP], [])
