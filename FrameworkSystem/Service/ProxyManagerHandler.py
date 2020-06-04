@@ -584,7 +584,8 @@ class ProxyManagerHandler(RequestHandler):
     provDict = {}
     groupDict = {}
     for group in groups:
-      result = Registry.getDNsForUsernameInGroup(username, group)
+      # Will use getDNsForUsernameInGroup in some future
+      result = Registry.getDNForUsernameInGroup(username, group)
       if not result['OK']:
         if group not in statusDict:
           statusDict[group] = [{'Status': 'fail', 'Comment': result['Message']}]
@@ -711,7 +712,21 @@ class ProxyManagerHandler(RequestHandler):
           if dn in dns:
             statusDict[group].append(st)
     
-    return S_OK(statusDict)
+    resD = {}
+    for group, statuses in statusDict.items():
+      for stat in statuses:
+        if stat['Status'] not in ["ready", "unknown"]:
+          resD[group] = stat
+          break
+      if group not in resD:
+        for stat in statuses:
+          if stat['Status'] == "ready":
+            resD[group] = stat
+            break
+      if group not in resD:
+        resD[group] = statuses[0]
+
+    return S_OK(resD)
 
 
   types_setPersistency = [basestring, basestring, bool]
