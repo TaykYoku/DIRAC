@@ -637,7 +637,7 @@ class ProxyManagerHandler(RequestHandler):
         if dn not in voData:
           if dn in groupDict[group]:
             groupDict[group].remove(dn)
-          st = {'Status': 'failed', 'DN': dn, 'Action': ['openURL', vomsServerURL],
+          st = {'Status': 'failed', 'DN': dn, 'Action': ['openURL', [vomsServerURL]],
                 'Comment': 'Make sure you(%s) are a member of the %s VOMS VO depended for this group. ' % (dn, vo)}
           statusDict[group].append(st)
           continue
@@ -647,7 +647,7 @@ class ProxyManagerHandler(RequestHandler):
           if voData[dn]['Suspended']:
             if dn in groupDict[group]:
               groupDict[group].remove(dn)
-            st = {'Status': 'suspended', 'DN': dn, 'Action': ['openURL', vomsServerURL],
+            st = {'Status': 'suspended', 'DN': dn, 'Action': ['openURL', [vomsServerURL]],
                   'Comment': 'It seems you(%s) are suspended in the %s VOMS VO depended for this group. ' % (dn, vo)}
             statusDict[group].append(st)
             continue
@@ -655,14 +655,14 @@ class ProxyManagerHandler(RequestHandler):
           if role not in voData[dn]['VOMSRoles']:
             if dn in groupDict[group]:
               groupDict[group].remove(dn)
-            st = {'Status': 'failed', 'DN': dn, 'Action': ['openURL', vomsServerURL],
+            st = {'Status': 'failed', 'DN': dn, 'Action': ['openURL', [vomsServerURL]],
                   'Comment': 'It seems you(%s) have no %s role in %s VOMS VO depended for this group. ' % (dn, role, vo)}
             statusDict[group].append(st)
             continue
           if role in voData[dn]['SuspendedRoles']:
             if dn in groupDict[group]:
               groupDict[group].remove(dn)
-            st = {'Status': 'suspended', 'DN': dn, 'Action': ['openURL', vomsServerURL],
+            st = {'Status': 'suspended', 'DN': dn, 'Action': ['openURL', [vomsServerURL]],
                   'Comment': 'It seems you(%s) are suspended for %s role in the %s VOMS VO depended for this group. ' % (dn, role, vo)}
             statusDict[group].append(st)
             continue
@@ -688,7 +688,7 @@ class ProxyManagerHandler(RequestHandler):
       
       if prov == 'Certificate':
         for dn in dns:
-          st = {'Status': 'not ready', 'DN': dn, "Action": ['upload proxy']
+          st = {'Status': 'not ready', 'DN': dn, "Action": ['upload proxy'],
                 "Comment": 'You hve no proxy with(%s) uploaded to DIRAC.' % dn}
           for group, dns in groupDict.items():
             if group not in statusDict:
