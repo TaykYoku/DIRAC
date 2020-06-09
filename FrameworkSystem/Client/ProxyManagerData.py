@@ -198,9 +198,7 @@ class ProxyManagerData(object):
       return S_OK(True)
     # Get list of users from the DB with proxys at least 300 seconds
     gLogger.verbose("Updating list of users in proxy management")
-    retVal = self.__refreshUserCache(validSeconds)
-    if not retVal['OK']:
-      return retVal
-    return S_OK(bool(result['Value'].get(cacheKey)))
+    result = self.__refreshUserCache(validSeconds)
+    return S_OK(bool(result['Value'].get(cacheKey))) if result['OK'] else result
 
 gProxyManagerData = ProxyManagerData()
