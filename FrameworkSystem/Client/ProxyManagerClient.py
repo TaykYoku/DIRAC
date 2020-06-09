@@ -56,7 +56,14 @@ class ProxyManagerClient(object):
 
         :return: S_OK()/S_ERROR()
     """
-    return gProxyManagerData.userHasProxy(user, group, validSeconds)
+    result = gProxyManagerData.userHasProxy(user, group, validSeconds)
+    if result['OK'] and not result['Value']:
+      result = gProxyManagerData.getGroupsStatusByUsername(user, [group])
+      if result['OK']:
+        if result['Value'] != "ready":
+          return S_OK(False)
+        return S_OK(True)
+    return result
 
   def uploadProxy(self, proxy=None, restrictLifeTime=0, rfcIfPossible=False):
     """ Upload a proxy to the proxy management service using delegation

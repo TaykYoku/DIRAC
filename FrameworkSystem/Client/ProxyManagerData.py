@@ -191,7 +191,7 @@ class ProxyManagerData(object):
         :param str group: user group
         :param int validSeconds: proxy valid time in a seconds
 
-        :return: S_OK()/S_ERROR()
+        :return: S_OK(bool)/S_ERROR()
     """
     cacheKey = (user, group)
     if self.__getUsersCache(cacheKey, validSeconds):
