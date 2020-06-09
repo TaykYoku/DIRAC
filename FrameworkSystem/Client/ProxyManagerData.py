@@ -206,6 +206,6 @@ class ProxyManagerData(object):
     result = self.__getRPC().getGroupsStatusByUsername(user, [group])
     if not result['OK']:
       return result
-    return S_OK(True result['Value'] == "ready" else False)
+    return S_OK(True if result['Value'] == "ready" else False)
 
 gProxyManagerData = ProxyManagerData()
