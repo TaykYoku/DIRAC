@@ -107,7 +107,7 @@ def initializationOfGroup(credDict, logObj=gLogger):
   """
   # Find/check group
   credDict[KW_PROPERTIES] = []
-  if not credDict.get(KW_GROUP):
+  if not credDict.get(KW_GROUP) or credDict[KW_GROUP] == 'visitor':
     result = Registry.findDefaultGroupForUser(credDict[KW_USERNAME])
     if not result['OK']:
       credDict[KW_USERNAME] = "anonymous"
