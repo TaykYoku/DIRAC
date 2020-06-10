@@ -39,8 +39,10 @@ def forwardingCredentials(credDict, logObj=gLogger):
       return False
     if credDict[KW_EXTRA_CREDENTIALS][0][0] == '/':
       credDict[KW_DN] = credDict[KW_EXTRA_CREDENTIALS][0]
+      credDict[KW_ID] = None
     else:
       credDict[KW_ID] = credDict[KW_EXTRA_CREDENTIALS][0]
+      credDict[KW_DN] = None
     credDict[KW_GROUP] = credDict[KW_EXTRA_CREDENTIALS][1]
     del credDict[KW_EXTRA_CREDENTIALS]
     return True
