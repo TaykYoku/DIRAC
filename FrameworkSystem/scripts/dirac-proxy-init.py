@@ -480,13 +480,13 @@ class ProxyInit(object):
 
         comment = authDict['Comment'].strip()
         if authDict['Status'] != 'authed':
-          if authDict['Status'] == 'authed and reported':
-            spinner.warn('Authenticated success. Administrators was notified about you.')
-            sys.exit(0)
-          elif authDict['Status'] == 'visitor':
-            spinner.warn('Authenticated success. You have permissions as Visitor.')
-            sys.exit(0)
-          sys.exit('Authentication failed.')
+          # if authDict['Status'] == 'authed and reported':
+          #   spinner.warn('Authenticated success. Administrators was notified about you.')
+          #   sys.exit(0)
+          # elif authDict['Status'] == 'visitor':
+          #   spinner.warn('Authenticated success. You have permissions as Visitor.')
+          #   sys.exit(0)
+          sys.exit('Authentication failed. %s' % comment)
         spinner.text = 'Authenticated success.'
 
       if comment:
