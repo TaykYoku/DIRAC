@@ -32,6 +32,7 @@ class BaseClient(object):
   KW_TIMEOUT = "timeout"
   KW_SETUP = "setup"
   KW_VO = "VO"
+  KW_DELEGATED_ID = "delegatedID"
   KW_DELEGATED_DN = "delegatedDN"
   KW_DELEGATED_GROUP = "delegatedGroup"
   KW_IGNORE_GATEWAYS = "ignoreGateways"
@@ -253,18 +254,25 @@ class BaseClient(object):
       self.__extraCredentials = self.kwargs[self.KW_EXTRA_CREDENTIALS]
 
     # Are we delegating something?
-    delegatedID = self.__threadConfig.getID()
+    delegatedID = self.kwargs.get(self.KW_DELEGATED_ID) or self.__threadConfig.getID()
     delegatedDN = self.kwargs.get(self.KW_DELEGATED_DN) or self.__threadConfig.getDN()
     delegatedGroup = self.kwargs.get(self.KW_DELEGATED_GROUP) or self.__threadConfig.getGroup()
     
+    if delegatedID:
+      self.kwargs[self.KW_DELEGATED_ID] = delegatedID
     if delegatedDN:
       self.kwargs[self.KW_DELEGATED_DN] = delegatedDN
-      if not delegatedGroup:
-        result = getGroupsForDN(delegatedDN)
-        if not result['OK']:
-          return result
-        delegatedGroup = result['Value'][0]
+    if delegatedGroup:
       self.kwargs[self.KW_DELEGATED_GROUP] = delegatedGroup
+    
+    if delegatedID or delegatedDN:
+    # if delegatedDN:
+    #   if not delegatedGroup:
+    #     result = getGroupsForDN(delegatedDN)
+    #     if not result['OK']:
+    #       return result
+    #     delegatedGroup = result['Value'][0]
+    #   self.kwargs[self.KW_DELEGATED_GROUP] = delegatedGroup
       self.__extraCredentials = (delegatedID or delegatedDN, delegatedGroup)
     return S_OK()
 
