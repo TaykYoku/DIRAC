@@ -62,8 +62,6 @@ class AuthManagerClient(Client):
       return S_ERROR('Time out')
     except self.exceptions.RequestException as ex:
       return S_ERROR(r.content or ex)
-    
-
 
   def parseAuthResponse(self, response, state):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.

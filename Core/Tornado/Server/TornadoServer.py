@@ -16,8 +16,8 @@ import os
 import M2Crypto
 
 import tornado.iostream
-tornado.iostream.SSLIOStream.configure(
-    'tornado_m2crypto.m2iostream.M2IOStream')  # pylint: disable=wrong-import-position
+#tornado.iostream.SSLIOStream.configure(
+#    'tornado_m2crypto.m2iostream.M2IOStream')  # pylint: disable=wrong-import-position
 
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, url
@@ -110,15 +110,26 @@ class TornadoServer(object):
     for item in handlerDict.items():
       # handlerDict[key].initializeService(key)
       self.urls.append(url(item[0], item[1]))
-    # If there is no services loaded:
-    if not self.urls:
-      raise ImportError("There is no services loaded, please check your configuration")
+      
+  def addRoutes(self, routes):
+    """ Add routes to server
+
+        :param list routes: list of tuples
+    """
+    if not isinstance(routes, list):
+      routes = [routes]
+    for item in routes:
+      # handlerDict[key].initializeService(key)
+      self.urls.append(url(item[0], item[1]))
 
   def startTornado(self):
     """
       Starts the tornado server when ready.
       This method never returns.
     """
+    # If there is no services loaded:
+    if not self.urls:
+      raise ImportError("There is no services loaded, please check your configuration")
 
     sLog.debug("Starting Tornado")
     self._initMonitoring()
@@ -132,13 +143,14 @@ class TornadoServer(object):
       sLog.fatal("Host certificates not found ! Can't start the Server")
       raise ImportError("Unable to load certificates")
     ca = Locations.getCAsLocation()
-    ssl_options = {
-        'certfile': certs[0],
-        'keyfile': certs[1],
-        'cert_reqs': M2Crypto.SSL.verify_peer,
-        'ca_certs': ca,
-        'sslDebug': False,  # Set to true if you want to see the TLS debug messages
-    }
+    ssl_options = None
+    # {
+    #     'certfile': certs[0],
+    #     'keyfile': certs[1],
+    #     'cert_reqs': M2Crypto.SSL.verify_peer,
+    #     'ca_certs': ca,
+    #     'sslDebug': False,  # Set to true if you want to see the TLS debug messages
+    # }
 
     self.__monitorLastStatsUpdate = time.time()
     self.__report = self.__startReportToMonitoringLoop()
