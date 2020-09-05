@@ -78,13 +78,24 @@ class AuthServerHandler(TornadoService, _AuthorizationServer):
       cls.__db = AuthDB()
       
       AuthorizationServer.__init__(cls, query_client=cls.query_client,
-                                    save_token=cls.save_token)
+                                   save_token=cls.save_token)
       self.generate_token = self.create_bearer_token_generator(self.metadata)
 
     def query_client(self, client_id):
-        return self.__db.getClient(client_id)
+      """ Method to get client object by ID
+
+          :param str client_id: client ID
+
+          :return: object/dict
+      """
+      return self.__db.getClient(client_id)
 
     def save_token(self, token, request):
+      """ Save token
+
+          :param dict token: token obj
+          :param request: request obj
+      """
         if request.user:
             user_id = request.user.get_user_id()
         else:
@@ -92,56 +103,6 @@ class AuthServerHandler(TornadoService, _AuthorizationServer):
         client = request.client
         # tok = OAuth2Token(client_id=client.client_id, user_id=user.get_user_id(), **token)
         self.__db.saveToken(token)
-
-    # def init_app(self, app, query_client=None, save_token=None):
-    #     """Initialize later with Flask app instance."""
-    #     if query_client is not None:
-    #         self.query_client = query_client
-    #     if save_token is not None:
-    #         self.save_token = save_token
-
-    #     self.generate_token = self.create_bearer_token_generator(app.settings)
-
-    #     metadata_file = app.settings.get('OAUTH2_METADATA_FILE')
-    #     if metadata_file:
-    #         with open(metadata_file) as f:
-    #             metadata = self.metadata_class(json.load(f))
-    #             metadata.validate()
-    #             self.metadata = metadata
-
-    #     self.config.setdefault('error_uris', app.settings.get('OAUTH2_ERROR_URIS'))
-    #     if app.settings.get('OAUTH2_JWT_ENABLED'):
-    #         deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
-    #         self.init_jwt_config(app.settings)
-
-    # def init_jwt_config(self, config):
-    #     """Initialize JWT related configuration."""
-    #     jwt_iss = config.get('OAUTH2_JWT_ISS')
-    #     if not jwt_iss:
-    #         raise RuntimeError('Missing "OAUTH2_JWT_ISS" configuration.')
-
-    #     jwt_key_path = config.get('OAUTH2_JWT_KEY_PATH')
-    #     if jwt_key_path:
-    #         with open(jwt_key_path, 'r') as f:
-    #             if jwt_key_path.endswith('.json'):
-    #                 jwt_key = json.load(f)
-    #             else:
-    #                 jwt_key = to_unicode(f.read())
-    #     else:
-    #         jwt_key = config.get('OAUTH2_JWT_KEY')
-
-    #     if not jwt_key:
-    #         raise RuntimeError('Missing "OAUTH2_JWT_KEY" configuration.')
-
-    #     jwt_alg = config.get('OAUTH2_JWT_ALG')
-    #     if not jwt_alg:
-    #         raise RuntimeError('Missing "OAUTH2_JWT_ALG" configuration.')
-
-    #     jwt_exp = config.get('OAUTH2_JWT_EXP', 3600)
-    #     self.config.setdefault('jwt_iss', jwt_iss)
-    #     self.config.setdefault('jwt_key', jwt_key)
-    #     self.config.setdefault('jwt_alg', jwt_alg)
-    #     self.config.setdefault('jwt_exp', jwt_exp)
 
     def get_error_uris(self, request):
         error_uris = self.metadata.get('error_uris')
