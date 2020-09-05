@@ -5,33 +5,99 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-import urllib
 import pprint
+from authlib.integrations.requests_client import OAuth2Session
+from authlib.oidc.discovery.well_known import get_well_known_url
+from requests import exceptions
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
 
-from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
+# from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
 
 __RCSID__ = "$Id$"
 
+# auth = AuthMangerClient()
+# res = auth.submitAuthorizeFlow(IdP, group, livetime)
+# if not res['OK']:
+#   return res
+# sessionToken = res['Value']
 
-class OAuth2IdProvider(IdProvider):
-
-  def __init__(self, parameters=None, sessionManager=None):
-    super(OAuth2IdProvider, self).__init__(parameters, sessionManager)
-
-  def setParameters(self, parameters):
-    """ Set identity providers parameters
-
-        :param dict parameters: parameters to set
+class OAuth2IdProvider(IdProvider, OAuth2Session):
+  def __init__(self, name=None, issuer=None, client_id=None,
+               client_secret=None, token_endpoint_auth_method=None,
+               revocation_endpoint_auth_method=None,
+               scope=None, redirect_uri=None,
+               token=None, token_placement='header',
+               update_token=None, **kwargs):
+    """ OIDCClient constructor
     """
-    self.parameters = parameters
-    self.oauth2 = OAuth2(parameters['ProviderName'])
+    IdProvider.__init__(self, **kwargs)
+    OAuth2Session.__init__(self, client_id=client_id, client_secret=client_secret,
+                           token_endpoint_auth_method=token_endpoint_auth_method,
+                           revocation_endpoint_auth_method=revocation_endpoint_auth_method,
+                           scope=scope, redirect_uri=redirect_uri,
+                           token=token, token_placement=token_placement,
+                           update_token=update_token, **kwargs)
+    self.exceptions = exceptions
+    self.name = name or kwargs.get('ProviderName')
+    self.issuer = issuer
+    self.client_id = client_id
+    self.client_secret = client_secret
+    self.server_metadata_url = kwargs.get('server_metadata_url', get_well_known_url(self.issuer))
+    # Add hooks to raise HTTP errors
+    self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
 
-  def submitNewSession(self, session=None):
+  def getTokenWithAuth(self, group, tokenLivetime, logger=None):
+    result = self.isSessionManagerAble()
+    if not result['OK']:
+      return result
+    
+    if logger:
+      self.log = logger
+    
+    res = self.sessionManager.submitAuthorizeFlow(IdP, group)
+    if not res['OK']:
+      return res
+    session, url = res['Value']
+    self.log.info('%s session will active 5 min', session)
+    self.log.info('Use next URL to login:\n', url)
+    self.log.info("After successfully authentication press [Enter] to continue or CTRL+C to exit..")
+    input()
+    return self.sessionManager.getSessionToken(IdP, group)
+
+  def checkResponse(func):
+    def function_wrapper(*args, **kwargs):
+        try:
+          func(*args, **kwargs)
+        except self.exceptions.Timeout:
+          return S_ERROR('Time out')
+        except self.exceptions.RequestException as ex:
+          return S_ERROR(r.content or ex)
+    return function_wrapper
+  
+  @checkResponse
+  def getServerParameter(self, parameter):
+    """ Get identity server parameter
+
+        :param str parameter: requester parameter
+
+        :return: S_OK()/S_ERROR()
+    """
+    if parameter not in self.metadata and not self.metadata.get('updated'):
+      try:
+        r = self.request('GET', self.server_metadata_url, withhold_token=True)
+        servMetadata = r.json()
+        for k, v in servMetadata.items():
+          if k not in self.metadata:
+            self.metadata[k] = v
+        self.metadata['updated'] = True
+      except ValueError as e:
+        return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text))
+    return S_OK(self.metadata.get(parameter))
+
+  def submitNewSession(self, session=None, reqGroup=None):
     """ Submit new authorization session
 
         :param str session: session number
@@ -42,23 +108,24 @@ class OAuth2IdProvider(IdProvider):
     result = self.isSessionManagerAble()
     if not result['OK']:
       return result
-
-    result = self.sessionManager.createNewSession(provider, session=session)
+    result = self.getServerParameter('authorization_endpoint')
+    if not result['OK']:
+      return result
+    authEndpoint = result['Value']
+    result = self.sessionManager.createNewSession(provider, reqGroup) # TODO: add reqGroup #, session=session)
     if not result['OK']:
       return result
     session = result['Value']
     self.log.verbose(session, 'session was created.')
+    #url = self.create_authorization_url(authEndpoint, state=session)  
 
-    result = self.oauth2.createAuthRequestURL(session)
-    if result['OK']:
-      url = result['Value']
-      result = self.sessionManager.updateSession(session, {'Provider': provider,
-                                                           'Comment': url})
-    if not result['OK']:
-      kill = self.sessionManager.killSession(session)
-      return result if kill['OK'] else kill
+    #   result = self.sessionManager.updateSession(session, {'Provider': provider,
+    #                                                        'Comment': url})
+    # if not result['OK']:
+    #   kill = self.sessionManager.killSession(session)
+    #   return result if kill['OK'] else kill
 
-    return S_OK(session)
+    return S_OK((session, self.create_authorization_url(authEndpoint, state=session)))
 
   def checkStatus(self, session):
     """ Read ready to work status of identity provider
@@ -159,6 +226,7 @@ class OAuth2IdProvider(IdProvider):
 
         :return: S_OK(dict)/S_ERROR() -- dictionary contain tokens
     """
+    token = self.refresh_token(refresh_token=tokens['RefreshToken'])
     result = self.oauth2.fetchToken(refreshToken=tokens['RefreshToken'])
     if not result['OK']:
       return result

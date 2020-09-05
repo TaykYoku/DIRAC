@@ -37,6 +37,7 @@ class IdProviderFactory(object):
     """
     result = getProviderInfo(idProvider)
     if not result['OK']:
+      self.log.error('Failed to read configuration', '%s: %s' % (subClassName, result['Message']))
       return result
     pDict = result['Value']
     pDict['ProviderName'] = idProvider
@@ -53,9 +54,9 @@ class IdProviderFactory(object):
 
     pClass = result['Value']
     try:
-      provider = pClass()
-      provider.setParameters(pDict)
-      provider.setManager(sessionManager)
+      provider = pClass(parameters=pDict, sessionManager=sessionManager)
+      # provider.setParameters(pDict)
+      # provider.setManager(sessionManager)
     except Exception as x:
       msg = 'IdProviderFactory could not instantiate %s object: %s' % (subClassName, str(x))
       self.log.exception()

@@ -9,6 +9,7 @@ import json
 import pprint
 import random
 import string
+from authlib.common.security import generate_token
 
 from ast import literal_eval
 from datetime import datetime
@@ -47,15 +48,20 @@ class AuthDB(DB):
                                        'AccessToken': 'VARCHAR(1000)',
                                        'RefreshToken': 'VARCHAR(1000)',
                                        'LastAccess': 'DATETIME',
-                                       'Reserved': 'VARCHAR(8) DEFAULT "no"'},
+                                       'RequestedGroup': 'VARCHAR(32)'},
                             'PrimaryKey': 'Session',
-                            'Engine': 'InnoDB'}}
+                            'Engine': 'InnoDB'},
+               'Tokens': {'Fields': {'Token': 'VARCHAR(1000)',
+                                     'Type': 'VARCHAR(32) DEFAULT "bearer"',
+                                     'ID': 'VARCHAR(128)',
+                                     'IdP': 'VARCHAR(128)',
+                                     'Scoupes': 'VARCHAR(128)',
+                                     'Expiration': 'DATETIME',
+                                     'LastAccess': 'DATETIME'}}}
 
   def __init__(self):
     """ Constructor
     """
-    self.__permValues = ['USER', 'GROUP', 'VO', 'ALL']
-    self.__permAttrs = ['ReadAccess', 'PublishAccess']
     DB.__init__(self, 'AuthDB', 'Framework/AuthDB')
     retVal = self.__initializeDB()
     if not retVal['OK']:
@@ -76,8 +82,9 @@ class AuthDB(DB):
     tablesInDB = [t[0] for t in retVal['Value']]
     tablesD = {}
 
-    if 'Sessions' not in tablesInDB:
-      tablesD['Sessions'] = self.tableDict['Sessions']
+    for k in self.tableDict:
+      if k not in tablesInDB:
+        tablesD[k] = self.tableDict[k]
 
     return self._createTables(tablesD)
 
@@ -99,18 +106,15 @@ class AuthDB(DB):
     if session:
       cond.append('Session = "%s" ' % session)
     where = 'WHERE %s' % ' AND '.join(cond) if cond else ''
-    result = self._query("SELECT DISTINCT ID, Provider, Session, Status, Reserved FROM `Sessions` %s" % where)
+    result = self._query("SELECT DISTINCT ID, Provider, Session, Status FROM `Sessions` %s" % where)
     if not result['OK']:
       return result
-    for userID, idP, session, status, reserved in result['Value']:
-      resDict[session] = {'ID': userID, 'Provider': idP, 'Status': status, 'Reserved': reserved}
-      result = self.getSessionTokens(session)
-      if not result['OK']:
-        return result
-      resDict[session]['Tokens'] = result['Value'] or {}
+    for userID, idP, session, status in result['Value']:
+      resDict[session] = {'ID': userID, 'Provider': idP, 'Status': status}
+
     return S_OK(resDict)
 
-  def createNewSession(self, provider, session=None):
+  def createNewSession(self, provider, requestedGroup=None, session=None):
     """ Generates a state string to be used in authorizations
 
         :param str provider: provider
@@ -124,27 +128,16 @@ class AuthDB(DB):
         return result
       allSessions = [s[0] for s in result['Value']]
       for i in range(100):
-        num = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(30))
-        if num not in allSessions:
-          session = num
+        session = generate_token(10)
+        if session not in allSessions:
           break
 
     if not session:
-      return S_ERROR("Need to modify Session manager!")
+      return S_ERROR("Сan't create a unique session ID.")
 
-    reserved = 'yes' if self.isReservedSession(session) else 'no'
-    result = self.insertFields('Sessions', ['Session', 'Provider', 'Reserved', 'LastAccess'],
-                                           [session, provider, reserved, 'UTC_TIMESTAMP()'])
+    result = self.insertFields('Sessions', ['Session', 'Provider', 'RequestedGroup', 'LastAccess'],
+                                           [session, provider, requestedGroup, 'UTC_TIMESTAMP()'])
     return S_OK(session) if result['OK'] else result
-
-  def isReservedSession(self, session):
-    """ Check if session is reseved
-
-        :param str session: session
-
-        :return: bool
-    """
-    return re.match('^reserved_.*', session or '')
 
   def getSessionAuthLink(self, session):
     """ Return authorization URL from session
@@ -167,39 +160,24 @@ class AuthDB(DB):
       return result
     return S_OK(url)
 
-  def getReservedSessions(self, userIDs=None, idPs=None):
-    """ Find reserved session
+  # def getSessionTokens(self, session):
+  #   """ Get tokens dict by session
 
-        :param list userIDs: user ID
-        :param list idPs: provider
+  #       :param str session: session number
 
-        :return: S_OK(list)/S_ERROR() -- list contain dictionaries with information
-    """
-    cond = ['Reserved = "yes" AND Status = "authed"']
-    if idPs:
-      cond.append('Provider IN ("%s")' % '", "'.join(idPs))
-    if userIDs:
-      cond.append('ID IN ("%s")' % '", "'.join(userIDs))
-    return self.__getFields(['Session', 'Provider', 'ID'], cond=" AND ".join(cond))
+  #       :return: S_OK(dict)/S_ERROR()
+  #   """
+  #   return self.__getFields(["AccessToken", "ExpiresIn", "RefreshToken", "TokenType"], Session=session)
 
-  def getSessionTokens(self, session):
-    """ Get tokens dict by session
+  # def getSessionProvider(self, session):
+  #   """ Get tokens dict by session
 
-        :param str session: session number
+  #       :param str session: session number
 
-        :return: S_OK(dict)/S_ERROR()
-    """
-    return self.__getFields(["AccessToken", "ExpiresIn", "RefreshToken", "TokenType"], Session=session)
-
-  def getSessionProvider(self, session):
-    """ Get tokens dict by session
-
-        :param str session: session number
-
-        :return: S_OK(dict)/S_ERROR()
-    """
-    result = self.__getFields(['Provider'], Session=session)
-    return S_OK(result['Value']['Provider']) if result['OK'] else result
+  #       :return: S_OK(dict)/S_ERROR()
+  #   """
+  #   result = self.__getFields(['Provider'], Session=session)
+  #   return S_OK(result['Value']['Provider']) if result['OK'] else result
 
   def getSessionStatus(self, session):
     """ Get status dictionary by session id
@@ -210,15 +188,15 @@ class AuthDB(DB):
     """
     return self.__getFields(fields=['ID', 'Session', 'Status', 'Comment', 'Provider'], Session=session)
 
-  def getSessionID(self, session):
-    """ Get user ID by session
+  # def getSessionID(self, session):
+  #   """ Get user ID by session
 
-        :param str session: session
+  #       :param str session: session
 
-        :return: S_OK(str)/S_ERROR()
-    """
-    result = self.__getFields(['ID'], Session=session)
-    return S_OK(result['Value']['ID']) if result['OK'] else result
+  #       :return: S_OK(str)/S_ERROR()
+  #   """
+  #   result = self.__getFields(['ID'], Session=session)
+  #   return S_OK(result['Value']['ID']) if result['OK'] else result
 
   def getSessionLifetime(self, session):
     """ Get lifetime of session

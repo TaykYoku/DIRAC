@@ -6,18 +6,23 @@ from __future__ import print_function
 
 import re
 import six
+import time
 import pprint
+from authlib.jose import jwt  # TODO: need to add authlib to DIRACOS
 
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, getIDsForUsername, getEmailsForGroup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
+
+from DIRAC.FrameworkSystem.DB.AuthServerHandler import AuthServerHandler
 
 __RCSID__ = "$Id$"
 
@@ -198,6 +203,7 @@ class AuthManagerHandler(RequestHandler):
     """ Handler initialization
     """
     cls.__db = AuthDB()
+    cls.__authServ = AuthServerHandler(cls.__db)
     # gThreadScheduler.addPeriodicTask(15 * 60, cls.__refreshReservedSessions)
     gThreadScheduler.addPeriodicTask(3600, cls.__cleanAuthDB)
     gThreadScheduler.addPeriodicTask(3600, cls.__updateSessionsFromDB)
@@ -212,6 +218,7 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
+    # TODO: Here need to use metadata resources not sessions
     idPsDict = {}
     for session, data in cls.__cacheSessions.getDict().items():
       if data['Status'] == 'authed' and data['Reserved'] == 'yes':
@@ -348,7 +355,7 @@ class AuthManagerHandler(RequestHandler):
 
   types_submitAuthorizeFlow = [six.string_types]
 
-  def export_submitAuthorizeFlow(self, providerName, session=None):
+  def export_submitAuthorizeFlow(self, providerName, group=None):
     """ Register new session and return dict with authorization url and session number
 
         :param str providerName: provider name
@@ -360,31 +367,11 @@ class AuthManagerHandler(RequestHandler):
                  Session -- session id, returned if status is 'needToAuth'
                  URL -- link to start authetication flow, returned if status is 'needToAuth'
     """
-    gLogger.info('Get authorization for %s.' % providerName, 'Session: %s' % session if session else '')
-
-    if self.__db.isReservedSession(session):
-      return S_ERROR('You cannot submit authorization flow with reserved session!')
-
     result = IdProviderFactory().getIdProvider(providerName, sessionManager=self.__db)
     if not result['OK']:
       return result
     provObj = result['Value']
-    if session:
-      result = provObj.checkStatus(session=session)
-      if result['OK']:
-        result = getUsernameForID(self.__getSessions(session).get('ID'))
-        if result['OK']:
-          return S_OK({'UserName': result['Value'], 'Status': 'ready'})
-
-    if not result['OK']:
-      self.log.error(result['Message'], 'Try to generate new session.')
-
-    result = provObj.submitNewSession()
-    if not result['OK']:
-      return S_ERROR('Cannot create authority request URL:', result['Message'])
-    session = result['Value']
-    return S_OK({'Status': 'needToAuth', 'Session': session,
-                 'URL': '%s/auth/%s' % (getAuthAPI().strip('/'), session)})
+    return provObj.submitNewSession()
 
   types_parseAuthResponse = [dict, six.string_types]
 
@@ -709,7 +696,7 @@ class AuthManagerHandler(RequestHandler):
   types_createNewSession = [six.string_types]
   auth_createNewSession = ["authenticated", "TrustedHost"]
 
-  def export_createNewSession(self, provider, session=None):
+  def export_createNewSession(self, provider, requestedGroup=None, session=None):
     """ Generates a state string to be used in authorizations
 
         :param str provider: provider
@@ -718,4 +705,37 @@ class AuthManagerHandler(RequestHandler):
         :return: S_OK(str)/S_ERROR()
     """
     res = self.__checkAuth(session)
-    return self.__db.createNewSession(provider, session) if res['OK'] else res
+    return self.__db.createNewSession(provider, requestedGroup, session) if res['OK'] else res
+
+  def export_getTokenBySession(self, session, group, livetime=24 * 3600):
+    """ Generate Bearer access token
+
+        :param str session: session number
+        :param str group: requested user group
+        :param int livetime: token livetime
+
+        :return: S_OK()/S_ERROR()
+    """
+    res = self.__checkAuth(session)
+    if res['OK']:
+      res = self.__db.getSessionStatus(session)
+    if not res['OK']:
+      return res
+    if res['Value']['Status'] != 'authed':
+      return S_ERROR("%s session status is %s." % (session, res['Value']['Status']))
+    provider = res['Value']['Provider']
+    uid = res['Value']['ID']
+
+    privateKey = getPrivateKeyLocation()
+    if not privateKey:
+      return S_ERROR('Cannot generate token: no private key found.')
+    with open(privateKey, 'rb') as f:
+      key = f.read()
+    header = {'alg': 'HS256'}
+    payload = {'idp': provider, 'sub': uid, 'group': group, 'exp': time.time() + livetime}
+    try:
+      token = jwt.encode(header, payload, key)
+    except Exception as e:
+      return S_ERROR(repr(e))
+    res = self.__db.killSession(session)
+    return S_OK(token) if res['OK'] else res

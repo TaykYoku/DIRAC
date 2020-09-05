@@ -68,7 +68,7 @@ class ConfigurationHandler(RequestHandler):
     return S_OK()
 
   types_commitNewData = [basestring]
-
+  # TODO: auth_
   def export_commitNewData(self, sData):
     global gPilotSynchronizer
     credDict = self.getRemoteCredentials()
@@ -139,7 +139,7 @@ class ConfigurationHandler(RequestHandler):
     return S_OK(contentsList)
 
   types_rollbackToVersion = [basestring]
-
+  # TODO: auth
   def export_rollbackToVersion(self, version):
     retVal = gServiceInterface.getVersionContents(version)
     if not retVal['OK']:

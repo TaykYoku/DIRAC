@@ -11,15 +11,20 @@ __RCSID__ = "$Id$"
 
 class IdProvider(object):
 
-  def __init__(self, parameters=None, sessionManager=None):
+  def __init__(self, *args, **kwargs):  #parameters=None, sessionManager=None):
     """ C'or
 
         :param dict parameters: parameters of the identity Provider
         :param object sessionManager: session manager
     """
     self.log = gLogger.getSubLogger(self.__class__.__name__)
-    self.parameters = parameters
-    self.sessionManager = sessionManager
+    self.parameters = kwargs.get('parameters', {})
+    self.sessionManager = kwargs.get('sessionManager')
+    self._initialization()
+
+  def _initialization(self):
+    """ Initialization """
+    pass
 
   def setParameters(self, parameters):
     """ Set parameters
@@ -34,6 +39,13 @@ class IdProvider(object):
         :param object sessionManager: session manager
     """
     self.sessionManager = sessionManager
+  
+  def setLogger(self, logger=gLogger.getSubLogger(self.__class__.__name__)):
+    """ Set logger
+
+        :param object logger: logger
+    """
+    self.log = logger
 
   def isSessionManagerAble(self):
     """ Check if session manager able
@@ -47,3 +59,8 @@ class IdProvider(object):
       except Exception as e:
         return S_ERROR('Session manager not able: %s' % e)
     return S_OK()
+
+  def getTokenWithAuth(self, *args, **kwargs):
+    """ Method to provide autherization flow on client side
+    """
+    return S_ERROR('getTokenWithAuth not implemented.')

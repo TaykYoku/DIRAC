@@ -24,15 +24,15 @@ __RCSID__ = "$Id$"
 class OAuth2ProxyProvider(ProxyProvider):
 
   def __init__(self, parameters=None):
-    super(OAuth2ProxyProvider, self).__init__(parameters)
+    super(OAuth2ProxyProvider, self).__init__(parameters) # TODO: need do self.idpObj -- idP in contex(access tokens) we do request
 
   def setParameters(self, parameters):
     self.parameters = parameters
-    self.idProviders = self.parameters['IdProvider'] or []
+    self.idProviders = self.parameters['IdProvider'] or []  # TODO: Supported ID Providers
     if not isinstance(self.parameters['IdProvider'], list):
       self.idProviders = [self.parameters['IdProvider']]
     if not self.idProviders:
-      result = getProvidersForInstance('Id', providerType='OAuth2')
+      result = getProvidersForInstance('Id', providerType='OAuth2')  # TODO: Its not need
       if not result['OK']:
         return result
       self.idProviders = result['Value']

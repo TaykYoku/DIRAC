@@ -35,7 +35,7 @@ class OAuth2(Session):
                issuer=None, jwks_uri=None,
                client_id=None, redirect_uri=None,
                client_secret=None, proxy_endpoint=None,
-               token_endpoint=None, providerOfWhat=None,
+               token_endpoint=None,
                scopes_supported=None, userinfo_endpoint=None,
                max_proxylifetime=None, revocation_endpoint=None,
                registration_endpoint=None, grant_types_supported=None,
@@ -99,6 +99,8 @@ class OAuth2(Session):
     self.parameters['registration_endpoint'] = registration_endpoint or __optns.get('registration_endpoint')
     self.parameters['authorization_endpoint'] = authorization_endpoint or __optns.get('authorization_endpoint')
     self.parameters['introspection_endpoint'] = introspection_endpoint or __optns.get('introspection_endpoint')
+
+    self.oauth2session = 
 
   def get(self, parameter):
     return self.parameters.get(parameter)

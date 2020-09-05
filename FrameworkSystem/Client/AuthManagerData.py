@@ -166,7 +166,7 @@ class AuthManagerData(object):
         :return: S_OK(list)
     """
     userIDs = []
-    profile = self.getProfiles() or {}
+    profile = self.getProfiles()
     for uid, data in profile.items():
       if dn in data.get('DNs', []):
         userIDs.append(uid)
@@ -216,13 +216,21 @@ class AuthManagerData(object):
       return S_OK(profile['DNs'][dn].get(option))
     return S_OK(None)
 
-  def getIdPsForID(self, uid):
-    """ Find option for DN
+  def getIdPForID(self, uid):
+    """ Find identity provider for user ID
 
         :param str uid: user ID
 
         :return: S_OK()/S_ERROR()
     """
+    # Fix
+    profile = self.getProfiles(userID=uid)
+    if not profile:
+      result = self.resfreshProfiles(userID=uid)
+      if not result['OK']:
+        return result
+      profile = result['Value']
+    
     sessionsDict = self.getSessions(userID=uid)
     if not sessionsDict:
       result = self.resfreshSessions(userID=uid)
