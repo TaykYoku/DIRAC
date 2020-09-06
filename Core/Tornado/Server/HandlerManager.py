@@ -9,6 +9,7 @@ from __future__ import print_function
 
 __RCSID__ = "$Id$"
 
+from six import string_types
 from tornado.web import url as TornadoURL, RequestHandler
 
 from DIRAC import gConfig, gLogger, S_ERROR, S_OK
