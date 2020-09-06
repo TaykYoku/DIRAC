@@ -236,7 +236,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     # Authorize
     # Resolves the hard coded authorization requirements
-    hardcodedAuth = getattr(self, 'auth_' + self.method, None)
+    hardcodedAuth = getattr(self, 'auth_' + self._methodName, None)
     if not AuthManager(None).authQuery(self._methodName, self.__credDict, hardcodedAuth):
       raise tornado.web.HTTPError(401)
     
