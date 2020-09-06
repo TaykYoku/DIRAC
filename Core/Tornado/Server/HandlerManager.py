@@ -199,15 +199,17 @@ class HandlerManager(object):
         for mName, mObj in inspect.getmembers(handler):
           if inspect.ismethod(mObj) and mName.find(handler.METHOD_PREFIX) == 0:
             methodName = mName[len(handler.METHOD_PREFIX):]
-            argObj = inspect.getargspec(mObj)
-            args = '/'.join(['([A-z0-9_.-]+)'] * (len(argObj.args) - 1 - len(argObj.defaults or [])))
-            defs = '/'.join(['([A-z0-9_.-]*)'] * len(argObj.defaults or []))
+            try:
+              args = getattr(handler, 'path_%s' % methodName)
+            except AttributeError::
+              args = []
+            # argObj = inspect.getargspec(mObj)
+            # args = '/'.join(['([A-z0-9_.-]+)'] * (len(argObj.args) - 1 - len(argObj.defaults or [])))
+            # defs = '/'.join(['([A-z0-9_.-]*)'] * len(argObj.defaults or []))
             gLogger.debug(" - Route %s/%s ->  %s.%s" % (handler.LOCATION, methodName, module['loadName'], mName))
             url = "%s/%s" % (handler.LOCATION, methodName)
             if args:
-              url += '/%s' % args
-            if defs:
-              url += '/%s' % defs
+              url += '/%s' % '/'.join(args)
             gLogger.debug("  * %s" % url)
             self.__addHandler((module['loadName'], handler), url)
     return S_OK()
