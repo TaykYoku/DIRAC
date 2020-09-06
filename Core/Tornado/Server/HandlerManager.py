@@ -199,10 +199,7 @@ class HandlerManager(object):
         for mName, mObj in inspect.getmembers(handler):
           if inspect.ismethod(mObj) and mName.find(handler.METHOD_PREFIX) == 0:
             methodName = mName[len(handler.METHOD_PREFIX):]
-            try:
-              args = getattr(handler, 'path_%s' % methodName)
-            except AttributeError::
-              args = []
+            args = getattr(handler, 'path_%s' % methodName, [])
             # argObj = inspect.getargspec(mObj)
             # args = '/'.join(['([A-z0-9_.-]+)'] * (len(argObj.args) - 1 - len(argObj.defaults or [])))
             # defs = '/'.join(['([A-z0-9_.-]*)'] * len(argObj.defaults or []))
