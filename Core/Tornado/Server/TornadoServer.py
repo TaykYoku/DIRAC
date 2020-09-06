@@ -176,7 +176,7 @@ class TornadoServer(object):
       Initialize the monitoring
     """
 
-    self._monitor.setComponentType(MonitoringClient.COMPONENT_TORNADO)
+    self._monitor.setComponentType(MonitoringClient.COMPONENT_WEB)
     self._monitor.initialize()
     self._monitor.setComponentName('Tornado')
 
