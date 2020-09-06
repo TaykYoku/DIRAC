@@ -251,7 +251,7 @@ class WebHandler(tornado.web.RequestHandler):
     # pylint: disable=no-value-for-parameter
     if self.getUserGroup():  # pylint: disable=no-value-for-parameter
       self.__disetConfig.setGroup(self.getUserGroup())  # pylint: disable=no-value-for-parameter
-    self.__disetConfig.setSetup(setup)
+    self.__disetConfig.setSetup(self.__setup)
     self.__disetDump = self.__disetConfig.dump()
 
     # Initialize request
