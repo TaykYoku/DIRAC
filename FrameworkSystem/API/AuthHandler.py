@@ -125,7 +125,7 @@ class AuthHandler(WebHandler):
     self.log.info('4: in test')
     return 'OK'
 
-  @coroutine
+  @asyncGen
   def web_authorization(self):
     self.log.info('web_authorization: %s' % self.request)
     self.log.info('1')
