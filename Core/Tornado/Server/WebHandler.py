@@ -113,7 +113,11 @@ class WebHandler(tornado.web.RequestHandler):
     self.__disetDump = self.__disetConfig.dump()
 
     # Set method name
-    self._methodName = self.request.path.replace(self.LOCATION, '', 1).split('/')[0]
+    try:
+      self._methodName = self.request.path.replace(self.LOCATION, '', 1).split('/')[1]
+    except IndexError:
+      self._methodName = None
+    
 
   def __processCredentials(self):
     """ Extract the user credentials based on the certificate or what comes from the balancer
