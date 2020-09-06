@@ -129,7 +129,7 @@ class AuthHandler(WebHandler):
   def web_authorization(self):
     self.log.info('web_authorization: %s' % self.request)
     self.log.info('1')
-    reuslt = yield self.threadTask(self.test, 'hello')
+    result = yield self.threadTask(self.test, 'hello')
     self.log.info('5: res %s' % result)
     self.finish('web_authorization: %s' % self.request)
     # if self.request.method == 'GET':
