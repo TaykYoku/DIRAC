@@ -117,9 +117,20 @@ class AuthHandler(WebHandler):
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
-  #@coroutine
+  def test(self, a):
+    self.log.info('2: in test')
+    self.log.info('3: in test %s' % a)
+    import time
+    time.sleep(5)
+    self.log.info('4: in test')
+    return 'OK'
+
+  @coroutine
   def web_authorization(self):
     self.log.info('web_authorization: %s' % self.request)
+    self.log.info('1')
+    reuslt = yield self.threadTask(self.test, 'hello')
+    self.log.info('5: res %s' % result)
     self.finish('web_authorization: %s' % self.request)
     # if self.request.method == 'GET':
 
