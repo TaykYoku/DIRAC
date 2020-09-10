@@ -158,7 +158,6 @@ class WebHandler(tornado.web.RequestHandler):
         if not res['OK']:
           raise Exception(res['Message'])
       except Exception as e:
-        sLog.error("Error in initialization", repr(e))
         raise
     
     self._methodName = None
