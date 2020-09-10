@@ -20,7 +20,7 @@ import tornado.iostream
 #    'tornado_m2crypto.m2iostream.M2IOStream')  # pylint: disable=wrong-import-position
 
 from tornado.httpserver import HTTPServer
-from tornado.web import Application, url
+from tornado.web import Application as _Application, url
 from tornado.ioloop import IOLoop
 import tornado.ioloop
 
@@ -32,36 +32,37 @@ from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
-#import redis
+import redis
 
 sLog = gLogger.getSubLogger(__name__)
 
-# class RedisCacheBackend(object):
+class RedisCacheBackend(object):
 
-#     def __init__(self, redis_connection, **options):
-#         self.options = dict(timeout=86400)
-#         self.options.update(options)
-#         self.redis = redis_connection
+  def __init__(self, redis_connection, **options):
+    self.options = dict(timeout=86400)
+    self.options.update(options)
+    self.redis = redis_connection
 
-#     def get(self, key):
-#         return self.redis.get(key) if self.exists(key) else None
+  def get(self, key):
+    return self.redis.get(key) if self.exists(key) else None
 
-#     def set(self, key, value, timeout=None):
-#         self.redis.set(key, value)
-#         self.redis.expire(key, timeout or self.options["timeout"])
+  def add(self, key, value, timeout=None):
+    self.redis.set(key, value)
+    self.redis.expire(key, timeout or self.options["timeout"])
 
-#     def delitem(self, key):
-#         self.redis.delete(key)
+  def delitem(self, key):
+    self.redis.delete(key)
 
-#     def exists(self, key):
-#         print key
-#         return bool(self.redis.exists(key))
+  def exists(self, key):
+    return bool(self.redis.exists(key))
 
-# class _Application(Application):
-#   def __init__(self, *args, **kwargs):
-#     self.redis = redis.Redis()
-#     self.cache = RedisCacheBackend(self.redis)
-#     super(Application, self).__init__(*args, **kwargs)
+class Application(_Application):
+  def __init__(self, *args, **kwargs):
+    self.redis = redis.Redis()
+    self.cache = RedisCacheBackend(self.redis)
+    # Initiated handlers list
+    self._initedHandlers = []
+    super(Application, self).__init__(*args, **kwargs)
 
 class TornadoServer(object):
   """
