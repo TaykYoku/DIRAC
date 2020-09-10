@@ -125,7 +125,7 @@ class WebHandler(tornado.web.RequestHandler):
       # while we were waiting for the lock
       if cls.__init_done:
         return S_OK()
-      cls.__log = gLogger.getSubLogger(cls.__name__)
+      cls.__log = gLogger.getSubLogger(cls.__class__.__name__)
       cls.initializeHandler()
       cls.__init_done = True
 
