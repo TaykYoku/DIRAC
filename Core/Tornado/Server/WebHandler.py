@@ -70,8 +70,13 @@ def asyncGen(method):
 
 
 class WebHandler(tornado.web.RequestHandler):
+  # Because we initialize at first request, we use a flag to know if it's already done
+  __init_done = False
+  # Lock to make sure that two threads are not initializing at the same time
+  __init_lock = threading.RLock()
+
   __disetConfig = ThreadConfig()
-  __log = False
+  __log = None
 
   # Location of the handler in the URL
   LOCATION = ""
@@ -96,12 +101,69 @@ class WebHandler(tornado.web.RequestHandler):
 
     return wrapper
 
+  classmethod
+  def __initialize(cls):
+    """
+      Initialize a service.
+      The work is only perform once at the first request.
+
+      :param relativeUrl: relative URL, e.g. ``/<System>/<Component>``
+      :param absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
+
+      :returns: S_OK
+    """
+    # If the initialization was already done successfuly,
+    # we can just return
+    if cls.__init_done:
+      return S_OK()
+
+    # Otherwise, do the work but with a lock
+    with cls.__init_lock:
+
+      # Check again that the initialization was not done by another thread
+      # while we were waiting for the lock
+      if cls.__init_done:
+        return S_OK()
+      cls.__log = gLogger.getSubLogger(cls.__name__)
+      cls.initializeHandler()
+      cls.__init_done = True
+
+      return S_OK()
+  
+  @classmethod
+  def initializeHandler(cls, infoDict=None):
+    """
+      This may be overwritten when you write a DIRAC service handler
+      And it must be a class method. This method is called only one time,
+      at the first request
+
+      :param dict ServiceInfoDict: infos about services, it contains
+                                    'serviceName', 'serviceSectionPath',
+                                    'csPaths' and 'URL'
+    """
+    pass
+
   def __init__(self, *args, **kwargs):
     """ Initialize the handler
     """
+    # Only initialized once
+    if not self.__init_done:
+      # Ideally, if something goes wrong, we would like to return a Server Error 500
+      # but this method cannot write back to the client as per the
+      # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
+      # So the client will get a ``Connection aborted```
+      try:
+        res = self.__initialize()
+        if not res['OK']:
+          raise Exception(res['Message'])
+      except Exception as e:
+        sLog.error("Error in initialization", repr(e))
+        raise
+    
+    self._methodName = None
+
+    # RequestHandler init
     super(WebHandler, self).__init__(*args, **kwargs)
-    if not WebHandler.__log:
-      WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
 
     # Fill credentials
     self.__credDict = {}
@@ -114,9 +176,9 @@ class WebHandler(tornado.web.RequestHandler):
 
     # Set method name
     try:
-      self._methodName = self.request.path.replace(self.LOCATION, '', 1).split('/')[1]
+      self._methodName = self._methodName or self.request.path.replace(self.LOCATION, '', 1).split('/')[1]
     except IndexError:
-      self._methodName = None
+      raise WErr(404, 'You need specify method name in request path.')
     
 
   def __processCredentials(self):
@@ -254,8 +316,6 @@ class WebHandler(tornado.web.RequestHandler):
     self.__disetConfig.setSetup(self.__setup)
     self.__disetDump = self.__disetConfig.dump()
 
-    # Initialize request
-    self.initialize()
 
   def get(self, *args, **kwargs):
     return self.__method(*args, **kwargs)

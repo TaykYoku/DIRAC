@@ -115,6 +115,13 @@ class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/oauth"
   METHOD_PREFIX = "web_"
 
+  @classmethod
+  def initializeHandler(cls):
+    """ This method is called only one time, at the first request.
+    """
+    print('---->> initializeHandler')
+    cls.__cacheSession = DictCache()
+
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
   def test(self, a):
@@ -129,9 +136,12 @@ class AuthHandler(WebHandler):
   def web_authorization(self):
     self.log.info('web_authorization: %s' % self.request)
     self.log.info('1')
-    result = yield self.threadTask(self.test, 'hello')
-    self.log.info('5: res %s' % result)
-    self.finish('web_authorization: %s' % self.request)
+    key = self.get_argument("key", "anykey")
+    value = self.get_argument("value", 'some info')
+    self.__cacheSession.add(key, 30, value=value)
+    #result = yield self.threadTask(self.test, 'hello')
+    #self.log.info('5: res %s' % result)
+    self.finish('web_authorization: %s: %s' % (key, value))
     # if self.request.method == 'GET':
 
     # t = Template('''<!DOCTYPE html>
@@ -149,7 +159,9 @@ class AuthHandler(WebHandler):
   
   def web_token(self):
     self.log.info('web_token: %s' % self.request)
-    self.finish('web_token: %s' % self.request)
+    key = self.get_argument("key", "anykey")
+    value = self.__cacheSession.get(key)
+    self.finish('web_token:  %s: %s' % (key, value))
   
   
   # auth_auth = ['all']

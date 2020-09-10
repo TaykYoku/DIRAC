@@ -32,8 +32,36 @@ from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
+#import redis
+
 sLog = gLogger.getSubLogger(__name__)
 
+# class RedisCacheBackend(object):
+
+#     def __init__(self, redis_connection, **options):
+#         self.options = dict(timeout=86400)
+#         self.options.update(options)
+#         self.redis = redis_connection
+
+#     def get(self, key):
+#         return self.redis.get(key) if self.exists(key) else None
+
+#     def set(self, key, value, timeout=None):
+#         self.redis.set(key, value)
+#         self.redis.expire(key, timeout or self.options["timeout"])
+
+#     def delitem(self, key):
+#         self.redis.delete(key)
+
+#     def exists(self, key):
+#         print key
+#         return bool(self.redis.exists(key))
+
+# class _Application(Application):
+#   def __init__(self, *args, **kwargs):
+#     self.redis = redis.Redis()
+#     self.cache = RedisCacheBackend(self.redis)
+#     super(Application, self).__init__(*args, **kwargs)
 
 class TornadoServer(object):
   """
