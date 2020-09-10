@@ -72,7 +72,7 @@ def asyncGen(method):
 
 class WebHandler(tornado.web.RequestHandler):
   # Because we initialize at first request, we use a flag to know if it's already done
-  # __init_done = False
+  __init_done = False
   # Lock to make sure that two threads are not initializing at the same time
   __init_lock = threading.RLock()
 
