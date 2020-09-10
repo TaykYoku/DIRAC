@@ -139,7 +139,8 @@ class AuthHandler(WebHandler):
     self.log.info('1')
     key = self.get_argument("key", "anykey")
     value = self.get_argument("value", 'some info')
-    self.__cacheSession.add(key, 30, value=value)
+    # self.__cacheSession.add(key, 30, value=value)
+    self.application.cache.add(key,value)
     #result = yield self.threadTask(self.test, 'hello')
     #self.log.info('5: res %s' % result)
     self.finish('web_authorization: %s: %s' % (key, value))
@@ -161,7 +162,7 @@ class AuthHandler(WebHandler):
   def web_token(self):
     self.log.info('web_token: %s' % self.request)
     key = self.get_argument("key", "anykey")
-    value = self.__cacheSession.get(key)
+    value = self.application.cache.get(key) #self.__cacheSession.get(key)
     self.finish('web_token:  %s: %s' % (key, value))
   
   
