@@ -10,6 +10,7 @@ from tornado import web, gen
 from tornado.template import Template
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
+from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
