@@ -72,7 +72,7 @@ def asyncGen(method):
 
 class WebHandler(tornado.web.RequestHandler):
   # Because we initialize at first request, we use a flag to know if it's already done
-  __init_done = False
+  # __init_done = False
   # Lock to make sure that two threads are not initializing at the same time
   __init_lock = threading.RLock()
 
@@ -144,7 +144,8 @@ class WebHandler(tornado.web.RequestHandler):
     """
     pass
 
-  def __init__(self, *args, **kwargs):
+  # def __init__(self, *args, **kwargs):
+  def initialize(self):  # pylint: disable=arguments-differ
     """ Initialize the handler
     """
     # Only initialized once
@@ -163,7 +164,7 @@ class WebHandler(tornado.web.RequestHandler):
     self._methodName = None
 
     # RequestHandler init
-    super(WebHandler, self).__init__(*args, **kwargs)
+    # super(WebHandler, self).__init__(*args, **kwargs)
 
     # Fill credentials
     self.__credDict = {}
