@@ -38,15 +38,13 @@ SESSION_FINISHING = "finishing"
 class AuthDB(DB):
   """ AuthDB class is a front-end to the OAuth Database
   """
-  tableDict = {'Sessions': {'Fields': {'ID': 'VARCHAR(128)',
+  tableDict = {'Sessions': {'Fields': {'Session': 'VARCHAR(64) NOT NULL',
+                                       'Grant': 'VARCHAR(64) NOT NULL',
+                                       'MetaData': 'VARCHAR(64)',
+                                       'DependsData': 'VARCHAR(64)',
                                        'Status': 'VARCHAR(32) DEFAULT "prepared"',
-                                       'Session': 'VARCHAR(64) NOT NULL',
                                        'Comment': 'MEDIUMBLOB',
-                                       'Provider': 'VARCHAR(255) NOT NULL',
-                                       'TokenType': 'VARCHAR(32) DEFAULT "bearer"',
-                                       'ExpiresIn': 'DATETIME',
-                                       'AccessToken': 'VARCHAR(1000)',
-                                       'RefreshToken': 'VARCHAR(1000)',
+                                       'Provider': 'VARCHAR(255)',
                                        'LastAccess': 'DATETIME',
                                        'RequestedGroup': 'VARCHAR(32)'},
                             'PrimaryKey': 'Session',
@@ -57,7 +55,18 @@ class AuthDB(DB):
                                      'IdP': 'VARCHAR(128)',
                                      'Scoupes': 'VARCHAR(128)',
                                      'Expiration': 'DATETIME',
-                                     'LastAccess': 'DATETIME'}}}
+                                     'LastAccess': 'DATETIME'}
+                          'PrimaryKey': 'Token',
+                          'Engine': 'InnoDB'},
+               'Clients': {'Fields': {'Name': 'VARCHAR(1000)',
+                                      'ClientSecret': 'VARCHAR(32) DEFAULT "bearer"',
+                                      'ClientID': 'VARCHAR(128)',
+                                      'RedirectURL': 'VARCHAR(128)',
+                                      'Scoupes': 'VARCHAR(128)',
+                                      'Expiration': 'DATETIME',
+                                      'LastAccess': 'DATETIME'}
+                           'PrimaryKey': 'Name',
+                           'Engine': 'InnoDB'}}
 
   def __init__(self):
     """ Constructor

@@ -5,9 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import re
+from datetime import datetime
 
 from tornado import web, gen
 from tornado.template import Template
+from authlib.common.security import generate_token
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
@@ -18,99 +20,11 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForIn
 
 __RCSID__ = "$Id$"
 
-template = """
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Authetication</title>
-    <meta charset="utf-8" />
-  </head>
-  <body>
-    <ul>
-      {% for idP, url in idPs.items() %}
-        <li> <p id="{{idP}}" onclick="auth()">{{idP}}</p> </li>
-      {% end %}
-    <ul>
-    <script type="text/javascript">
-      function auth() {
-        var me = this;
+__cacheSession = DictCache()
+__cacheClient = DictCache()
+gCacheClient = ThreadSafe.Synchronizer()
+gCacheSessions = ThreadSafe.Synchronizer()
 
-        authorizationURL = result.Value.URL;
-        session = result.Value.Session;
-
-        // Open popup
-        var oAuthReqWin = open(authorizationURL, "popupWindow", "hidden=yes,height=570,width=520,scrollbars=yes,status=yes");
-        oAuthReqWin.focus();
-
-        // Send request to redirect URL about success authorization
-        console.log("debug", "Watch when popup window will be close");
-        var res = (function waitPopupClosed(i, r) {
-          if (r === "closed") {
-            return Ext.Ajax.request({
-              url: {{GLOBAL_BASE_URL}} + "Authentication/waitOAuthStatus",
-              params: {
-                typeauth: authProvider,
-                inthread: inthread ?? null,
-                session: session
-              },
-              async: false,
-              success: function(response) {
-                var result = Ext.decode(response.responseText);
-                var msg = result.Comment ? result.Comment.replace(/\n/g, "<br>") : "";
-                if (result.Status == "authed") {
-                  return (location.protocol = "https:");  
-                } else if (result.Status != "failed") {
-                  msg = "Authentication thread discontinued.\n" + msg;
-                }
-                
-                // Hide load icon
-                Ext.get("app-dirac-loading").hide();
-                Ext.get("app-dirac-loading-msg").setHtml("Loading module. Please wait ...");
-                return Ext.Msg.show({
-                  closeAction: "destroy",
-                  title: "Authentication error.",
-                  message: msg,
-                  icon: Ext.Msg.ERROR
-                });
-              },
-              failure: function(form, action) {
-                // Hide load icon
-                Ext.get("app-dirac-loading").hide();
-                Ext.get("app-dirac-loading-msg").setHtml("Loading module. Please wait ...");
-                return me.alert("Request was ended with error: " + form + action, "error");
-              }
-            });
-          } else {
-            setTimeout(function() {
-              if (--i) {
-                if (oAuthReqWin === undefined) {
-                  me.log("debug", "Popup window was closed.");
-                  return waitPopupClosed(0, "closed");
-                }
-                if (oAuthReqWin) {
-                  if (oAuthReqWin.closed) {
-                    me.log("debug", "Popup window was closed.");
-                    return waitPopupClosed(0, "closed");
-                  } else {
-                    oAuthReqWin.focus();
-                    return waitPopupClosed(i);
-                  }
-                } else {
-                  return waitPopupClosed(i);
-                }
-              } else {
-                return waitPopupClosed(120);
-              }
-            }, 1000);
-          }
-        })(120, "opened");
-      }
-      if ("%s" == "redirect") { window.open("%s","_self") }
-      else { window.close() }
-    </script>
-  </body>
-</html>
-"""
 
 class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/oauth"
@@ -121,50 +35,294 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    cls.__cacheSession = DictCache()
+    global __cacheSession
+    global __cacheClient
+    cls.__cacheSession = __cacheSession
+    cls.__cacheClient = __cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
-  def test(self, a):
-    self.log.info('2: in test')
-    self.log.info('3: in test %s' % a)
-    import time
-    time.sleep(5)
-    self.log.info('4: in test')
-    return 'OK'
+
+  @gCacheClient
+  def addClient(self, data):
+    result = gSessionManager.createClient(data)
+    if result['OK']:
+      data = result['Value']
+      cls.__cacheClient.add(data['client_id'], data, (data['ExpiresIn'] - datetime.now()).seconds)
+    return result
+  
+  @gCacheClient
+  def getClient(self, clientID):
+    data = cls.__cacheClient.get(clientID)
+    if not data:
+      result = gSessionManager.getClient(clientID)
+      if result['OK']:
+        data = result['Value']
+        cid = data['client_id']
+        exp = (data['ExpiresIn'] - datetime.now()).seconds
+        cls.__cacheClient.add(cid, data, exp)
+    return data
+  
+  @gCacheSession
+  def addSession(self, session, data, expTime=300):
+    cls.__cacheSession.add(session, data, expTime)
+  
+  @gCacheSession
+  def getSession(self, session=None):
+    return cls.__cacheSession.get(clientID) if session else cls.__cacheSession.getDict()
+  
+  def updateSession(self, session, expTime=60, **data):
+    origData = self.getSession(session)
+    for k, v in data.items():
+      origData[k] = v
+    self.addSession(session, origData, expTime)
+  
+  def getSessionByOption(self, key):
+    value = self.get_argument(key)
+    sessions = cls.getSession()
+    for session, data in sessions.items():
+      if data[key] == value:
+        return session, data
+    return None, {}
 
   @asyncGen
-  def web_authorization(self):
-    self.log.info('web_authorization: %s' % self.request)
-    self.log.info('1')
-    key = self.get_argument("key", "anykey")
-    value = self.get_argument("value", 'some info')
-    # self.__cacheSession.add(key, 30, value=value)
-    self.application.cache.add(key,value)
-    #result = yield self.threadTask(self.test, 'hello')
-    #self.log.info('5: res %s' % result)
-    self.finish('web_authorization: %s: %s' % (key, value))
-    # if self.request.method == 'GET':
+  def web_register(self):
+    """ Device authorization flow
 
-    # t = Template('''<!DOCTYPE html>
-    #   <html><head><title>Authetication</title>
-    #     <meta charset="utf-8" /></head><body>
-    #       %s <br>
-    #       <script type="text/javascript">
-    #         if ("%s" == "redirect") { window.open("%s","_self") }
-    #         else { window.close() }
-    #       </script>
-    #     </body>
-    #   </html>''' % (comment, status, comment))
-    # self.log.info('>>>REDIRECT:\n', comment)
-    # self.finish(t.generate())
+        POST: /device?client_id= &scope=
+    """
+    if self.request.method == 'POST':
+      result = yield self.threadTask(self.addClient, self.request.arguments)
+      if not result['OK']:
+        raise
+      self.finish(result['Value'])
+
+  @asyncGen
+  def web_device(self):
+    """ Device authorization flow
+
+        POST: /device?client_id= &scope=
+    """
+    if self.request.method == 'POST':
+      scope = self.grt_argument('scope', None)
+      client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
+      if not client:
+        raise
+      session = generate_token(10)  # user_code
+      userCode = generate_token(10)
+      deviceCode = generate_token(10)
+      sessionDict = {'grant': 'device',
+                     'user_code': userCode,
+                     'device_code': deviceCode}
+      self.addSession(session, sessionDict)
+      self.write({'expires_in': 300, 'device_code': deviceCode, 'user_code': userCode,
+                  'verification_uri': 'https://dirac.egi.eu/DIRAC/device',
+                  'verification_uri_complete': 'https://dirac.egi.eu/DIRAC/device?user_code=%s' % userCode})
+    elif self.request.method == 'GET':
+      userCode = self.get_argument('user_code', None)
+      if userCode:
+        t = """
+        <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Authetication</title>
+              <meta charset="utf-8" />
+            </head>
+            <body>
+              <ul>
+                {% for idP in idPs %}
+                  <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
+                {% end %}
+              <ul>
+            </body>
+          </html>
+        """
+        session = self.getSessionByOption('user_code')
+        if not session:
+          raise
+        self.set_cookie('session', session, 60)
+        self.write(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
+                              idPs=getProvidersForInstance('id')))
+      else:
+        t = """
+        <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Authetication</title>
+              <meta charset="utf-8" />
+            </head>
+            <body>
+              <form action="{{deviceEndpoint}}" method="GET">
+                <input type="text" id="user_code" name="user_code">
+                <button type="submit" id="submit">Submit</button>
+              </form>
+            </body>
+          </html>
+        """
+        self.write(t.generate(deviceEndpoint='https://dirac.egi.eu/DIRAC/device'))
+    else:
+      raise
+    self.finish()
+
+  path_oauth = ['([A-z_-.,0-9]*)']
+  @asyncGen
+  def web_authorization(self, idP=None):
+    if self.request.method != 'GET':
+      raise
+    self.log.info('web_authorization: %s' % self.request)
+    if self.get_argument('response_type', None) == 'code':
+      client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
+      if not client:
+        raise
+      session = self.get_argument('state', generate_token(10))
+      codeChallenge = self.get_argument('code_challenge', None)
+      if codeChallenge:
+        sessionDict['code_challenge'] = codeChallenge
+        sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
+      self.addSession(session, sessionDict)
+      t = """
+      <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authetication</title>
+            <meta charset="utf-8" />
+          </head>
+          <body>
+            <ul>
+              {% for idP in idPs %}
+                <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
+              {% end %}
+            <ul>
+          </body>
+        </html>
+      """
+      self.set_cookie('session', session, 60)
+      self.finish(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
+                             idPs=getProvidersForInstance('id')))
+    elif idP:
+      if idP not in getProvidersForInstance('id'):
+        raise
+      session = self.get_cookie('session')
+      self.clean_cookie('session')
+      if not session:
+        raise
+      self.updateSession(session, Provider=idP)
+      result = IdProviderFactory().getIdProvider(idP)
+      if not result['OK']:
+        raise
+      provObj = result['Value']
+      result = provObj.getAuthURL(self.getSession(session))
+      if not result['OK']:
+        raise
+      self.log.notice('Redirect to', result['Value'])
+      self.redirect(result['Value'])
+
+  @asyncGen
+  def web_redirect(self):
+    # Redirect endpoint for response
+    self.log.info('REDIRECT RESPONSE:\n', self.request)
+    session = self.get_argument('state', None)
+    if not session:
+      raise WErr(500, "In some case session was not keep in flow.")
+    sessionDict = self.getSession(session)
+    if not sessionDict:
+      raise WErr(500, "Session expired.")
+    error = self.get_argument('error', None)
+    if error:
+      description = self.get_argument('error_description', '')
+      raise WErr(500, '%s session crashed with error:\n%s\n%s' % (session, error,
+                                                                  description))
+
+    self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
+    result = IdProviderFactory().getIdProvider(sessionDict['Provider'])
+    if not result['OK']:
+      raise
+    provObj = result['Value']
+    result = provObj.parseAuthResponse(**self.get_arguments)
+    if not result['OK']:
+      raise
+    #### GENERATE TOKEN
+    header = {}
+    payload = {'sub': result['Value']['ID'],
+               'grp': result['Value']['Group'],
+               'iss': getSetup(),
+               'exp': 12 * 3600}
+    #### key = READ Key
+    sessionDict['Token'] = {'access_token': jwt.encode(header, payload, key),
+                            'token_type': 'Baerer',
+                            'expires_at': 12 * 3600,
+                            'state': session}
+    sessionDict['Status'] = result['Value']['Status']
+    sessionDict['Comment'] = result['Value']['Comment']
+    if sessionDict['grant'] == 'device':
+      t = """
+      <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authetication</title>
+            <meta charset="utf-8" />
+          </head>
+          <body>
+            <script type="text/javascript"> window.close() </script>
+          </body>
+        </html>
+      """
+      self.finish(t.generate())
+    elif sessionDict['grant'] == 'code':
+      if 'code_challenge' in sessionDict:
+        # code = Create JWS
+        self.finish({'code': code, 'state': session})
+      else:
+        code = generate_token(10)
+        requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
+      sessionDict['code'] = code
+
+    self.updateSession(session, **sessionDict, 300)
+
   
   def web_token(self):
-    self.log.info('web_token: %s' % self.request)
-    key = self.get_argument("key", "anykey")
-    value = self.application.cache.get(key) #self.__cacheSession.get(key)
-    self.finish('web_token:  %s: %s' % (key, value))
-  
+    if self.request.method != 'POST':
+      raise
+    client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
+    if not client:
+      raise
+    grantType = self.get_argument('grant_type')
+    if grantType == 'device_code'
+      session, data = self.getSessionByOption('device_code')
+      if not session:
+        raise
+      if data['Status'] not in ['authed', 'failed']:
+        self.write('Status: %s Wait..' % data['Status'])
+      else:
+        self.__cacheSession.delete(session)
+        if data['Status'] != 'authed':
+          raise
+        if not data['Token']:
+          raise
+        self.write(data['Token'])
+      self.finish()
+    elif grantType == 'authorization_code':
+      session, data = self.getSessionByOption('code')
+      if not session:
+        raise
+      self.__cacheSession.delete(session)
+      if self.get_argument('redirect_uri') != client['redirect_uri']:
+        raise
+      codeVerifier = self.get_argument('code_verifier', None)
+      if codeVerifier:
+        if data['code_challenge_method'] == 'S256':
+          from authlib.oauth2.rfc7636 import create_s256_code_challenge
+          codeVerifier = create_s256_code_challenge(codeVerifier)
+        if data['code_challenge'] != codeVerifier:
+          raise
+      if not data['Token']:
+        raise
+      self.finish(data['Token'])
+    else:
+      raise
+
+
+
   
   # auth_auth = ['all']
   # methods_auth = ['POST', 'GET']

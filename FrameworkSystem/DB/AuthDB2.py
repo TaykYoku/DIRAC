@@ -1,0 +1,199 @@
+""" Auth class is a front-end to the Auth Database
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import re
+import json
+import pprint
+import random
+import string
+import datatime
+from authlib.common.security import generate_token
+
+from ast import literal_eval
+from datetime import datetime
+
+from DIRAC import gConfig, S_OK, S_ERROR, gLogger
+from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
+
+__RCSID__ = "$Id$"
+
+from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column
+
+Model = declarative_base()
+
+class Client(Model, OAuth2ClientMixin):
+  __tablename__ = 'Clients'
+  __table_args__ = {'mysql_engine': 'InnoDB',
+                    'mysql_charset': 'utf8',
+                    'schema': 'auth'}
+  id = Column(Integer, primary_key=True, nullable=False)
+
+  # Relationships
+  # token = relationship("Token")
+
+class AuthDB(SQLAlchemyDB):
+  """ AuthDB class is a front-end to the OAuth Database
+  """
+  def __init__(self):
+    """ Constructor
+    """
+    super(AuthDB, self).__init__()
+    self._initializeConnection('Framework/AuthDB')
+    result = self.__initializeDB()
+    if not result['OK']:
+      raise Exception("Can't create tables: %s" % result['Message'])
+    self.session = scoped_session(self.sessionMaker_o)
+
+  def __initializeDB(self):
+    """ Create the tables
+    """
+    tablesInDB = self.inspector.get_table_names()
+
+    # Clients
+    if 'Clients' not in tablesInDB:
+      try:
+        Client.__table__.create(self.engine)  # pylint: disable=no-member
+      except Exception as e:
+        return S_ERROR(e)
+
+    # # Tokens
+    # if 'Tokens' not in tablesInDB:
+    #   try:
+    #     Token.__table__.create(self.engine)  # pylint: disable=no-member
+    #   except Exception as e:
+    #     return S_ERROR(e)
+
+    return S_OK()
+
+  def addClient(self, client_id=None, client_secret=None,
+                client_id_issued_at=None, client_secret_expires_at=None, **metadata):
+
+    client = Client(client_id=client_id or generate_token(30),
+                    client_secret=client_secret or generate_token(30),
+                    client_id_issued_at=client_id_issued_at or datetime.now() + timedelta(days=360),
+                    client_secret_expires_at=client_secret_expires_at or datetime.now() + timedelta(days=360),
+                    **metadata)
+    
+    session = self.session()
+    try:
+      session.add(client)
+      session.commit()
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not add Client: %s' % (e))
+
+    session.close()
+    return S_OK('Component successfully added')
+  
+  def removeClient(self, clientID):
+    session = self.session()
+
+    result = self.__filterFields(session, Client, {'client_id': clientID})
+    if not result['OK']:
+      session.rollback()
+      session.close()
+      return result
+
+    for client in result['Value']:
+      session.delete(client)
+    
+    try:
+      session.commit()
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not commit changes: %s' % (e))
+
+    session.close()
+    return S_OK('Components successfully removed')
+  
+  def getClientByID(self, clientID):
+    session = self.session()
+    try:
+      client = session.query(Client).filter(client_id=clientID).one()
+      session.commit()
+    except MultipleResultsFound as e:
+      return S_ERROR(str(e))
+    except NoResultFound, e:
+      return S_ERROR(str(e))
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not commit changes: %s' % (e))
+
+    session.close()
+    return S_OK(client)
+  
+  def __filterFields(self, session, table, matchFields=None):
+    """
+    Filters instances of a selection by finding matches on the given fields
+    session argument is a Session instance used to retrieve the items
+    table argument must be one the following three: Component, Host,
+    InstalledComponent
+    matchFields argument should be a dictionary with the fields to match.
+    matchFields accepts fields of the form <Field.bigger> and <Field.smaller>
+    to filter using > and < relationships.
+    If matchFields is empty, no filtering will be done
+    """
+
+    if matchFields is None:
+      matchFields = {}
+
+    filtered = session.query(table)
+
+    for key in matchFields:
+      actualKey = key
+
+      comparison = '='
+      if '.bigger' in key:
+        comparison = '>'
+        actualKey = key.replace('.bigger', '')
+      elif '.smaller' in key:
+        comparison = '<'
+        actualKey = key.replace('.smaller', '')
+
+      if matchFields[key] is None:
+        sql = '`%s` IS NULL' % (actualKey)
+      elif isinstance(matchFields[key], list):
+        if len(matchFields[key]) > 0 and None not in matchFields[key]:
+          sql = '`%s` IN ( ' % (actualKey)
+          for i, element in enumerate(matchFields[key]):
+            toAppend = element
+            if isinstance(toAppend, datetime.datetime):
+              toAppend = toAppend.strftime("%Y-%m-%d %H:%M:%S")
+            if isinstance(toAppend, six.string_types):
+              toAppend = '\'%s\'' % (toAppend)
+            if i == 0:
+              sql = '%s%s' % (sql, toAppend)
+            else:
+              sql = '%s, %s' % (sql, toAppend)
+          sql = '%s )' % (sql)
+        else:
+          continue
+      elif isinstance(matchFields[key], six.string_types):
+        sql = '`%s` %s \'%s\'' % (actualKey, comparison, matchFields[key])
+      elif isinstance(matchFields[key], datetime.datetime):
+        sql = '%s %s \'%s\'' % \
+            (actualKey,
+             comparison,
+             matchFields[key].strftime("%Y-%m-%d %H:%M:%S"))
+      else:
+        sql = '`%s` %s %s' % (actualKey, comparison, matchFields[key])
+
+      filteredTemp = filtered.filter(text(sql))
+      try:
+        session.execute(filteredTemp)
+        session.commit()
+      except Exception as e:
+        return S_ERROR('Could not filter the fields: %s' % (e))
+      filtered = filteredTemp
+
+    return S_OK(filtered)
+

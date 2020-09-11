@@ -20,7 +20,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, 
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
-from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
+from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 
 from DIRAC.FrameworkSystem.DB.AuthServerHandler import AuthServerHandler
 
@@ -202,15 +202,15 @@ class AuthManagerHandler(RequestHandler):
   def initializeHandler(cls, serviceInfo):
     """ Handler initialization
     """
-    cls.__db = AuthDB()
-    cls.__authServ = AuthServerHandler(cls.__db)
+    cls.__db = AuthDB2()
+    # cls.__authServ = AuthServerHandler(cls.__db)
     # gThreadScheduler.addPeriodicTask(15 * 60, cls.__refreshReservedSessions)
-    gThreadScheduler.addPeriodicTask(3600, cls.__cleanAuthDB)
-    gThreadScheduler.addPeriodicTask(3600, cls.__updateSessionsFromDB)
-    result = cls.__cleanAuthDB()
-    if result['OK']:
-      result = cls.__updateSessionsFromDB()
-    return cls.__refreshProfiles() if result['OK'] else result
+    #gThreadScheduler.addPeriodicTask(3600, cls.__cleanAuthDB)
+    #gThreadScheduler.addPeriodicTask(3600, cls.__updateSessionsFromDB)
+    #result = cls.__cleanAuthDB()
+    #if result['OK']:
+    #  result = cls.__updateSessionsFromDB()
+    #return cls.__refreshProfiles() if result['OK'] else result
 
   @classmethod
   def __refreshProfiles(cls):
@@ -739,3 +739,16 @@ class AuthManagerHandler(RequestHandler):
       return S_ERROR(repr(e))
     res = self.__db.killSession(session)
     return S_OK(token) if res['OK'] else res
+  
+  types_createClient = [dict]
+  auth_createClient = ["authenticated", "TrustedHost"]
+
+  def export_createClient(self, kwargs):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.addClient(**kwargs)

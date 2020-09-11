@@ -58,10 +58,10 @@ class RedisCacheBackend(object):
 
 class Application(_Application):
   def __init__(self, *args, **kwargs):
-    self.redis = redis.Redis()
-    self.cache = RedisCacheBackend(self.redis)
-    # Initiated handlers list
-    self._initedHandlers = []
+    # #self.redis = redis.Redis()
+    # self.cache = RedisCacheBackend(self.redis)
+    # # Initiated handlers list
+    # self._initedHandlers = []
     super(Application, self).__init__(*args, **kwargs)
 
 class TornadoServer(object):
