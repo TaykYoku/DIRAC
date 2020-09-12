@@ -38,8 +38,6 @@ class AuthHandler(WebHandler):
     print('---->> initializeHandler')
     global cacheSession
     global cacheClient
-    #cls.__cacheSession = cacheSession
-    #cls.__cacheClient = cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
@@ -49,19 +47,19 @@ class AuthHandler(WebHandler):
     result = gSessionManager.createClient(data)
     if result['OK']:
       data = result['Value']
-      self.__cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
+      cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
     return result
 
   @gCacheClient
   def getClient(self, clientID):
-    data = self.__cacheClient.get(clientID)
+    data = cacheClient.get(clientID)
     if not data:
       result = gSessionManager.getClient(clientID)
       if result['OK']:
         data = result['Value']
         cid = data['client_id']
         exp = (data['ExpiresIn'] - datetime.now()).seconds
-        self.__cacheClient.add(cid, exp, data)
+        cacheClient.add(cid, exp, data)
     return data
   
   @gCacheSession
@@ -92,16 +90,13 @@ class AuthHandler(WebHandler):
 
         POST: /device?client_id= &scope=
     """
-    session = self.get_argument('session', None)
     if self.request.method == 'POST':
-      if session:
-        self.addSession(session, self.get_argument('data', 'qwe123'))
       result = yield self.threadTask(self.addClient, self.request.arguments)
       if not result['OK']:
         raise
       self.finish(result['Value'])
     else:
-      self.finish(self.getSession(session))
+      self.finish(cacheClient.getDict())
 
   @asyncGen
   def web_device(self):
@@ -300,7 +295,7 @@ class AuthHandler(WebHandler):
       if data['Status'] not in ['authed', 'failed']:
         self.write('Status: %s Wait..' % data['Status'])
       else:
-        self.__cacheSession.delete(session)
+        cacheSession.delete(session)
         if data['Status'] != 'authed':
           raise
         if not data['Token']:
@@ -311,7 +306,7 @@ class AuthHandler(WebHandler):
       session, data = self.getSessionByOption('code')
       if not session:
         raise
-      self.__cacheSession.delete(session)
+      cacheSession.delete(session)
       if self.get_argument('redirect_uri') != client['redirect_uri']:
         raise
       codeVerifier = self.get_argument('code_verifier', None)
