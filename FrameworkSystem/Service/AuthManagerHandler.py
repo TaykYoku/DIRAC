@@ -22,7 +22,7 @@ from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 
-from DIRAC.FrameworkSystem.DB.AuthServerHandler import AuthServerHandler
+# from DIRAC.FrameworkSystem.DB.AuthServerHandler import AuthServerHandler
 
 __RCSID__ = "$Id$"
 
