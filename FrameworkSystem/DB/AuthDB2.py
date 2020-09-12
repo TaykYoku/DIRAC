@@ -34,8 +34,15 @@ class Client(Model, OAuth2ClientMixin):
                     'schema': 'auth'}
   id = Column(Integer, primary_key=True, nullable=False)
 
-  # Relationships
-  # token = relationship("Token")
+class Token(Model, OAuth2TokenMixin):
+  __tablename__ = 'Tokens'
+  __table_args__ = {'mysql_engine': 'InnoDB',
+                    'mysql_charset': 'utf8',
+                    'schema': 'auth'}
+  id = Column(Integer, primary_key=True, nullable=False)
+
+# Relationships
+# token = relationship("Token")
 
 class AuthDB(SQLAlchemyDB):
   """ AuthDB class is a front-end to the OAuth Database
@@ -62,12 +69,12 @@ class AuthDB(SQLAlchemyDB):
       except Exception as e:
         return S_ERROR(e)
 
-    # # Tokens
-    # if 'Tokens' not in tablesInDB:
-    #   try:
-    #     Token.__table__.create(self.engine)  # pylint: disable=no-member
-    #   except Exception as e:
-    #     return S_ERROR(e)
+    # Tokens
+    if 'Tokens' not in tablesInDB:
+      try:
+        Token.__table__.create(self.engine)  # pylint: disable=no-member
+      except Exception as e:
+        return S_ERROR(e)
 
     return S_OK()
 
@@ -118,6 +125,69 @@ class AuthDB(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(client_id=clientID).one()
+      session.commit()
+    except MultipleResultsFound as e:
+      return S_ERROR(str(e))
+    except NoResultFound, e:
+      return S_ERROR(str(e))
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not commit changes: %s' % (e))
+
+    session.close()
+    return S_OK(client)
+  
+  def addToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
+               access_token=None, refresh_token=None, **metadata):
+
+    token = Token(client_id=client_id,
+                    token_type=token_type or "Baerer",
+                    **metadata)
+    
+    session = self.session()
+    try:
+      session.add(token)
+      session.commit()
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not add Client: %s' % (e))
+
+    session.close()
+    return S_OK('Component successfully added')
+  
+  def removeToken(self, access_token=None, refresh_token=None):
+    session = self.session()
+    d = {}
+    if access_token:
+      d['access_token'] = access_token
+    if refresh_token:
+      d['refresh_token'] = refresh_token
+    result = self.__filterFields(session, Token, d)
+    
+    if not result['OK']:
+      session.rollback()
+      session.close()
+      return result
+
+    for client in result['Value']:
+      session.delete(client)
+    
+    try:
+      session.commit()
+    except Exception as e:
+      session.rollback()
+      session.close()
+      return S_ERROR('Could not commit changes: %s' % (e))
+
+    session.close()
+    return S_OK('Components successfully removed')
+  
+  def getToken(self, params):
+    session = self.session()
+    try:
+      client = session.query(Token).filter(**params).one()
       session.commit()
     except MultipleResultsFound as e:
       return S_ERROR(str(e))

@@ -50,7 +50,7 @@ class AuthHandler(WebHandler):
       data = result['Value']
       cls.__cacheClient.add(data['client_id'], data, (data['ExpiresIn'] - datetime.now()).seconds)
     return result
-  
+
   @gCacheClient
   def getClient(self, clientID):
     data = cls.__cacheClient.get(clientID)
@@ -277,7 +277,7 @@ class AuthHandler(WebHandler):
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
       sessionDict['code'] = code
 
-    self.updateSession(session, **sessionDict, 300)
+    self.updateSession(session, sessionDict, 300)
 
   
   def web_token(self):
