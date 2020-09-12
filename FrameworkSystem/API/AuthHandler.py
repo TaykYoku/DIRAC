@@ -138,7 +138,7 @@ class AuthHandler(WebHandler):
     else:
       self.finish(cacheClient.getDict())
 
-  path_device = ['([A-z_-.,0-9]*)']
+  path_device = ['([A-z0-9]*)']
   @asyncGen
   def web_device(self, userCode=None):
     """ Device authorization flow
@@ -205,7 +205,7 @@ class AuthHandler(WebHandler):
         self.write(t.generate(deviceEndpoint='https://dirac.egi.eu/DIRAC/device'))
     self.finish()
 
-  path_authorization = ['([A-z_-0-9]*)']
+  path_authorization = ['([A-z0-9]*)']
   @asyncGen
   def web_authorization(self, idP=None):
     if self.request.method != 'GET':
