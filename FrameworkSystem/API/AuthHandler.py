@@ -47,7 +47,7 @@ class AuthHandler(WebHandler):
     result = gSessionManager.createClient(data)
     if result['OK']:
       data = result['Value']
-      cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
+      cacheClient.add(data['client_id'], 360 * 24 * 3600, data)
     return result
 
   @gCacheClient

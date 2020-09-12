@@ -84,7 +84,7 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       session.add(client)
-      result = S_OK(client.client_info())
+      result = S_OK(client.client_info)
       session.commit()
     except Exception as e:
       session.rollback()
