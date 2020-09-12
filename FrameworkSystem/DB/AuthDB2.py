@@ -82,7 +82,7 @@ class AuthDB2(SQLAlchemyDB):
                     client_secret=client_secret or generate_token(30),
                     client_id_issued_at=client_id_issued_at or datetime.now() + timedelta(days=360),
                     client_secret_expires_at=client_secret_expires_at or datetime.now() + timedelta(days=360),
-                    **metadata)
+                    _client_metadata=metadata)
     
     session = self.session()
     try:
