@@ -75,13 +75,10 @@ class AuthDB2(SQLAlchemyDB):
 
     return S_OK()
 
-  def addClient(self, client_id=None, client_secret=None,
-                client_id_issued_at=None, client_secret_expires_at=None, **metadata):
+  def addClient(self, client_id=None, client_secret=None, **metadata):
 
     client = Client(client_id=client_id or generate_token(30),
                     client_secret=client_secret or generate_token(30),
-                    client_id_issued_at=client_id_issued_at or datetime.now() + timedelta(days=360),
-                    client_secret_expires_at=client_secret_expires_at or datetime.now() + timedelta(days=360),
                     _client_metadata=metadata)
     
     session = self.session()
