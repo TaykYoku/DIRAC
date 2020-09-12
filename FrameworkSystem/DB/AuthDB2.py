@@ -12,7 +12,7 @@ import string
 from authlib.common.security import generate_token
 
 from ast import literal_eval
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from DIRAC import gConfig, S_OK, S_ERROR, gLogger
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
