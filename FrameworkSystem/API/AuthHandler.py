@@ -93,7 +93,7 @@ class AuthHandler(WebHandler):
     if self.request.method == 'POST':
       result = yield self.threadTask(self.addClient, self.request.arguments)
       if not result['OK']:
-        raise WErr(result['Message'])
+        raise WErr(503, result['Message'])
       self.finish(result['Value'])
     else:
       self.finish(cacheClient.getDict())
