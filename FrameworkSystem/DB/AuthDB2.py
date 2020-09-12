@@ -43,14 +43,14 @@ class Token(Model, OAuth2TokenMixin):
 # Relationships
 # token = relationship("Token")
 
-class AuthDB(SQLAlchemyDB):
+class AuthDB2(SQLAlchemyDB):
   """ AuthDB class is a front-end to the OAuth Database
   """
   def __init__(self):
     """ Constructor
     """
-    super(AuthDB, self).__init__()
-    self._initializeConnection('Framework/AuthDB')
+    super(AuthDB2, self).__init__()
+    self._initializeConnection('Framework/AuthDB2')
     result = self.__initializeDB()
     if not result['OK']:
       raise Exception("Can't create tables: %s" % result['Message'])
