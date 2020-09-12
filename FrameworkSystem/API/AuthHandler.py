@@ -287,7 +287,7 @@ class AuthHandler(WebHandler):
     if not client:
       raise
     grantType = self.get_argument('grant_type')
-    if grantType == 'device_code'
+    if grantType == 'device_code':
       session, data = self.getSessionByOption('device_code')
       if not session:
         raise
