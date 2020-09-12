@@ -321,7 +321,7 @@ class AuthHandler(WebHandler):
 
     self.updateSession(session, sessionDict, 300)
 
-  
+  @asyncGen
   def web_token(self):
     if self.request.method != 'POST':
       raise
