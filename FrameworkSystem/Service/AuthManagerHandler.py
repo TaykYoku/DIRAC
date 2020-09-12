@@ -753,6 +753,19 @@ class AuthManagerHandler(RequestHandler):
         :return: S_OK(str)/S_ERROR()
     """
     return self.__db.addClient(**kwargs)
+
+  types_getClientByID = [str]
+  auth_getClientByID = []  # "authenticated", "TrustedHost"]
+
+  def export_getClientByID(self, clientID):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.getClientByID(clientID)
   
   types_saveToken = [dict]
   auth_saveToken = ["authenticated", "TrustedHost"]

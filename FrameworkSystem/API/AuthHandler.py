@@ -10,6 +10,7 @@ from datetime import datetime
 from tornado import web, gen
 from tornado.template import Template
 from authlib.common.security import generate_token
+from authlib.jose import jwt
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Utilities import ThreadSafe
@@ -25,6 +26,46 @@ cacheSession = DictCache()
 cacheClient = DictCache()
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
+
+from authlib.oauth2.rfc8628 import (
+    DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
+    DeviceCodeGrant as _DeviceCodeGrant,
+    DeviceCredentialDict,
+)
+from authlib.oauth2.rfc7636 import (
+    compare_plain_code_challenge,
+    create_s256_code_challenge,
+)
+# class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
+#     def get_verification_uri(self):
+#         return 'https://example.com/activate'
+
+#     def save_device_credential(self, client_id, scope, data):
+#         pass
+
+# class DeviceCodeGrant(_DeviceCodeGrant):
+#     def query_device_credential(self, device_code):
+#         data = device_credentials.get(device_code)
+#         if not data:
+#             return None
+
+#         now = int(time.time())
+#         data['expires_at'] = now + data['expires_in']
+#         data['device_code'] = device_code
+#         data['scope'] = 'profile'
+#         data['interval'] = 5
+#         data['verification_uri'] = 'https://example.com/activate'
+#         return DeviceCredentialDict(data)
+
+#     def query_user_grant(self, user_code):
+#         if user_code == 'code':
+#             return User.query.get(1), True
+#         if user_code == 'denied':
+#             return User.query.get(1), False
+#         return None
+
+#     def should_slow_down(self, credential, now):
+#         return False
 
 
 class AuthHandler(WebHandler):
@@ -47,19 +88,17 @@ class AuthHandler(WebHandler):
     result = gSessionManager.createClient(data)
     if result['OK']:
       data = result['Value']
-      cacheClient.add(data['client_id'], 360 * 24 * 3600, data)
+      cacheClient.add(data['client_id'], 24 * 3600, data)
     return result
 
   @gCacheClient
   def getClient(self, clientID):
     data = cacheClient.get(clientID)
     if not data:
-      result = gSessionManager.getClient(clientID)
+      result = gSessionManager.getClientByID(clientID)
       if result['OK']:
         data = result['Value']
-        cid = data['client_id']
-        exp = (data['ExpiresIn'] - datetime.now()).seconds
-        cacheClient.add(cid, exp, data)
+        cacheClient.add(data['client_id'], 24 * 3600, data)
     return data
   
   @gCacheSession
@@ -76,8 +115,8 @@ class AuthHandler(WebHandler):
       origData[k] = v
     self.addSession(session, origData, expTime)
   
-  def getSessionByOption(self, key):
-    value = self.get_argument(key)
+  def getSessionByOption(self, key, value=None):
+    value = value or self.get_argument(key)
     sessions = self.getSession()
     for session, data in sessions.items():
       if data[key] == value:
@@ -95,11 +134,14 @@ class AuthHandler(WebHandler):
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.finish(result['Value'])
+    
+    # TODO_remove this block:
     else:
       self.finish(cacheClient.getDict())
 
+  path_device = ['([A-z_-.,0-9]*)']
   @asyncGen
-  def web_device(self):
+  def web_device(self, userCode=None):
     """ Device authorization flow
 
         POST: /device?client_id= &scope=
@@ -108,19 +150,20 @@ class AuthHandler(WebHandler):
       scope = self.grt_argument('scope', None)
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
       if not client:
-        raise
-      session = generate_token(10)  # user_code
-      userCode = generate_token(10)
-      deviceCode = generate_token(10)
-      sessionDict = {'grant': 'device',
-                     'user_code': userCode,
-                     'device_code': deviceCode}
-      self.addSession(session, sessionDict)
-      self.write({'expires_in': 300, 'device_code': deviceCode, 'user_code': userCode,
-                  'verification_uri': 'https://dirac.egi.eu/DIRAC/device',
-                  'verification_uri_complete': 'https://dirac.egi.eu/DIRAC/device?user_code=%s' % userCode})
+        raise WErr(404, 'Client ID is unregistred.')
+      data = {}
+      data['expires_in'] = 300
+      data['expires_at'] = int(time.time()) + data['expires_in']
+      data['device_code'] = generate_token(20)
+      data['user_code'] = generate_token(10)
+      data['scope'] = ''
+      data['interval'] = 5
+      data['verification_uri'] = 'https://dirac.egi.eu/DIRAC/device'
+      data['verification_uri_complete'] = 'https://dirac.egi.eu/DIRAC/device/%s' % data['user_code']
+      # return DeviceCredentialDict(data)
+      self.addSession(data['device_code'], data)
+      self.write(data)
     elif self.request.method == 'GET':
-      userCode = self.get_argument('user_code', None)
       if userCode:
         t = """
         <!DOCTYPE html>
@@ -138,9 +181,9 @@ class AuthHandler(WebHandler):
             </body>
           </html>
         """
-        session = self.getSessionByOption('user_code')
+        session = self.getSessionByOption('user_code', userCode)
         if not session:
-          raise
+          raise WErr(404, 'Session expired.')
         self.set_cookie('session', session, 60)
         self.write(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
                               idPs=getProvidersForInstance('id')))
@@ -161,20 +204,18 @@ class AuthHandler(WebHandler):
           </html>
         """
         self.write(t.generate(deviceEndpoint='https://dirac.egi.eu/DIRAC/device'))
-    else:
-      raise
     self.finish()
 
-  path_oauth = ['([A-z_-.,0-9]*)']
+  path_authorization = ['([A-z_-.,0-9]*)']
   @asyncGen
   def web_authorization(self, idP=None):
     if self.request.method != 'GET':
-      raise
+      raise WErr(404, '%s request method not supported.')
     self.log.info('web_authorization: %s' % self.request)
     if self.get_argument('response_type', None) == 'code':
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
       if not client:
-        raise
+        raise WErr(404, 'Client ID is unregistred.')
       session = self.get_argument('state', generate_token(10))
       codeChallenge = self.get_argument('code_challenge', None)
       if codeChallenge:
@@ -202,19 +243,19 @@ class AuthHandler(WebHandler):
                              idPs=getProvidersForInstance('id')))
     elif idP:
       if idP not in getProvidersForInstance('id'):
-        raise
+        raise WErr(503, 'Provider not exist.')
       session = self.get_cookie('session')
       self.clean_cookie('session')
       if not session:
-        raise
+        raise WErr(404, "session expired")
       self.updateSession(session, Provider=idP)
       result = IdProviderFactory().getIdProvider(idP)
       if not result['OK']:
-        raise
+        raise WErr(503, result['Message'])
       provObj = result['Value']
       result = provObj.getAuthURL(self.getSession(session))
       if not result['OK']:
-        raise
+        raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
       self.redirect(result['Value'])
 
@@ -237,11 +278,12 @@ class AuthHandler(WebHandler):
     self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
     result = IdProviderFactory().getIdProvider(sessionDict['Provider'])
     if not result['OK']:
-      raise
+      raise WErr(503, result['Message'])
     provObj = result['Value']
     result = provObj.parseAuthResponse(**self.get_arguments)
     if not result['OK']:
-      raise
+      raise WErr(503, result['Message'])
+    userProfile
     #### GENERATE TOKEN
     header = {}
     payload = {'sub': result['Value']['ID'],
@@ -255,7 +297,7 @@ class AuthHandler(WebHandler):
                             'state': session}
     sessionDict['Status'] = result['Value']['Status']
     sessionDict['Comment'] = result['Value']['Comment']
-    if sessionDict['grant'] == 'device':
+    if 'device_code' in sessionDict:
       t = """
       <!DOCTYPE html>
         <html>
@@ -309,19 +351,20 @@ class AuthHandler(WebHandler):
       cacheSession.delete(session)
       if self.get_argument('redirect_uri') != client['redirect_uri']:
         raise
-      codeVerifier = self.get_argument('code_verifier', None)
-      if codeVerifier:
+      if data['code_challenge_method']:
+        codeVerifier = self.get_argument('code_verifier')
         if data['code_challenge_method'] == 'S256':
-          from authlib.oauth2.rfc7636 import create_s256_code_challenge
-          codeVerifier = create_s256_code_challenge(codeVerifier)
-        if data['code_challenge'] != codeVerifier:
-          raise
+          create_s256_code_challenge(codeVerifier, data['code_challenge'])
+        else:
+          compare_plain_code_challenge(codeVerifier, data['code_challenge'])
+
       if not data['Token']:
         raise
       self.finish(data['Token'])
     else:
       raise
 
+  def __generateToken(self, header, payload):
 
 
   

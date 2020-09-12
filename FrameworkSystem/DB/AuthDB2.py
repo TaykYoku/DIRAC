@@ -119,18 +119,18 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(client_id=clientID).one()
+      result = S_OK(client.client_info)
       session.commit()
     except MultipleResultsFound as e:
-      return S_ERROR(str(e))
+      result = S_ERROR(str(e))
     except NoResultFound, e:
-      return S_ERROR(str(e))
+      result = S_ERROR(str(e))
     except Exception as e:
       session.rollback()
-      session.close()
-      return S_ERROR('Could not commit changes: %s' % (e))
+      result = S_ERROR('Could not commit changes: %s' % (e))
 
     session.close()
-    return S_OK(client)
+    return result
   
   def addToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
                access_token=None, refresh_token=None, **metadata):
