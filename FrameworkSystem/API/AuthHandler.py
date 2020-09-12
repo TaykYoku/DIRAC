@@ -24,7 +24,7 @@ __RCSID__ = "$Id$"
 __cacheSession = DictCache()
 __cacheClient = DictCache()
 gCacheClient = ThreadSafe.Synchronizer()
-gCacheSessions = ThreadSafe.Synchronizer()
+gCacheSession = ThreadSafe.Synchronizer()
 
 
 class AuthHandler(WebHandler):
