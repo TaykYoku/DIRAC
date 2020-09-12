@@ -92,11 +92,16 @@ class AuthHandler(WebHandler):
 
         POST: /device?client_id= &scope=
     """
+    session = self.get_argument('session', None)
     if self.request.method == 'POST':
+      if session:
+        self.addSession(session, 300, self.get_argument('data', 'qwe123'))
       result = yield self.threadTask(self.addClient, self.request.arguments)
       if not result['OK']:
         raise
       self.finish(result['Value'])
+    else:
+      self.finish(self.getSession(session))
 
   @asyncGen
   def web_device(self):
