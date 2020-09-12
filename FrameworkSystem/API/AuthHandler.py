@@ -21,8 +21,8 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForIn
 
 __RCSID__ = "$Id$"
 
-__cacheSession = DictCache()
-__cacheClient = DictCache()
+cacheSession = DictCache()
+cacheClient = DictCache()
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
 
@@ -36,10 +36,10 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    global __cacheSession
-    global __cacheClient
-    cls.__cacheSession = __cacheSession
-    cls.__cacheClient = __cacheClient
+    global cacheSession
+    global cacheClient
+    cls.__cacheSession = cacheSession
+    cls.__cacheClient = cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
@@ -49,7 +49,7 @@ class AuthHandler(WebHandler):
     result = gSessionManager.createClient(data)
     if result['OK']:
       data = result['Value']
-      cls.__cacheClient.add(data['client_id'], data, (data['ExpiresIn'] - datetime.now()).seconds)
+      cls.__cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
     return result
 
   @gCacheClient
@@ -61,22 +61,22 @@ class AuthHandler(WebHandler):
         data = result['Value']
         cid = data['client_id']
         exp = (data['ExpiresIn'] - datetime.now()).seconds
-        cls.__cacheClient.add(cid, data, exp)
+        cls.__cacheClient.add(cid, exp, data)
     return data
   
   @gCacheSession
   def addSession(self, session, data, expTime=300):
-    cls.__cacheSession.add(session, data, expTime)
+    cls.__cacheSession.add(session, expTime, data)
   
   @gCacheSession
   def getSession(self, session=None):
-    return cls.__cacheSession.get(clientID) if session else cls.__cacheSession.getDict()
+    return cls.__cacheSession.get(session) if session else cls.__cacheSession.getDict()
   
   def updateSession(self, session, expTime=60, **data):
     origData = self.getSession(session)
     for k, v in data.items():
       origData[k] = v
-    self.addSession(session, origData, expTime)
+    self.addSession(session, expTime, origData)
   
   def getSessionByOption(self, key):
     value = self.get_argument(key)
