@@ -50,7 +50,7 @@ class AuthDB2(SQLAlchemyDB):
     """ Constructor
     """
     super(AuthDB2, self).__init__()
-    self._initializeConnection('Framework/AuthDB2')
+    self._initializeConnection('Framework/AuthDB')
     result = self.__initializeDB()
     if not result['OK']:
       raise Exception("Can't create tables: %s" % result['Message'])
