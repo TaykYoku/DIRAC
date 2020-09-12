@@ -33,7 +33,6 @@ from authlib.oauth2.rfc8628 import (
     DeviceCredentialDict,
 )
 from authlib.oauth2.rfc7636 import (
-    compare_plain_code_challenge,
     create_s256_code_challenge,
 )
 # class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
@@ -354,15 +353,13 @@ class AuthHandler(WebHandler):
       if data['code_challenge_method']:
         codeVerifier = self.get_argument('code_verifier')
         if data['code_challenge_method'] == 'S256':
-          create_s256_code_challenge(codeVerifier, data['code_challenge'])
-        else:
-          compare_plain_code_challenge(codeVerifier, data['code_challenge'])
+          codeVerifier = create_s256_code_challenge(codeVerifier)
+        if codeVerifier != data['code_challenge']:
+          raise WErr(404, 'code_verifier is not correct.')
 
       if not data['Token']:
-        raise
+        raise WErr(503, 'Cannot creat token.')
       self.finish(data['Token'])
-    else:
-      raise
 
   # def __generateToken(self, header, payload):
 
