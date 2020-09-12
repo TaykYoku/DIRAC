@@ -91,7 +91,7 @@ class AuthDB2(SQLAlchemyDB):
       return S_ERROR('Could not add Client: %s' % (e))
 
     session.close()
-    return S_OK('Component successfully added')
+    return S_OK(client.client_info())
   
   def removeClient(self, clientID):
     session = self.session()
