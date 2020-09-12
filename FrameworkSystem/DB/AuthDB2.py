@@ -22,7 +22,7 @@ __RCSID__ = "$Id$"
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column
+from sqlalchemy import Column, Integer
 
 Model = declarative_base()
 
