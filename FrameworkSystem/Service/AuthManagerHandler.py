@@ -742,7 +742,7 @@ class AuthManagerHandler(RequestHandler):
     return S_OK(token) if res['OK'] else res
   
   types_createClient = [dict]
-  auth_createClient = ["authenticated", "TrustedHost"]
+  auth_createClient = []#"authenticated", "TrustedHost"]
 
   def export_createClient(self, kwargs):
     """ Generates a state string to be used in authorizations
