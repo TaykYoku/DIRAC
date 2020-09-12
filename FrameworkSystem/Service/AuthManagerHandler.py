@@ -203,6 +203,7 @@ class AuthManagerHandler(RequestHandler):
     """ Handler initialization
     """
     cls.__db = AuthDB2()
+    return S_OK()
     # cls.__authServ = AuthServerHandler(cls.__db)
     # gThreadScheduler.addPeriodicTask(15 * 60, cls.__refreshReservedSessions)
     #gThreadScheduler.addPeriodicTask(3600, cls.__cleanAuthDB)
