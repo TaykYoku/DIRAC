@@ -12,6 +12,7 @@ from tornado.template import Template
 from authlib.common.security import generate_token
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
+from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
