@@ -364,7 +364,7 @@ class AuthHandler(WebHandler):
     else:
       raise
 
-  def __generateToken(self, header, payload):
+  # def __generateToken(self, header, payload):
 
 
   
