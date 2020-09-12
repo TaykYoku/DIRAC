@@ -79,7 +79,7 @@ class AuthDB2(SQLAlchemyDB):
 
     client = Client(client_id=client_id or generate_token(30),
                     client_secret=client_secret or generate_token(30),
-                    _client_metadata=metadata)
+                    _client_metadata=str(metadata))
     
     session = self.session()
     try:
