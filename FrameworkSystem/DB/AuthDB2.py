@@ -9,7 +9,6 @@ import json
 import pprint
 import random
 import string
-import datatime
 from authlib.common.security import generate_token
 
 from ast import literal_eval
@@ -236,7 +235,7 @@ class AuthDB(SQLAlchemyDB):
           sql = '`%s` IN ( ' % (actualKey)
           for i, element in enumerate(matchFields[key]):
             toAppend = element
-            if isinstance(toAppend, datetime.datetime):
+            if isinstance(toAppend, datetime):
               toAppend = toAppend.strftime("%Y-%m-%d %H:%M:%S")
             if isinstance(toAppend, six.string_types):
               toAppend = '\'%s\'' % (toAppend)
@@ -249,7 +248,7 @@ class AuthDB(SQLAlchemyDB):
           continue
       elif isinstance(matchFields[key], six.string_types):
         sql = '`%s` %s \'%s\'' % (actualKey, comparison, matchFields[key])
-      elif isinstance(matchFields[key], datetime.datetime):
+      elif isinstance(matchFields[key], datetime):
         sql = '%s %s \'%s\'' % \
             (actualKey,
              comparison,
