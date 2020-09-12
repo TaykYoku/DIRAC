@@ -49,28 +49,28 @@ class AuthHandler(WebHandler):
     result = gSessionManager.createClient(data)
     if result['OK']:
       data = result['Value']
-      cls.__cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
+      self.__cacheClient.add(data['client_id'], (data['ExpiresIn'] - datetime.now()).seconds, data)
     return result
 
   @gCacheClient
   def getClient(self, clientID):
-    data = cls.__cacheClient.get(clientID)
+    data = self.__cacheClient.get(clientID)
     if not data:
       result = gSessionManager.getClient(clientID)
       if result['OK']:
         data = result['Value']
         cid = data['client_id']
         exp = (data['ExpiresIn'] - datetime.now()).seconds
-        cls.__cacheClient.add(cid, exp, data)
+        self.__cacheClient.add(cid, exp, data)
     return data
   
   @gCacheSession
   def addSession(self, session, data, expTime=300):
-    cls.__cacheSession.add(session, expTime, data)
+    self.__cacheSession.add(session, expTime, data)
   
   @gCacheSession
   def getSession(self, session=None):
-    return cls.__cacheSession.get(session) if session else cls.__cacheSession.getDict()
+    return self.__cacheSession.get(session) if session else self.__cacheSession.getDict()
   
   def updateSession(self, session, expTime=60, **data):
     origData = self.getSession(session)
@@ -80,7 +80,7 @@ class AuthHandler(WebHandler):
   
   def getSessionByOption(self, key):
     value = self.get_argument(key)
-    sessions = cls.getSession()
+    sessions = self.getSession()
     for session, data in sessions.items():
       if data[key] == value:
         return session, data
