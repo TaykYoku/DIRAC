@@ -20,7 +20,7 @@ from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
 __RCSID__ = "$Id$"
 
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer
 
