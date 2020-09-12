@@ -84,14 +84,14 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       session.add(client)
+      result = S_OK(client.client_info())
       session.commit()
     except Exception as e:
       session.rollback()
-      session.close()
-      return S_ERROR('Could not add Client: %s' % (e))
+      result = S_ERROR('Could not add Client: %s' % (e))
 
     session.close()
-    return S_OK(client.client_info())
+    return result
   
   def removeClient(self, clientID):
     session = self.session()
