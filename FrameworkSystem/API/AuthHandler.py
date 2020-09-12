@@ -38,8 +38,8 @@ class AuthHandler(WebHandler):
     print('---->> initializeHandler')
     global cacheSession
     global cacheClient
-    cls.__cacheSession = cacheSession
-    cls.__cacheClient = cacheClient
+    #cls.__cacheSession = cacheSession
+    #cls.__cacheClient = cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
@@ -66,11 +66,11 @@ class AuthHandler(WebHandler):
   
   @gCacheSession
   def addSession(self, session, data, expTime=300):
-    self.__cacheSession.add(session, expTime, data)
+    cacheSession.add(session, expTime, data)
   
   @gCacheSession
   def getSession(self, session=None):
-    return self.__cacheSession.get(session) if session else self.__cacheSession.getDict()
+    return cacheSession.get(session) if session else cacheSession.getDict()
   
   def updateSession(self, session, expTime=60, **data):
     origData = self.getSession(session)
