@@ -76,7 +76,7 @@ class AuthHandler(WebHandler):
     origData = self.getSession(session)
     for k, v in data.items():
       origData[k] = v
-    self.addSession(session, expTime, origData)
+    self.addSession(session, origData, expTime)
   
   def getSessionByOption(self, key):
     value = self.get_argument(key)
@@ -95,7 +95,7 @@ class AuthHandler(WebHandler):
     session = self.get_argument('session', None)
     if self.request.method == 'POST':
       if session:
-        self.addSession(session, 300, self.get_argument('data', 'qwe123'))
+        self.addSession(session, self.get_argument('data', 'qwe123'))
       result = yield self.threadTask(self.addClient, self.request.arguments)
       if not result['OK']:
         raise
