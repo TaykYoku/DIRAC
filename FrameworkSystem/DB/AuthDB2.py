@@ -29,15 +29,13 @@ Model = declarative_base()
 class Client(Model, OAuth2ClientMixin):
   __tablename__ = 'Clients'
   __table_args__ = {'mysql_engine': 'InnoDB',
-                    'mysql_charset': 'utf8',
-                    'schema': 'auth'}
+                    'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
 
 class Token(Model, OAuth2TokenMixin):
   __tablename__ = 'Tokens'
   __table_args__ = {'mysql_engine': 'InnoDB',
-                    'mysql_charset': 'utf8',
-                    'schema': 'auth'}
+                    'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
 
 # Relationships
@@ -50,7 +48,7 @@ class AuthDB2(SQLAlchemyDB):
     """ Constructor
     """
     super(AuthDB2, self).__init__()
-    self._initializeConnection('Framework/AuthDB')
+    self._initializeConnection('Framework/AuthDB2')
     result = self.__initializeDB()
     if not result['OK']:
       raise Exception("Can't create tables: %s" % result['Message'])
