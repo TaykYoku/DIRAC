@@ -192,10 +192,16 @@ class AuthHandler(WebHandler):
             <meta charset="utf-8" />
           </head>
           <body>
-            <form action="{{deviceEndpoint}}" method="GET">
+            <form id="user_code_form" onsubmit="verification_uri_complete()">
               <input type="text" id="user_code" name="user_code">
               <button type="submit" id="submit">Submit</button>
             </form>
+            <script>
+              function verification_uri_complete(){
+                var form = document.getElementById('user_code_form');
+                form.action = "{{deviceEndpoint}}" + document.getElementById('user_code').value;
+              }
+            </script>
           </body>
         </html>''')
         self.write(t.generate(deviceEndpoint='https://dirac.egi.eu/DIRAC/device'))
