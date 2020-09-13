@@ -30,22 +30,23 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                revocation_endpoint_auth_method=None,
                scope=None, redirect_uri=None,
                token=None, token_placement='header',
-               update_token=None, **kwargs):
+               update_token=None, **parameters):
     """ OIDCClient constructor
     """
-    IdProvider.__init__(self, **kwargs)
+    IdProvider.__init__(self, **parameters)
     OAuth2Session.__init__(self, client_id=client_id, client_secret=client_secret,
                            token_endpoint_auth_method=token_endpoint_auth_method,
                            revocation_endpoint_auth_method=revocation_endpoint_auth_method,
                            scope=scope, redirect_uri=redirect_uri,
                            token=token, token_placement=token_placement,
-                           update_token=update_token, **kwargs)
+                           update_token=update_token, **parameters)
+    self.parameters = parameters
     self.exceptions = exceptions
-    self.name = name or kwargs.get('ProviderName')
+    self.name = name or parameters.get('ProviderName')
     self.issuer = issuer
     self.client_id = client_id
     self.client_secret = client_secret
-    self.server_metadata_url = kwargs.get('server_metadata_url', get_well_known_url(self.issuer))
+    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer))
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
 
