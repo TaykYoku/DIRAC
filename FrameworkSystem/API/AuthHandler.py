@@ -69,7 +69,7 @@ from authlib.oauth2.rfc7636 import (
 
 
 class AuthHandler(WebHandler):
-  LOCATION = "/DIRAC/oauth"
+  LOCATION = "/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
   @classmethod
@@ -159,8 +159,8 @@ class AuthHandler(WebHandler):
       data['user_code'] = generate_token(10)
       data['scope'] = ''
       data['interval'] = 5
-      data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/oauth/device'
-      data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/oauth/device/%s' % data['user_code']
+      data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+      data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
       # return DeviceCredentialDict(data)
       self.addSession(data['device_code'], data)
       self.write(data)
@@ -190,7 +190,7 @@ class AuthHandler(WebHandler):
             </script>
           </body>
         </html>''')
-        self.write(t.generate(deviceEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/device'))
+        self.write(t.generate(deviceEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/device'))
     self.finish()
 
   path_authorization = ['([A-z0-9]*)']
@@ -350,7 +350,7 @@ class AuthHandler(WebHandler):
     result = getProvidersForInstance('Id')
     if not result['OK']:
       raise WErr(503, result['Message'])
-    self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
+    self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
                           idPs=result['Value'], session=session))
 
   # def __generateToken(self, header, payload):
