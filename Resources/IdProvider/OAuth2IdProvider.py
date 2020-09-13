@@ -71,7 +71,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
         try:
-          func(*args, **kwargs)
+          return func(*args, **kwargs)
         except exceptions.Timeout:
           return S_ERROR('Time out')
         except exceptions.RequestException as ex:
