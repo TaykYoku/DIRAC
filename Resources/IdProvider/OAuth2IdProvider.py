@@ -44,6 +44,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.exceptions = exceptions
     self.name = name or parameters.get('ProviderName')
     self.issuer = issuer
+    self.redirect_uri = redirect_uri or 'https://marosvn32.in2p3.fr/DIRAC/auth/redirect'
     self.client_id = client_id
     self.client_secret = client_secret
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer, True))
