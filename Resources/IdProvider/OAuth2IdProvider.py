@@ -72,9 +72,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     def function_wrapper(*args, **kwargs):
         try:
           func(*args, **kwargs)
-        except self.exceptions.Timeout:
+        except exceptions.Timeout:
           return S_ERROR('Time out')
-        except self.exceptions.RequestException as ex:
+        except exceptions.RequestException as ex:
           return S_ERROR(r.content or str(ex))
     return function_wrapper
   
