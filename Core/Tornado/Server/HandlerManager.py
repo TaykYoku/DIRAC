@@ -208,7 +208,7 @@ class HandlerManager(object):
             gLogger.debug(" - Route %s/%s ->  %s.%s" % (handler.LOCATION, methodName, module['loadName'], mName))
             url = "%s/%s" % (handler.LOCATION, methodName)
             if args:
-              url += '/%s' % '/'.join(args)
+              url += '[\/]%s' % '/'.join(args)
             gLogger.debug("  * %s" % url)
             self.__addHandler((module['loadName'], handler), url)
     return S_OK()
