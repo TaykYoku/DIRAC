@@ -119,7 +119,7 @@ class AuthDB2(SQLAlchemyDB):
   def getClientByID(self, clientID):
     session = self.session()
     try:
-      client = session.query(Client).filter(client_id=clientID).one()
+      client = session.query(Client).filter(Client.client_id==clientID).one()
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
