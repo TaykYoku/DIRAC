@@ -87,6 +87,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         :return: S_OK()/S_ERROR()
     """
     if parameter not in self.metadata and not self.metadata.get('updated'):
+      r = None
       try:
         r = self.request('GET', self.server_metadata_url, withhold_token=True)
         servMetadata = r.json()
@@ -95,7 +96,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
             self.metadata[k] = v
         self.metadata['updated'] = True
       except ValueError as e:
-        return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text))
+        return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     return S_OK(self.metadata.get(parameter))
 
   def submitNewSession(self, session):
