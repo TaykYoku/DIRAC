@@ -228,7 +228,7 @@ class AuthHandler(WebHandler):
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
       authURL, idPSessionParams = result['Value']
-      self.updateSession(session, {'secondFlow': idPSessionParams})
+      self.updateSession(session, secondFlow=idPSessionParams)
       self.redirect(authURL)
 
   @asyncGen
