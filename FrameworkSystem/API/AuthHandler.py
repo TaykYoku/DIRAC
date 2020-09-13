@@ -164,22 +164,20 @@ class AuthHandler(WebHandler):
       self.write(data)
     elif self.request.method == 'GET':
       if userCode:
-        t = """
-        <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Authetication</title>
-              <meta charset="utf-8" />
-            </head>
-            <body>
-              <ul>
-                {% for idP in idPs %}
-                  <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
-                {% end %}
-              <ul>
-            </body>
-          </html>
-        """
+        t = template.Template('''<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authetication</title>
+            <meta charset="utf-8" />
+          </head>
+          <body>
+            <ul>
+              {% for idP in idPs %}
+                <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
+              {% end %}
+            <ul>
+          </body>
+        </html>''')
         session = self.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
@@ -187,21 +185,19 @@ class AuthHandler(WebHandler):
         self.write(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
                               idPs=getProvidersForInstance('id')))
       else:
-        t = """
-        <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Authetication</title>
-              <meta charset="utf-8" />
-            </head>
-            <body>
-              <form action="{{deviceEndpoint}}" method="GET">
-                <input type="text" id="user_code" name="user_code">
-                <button type="submit" id="submit">Submit</button>
-              </form>
-            </body>
-          </html>
-        """
+        t = template.Template('''<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authetication</title>
+            <meta charset="utf-8" />
+          </head>
+          <body>
+            <form action="{{deviceEndpoint}}" method="GET">
+              <input type="text" id="user_code" name="user_code">
+              <button type="submit" id="submit">Submit</button>
+            </form>
+          </body>
+        </html>''')
         self.write(t.generate(deviceEndpoint='https://dirac.egi.eu/DIRAC/device'))
     self.finish()
 
@@ -221,8 +217,7 @@ class AuthHandler(WebHandler):
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
       self.addSession(session, sessionDict)
-      t = """
-      <!DOCTYPE html>
+        t = template.Template('''<!DOCTYPE html>
         <html>
           <head>
             <title>Authetication</title>
@@ -235,8 +230,7 @@ class AuthHandler(WebHandler):
               {% end %}
             <ul>
           </body>
-        </html>
-      """
+        </html>''')
       self.set_cookie('session', session, 60)
       self.finish(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
                              idPs=getProvidersForInstance('id')))
@@ -297,18 +291,16 @@ class AuthHandler(WebHandler):
     sessionDict['Status'] = result['Value']['Status']
     sessionDict['Comment'] = result['Value']['Comment']
     if 'device_code' in sessionDict:
-      t = """
-      <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Authetication</title>
-            <meta charset="utf-8" />
-          </head>
-          <body>
-            <script type="text/javascript"> window.close() </script>
-          </body>
-        </html>
-      """
+      t = template.Template('''<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Authetication</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <script type="text/javascript"> window.close() </script>
+        </body>
+      </html>''')
       self.finish(t.generate())
     elif sessionDict['grant'] == 'code':
       if 'code_challenge' in sessionDict:
