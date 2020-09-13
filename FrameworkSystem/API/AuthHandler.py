@@ -179,7 +179,7 @@ class AuthHandler(WebHandler):
             <ul>
           </body>
         </html>''')
-        session = self.getSessionByOption('user_code', userCode)
+        session, _ = self.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
         self.set_cookie('session', session, 60)
