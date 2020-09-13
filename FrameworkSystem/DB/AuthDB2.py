@@ -127,7 +127,7 @@ class AuthDB2(SQLAlchemyDB):
       result = S_ERROR(str(e))
     except Exception as e:
       session.rollback()
-      result = S_ERROR('Could not commit changes: %s' % str(e))
+      result = S_ERROR('Could not commit changes: %s' % e)
 
     session.close()
     return result

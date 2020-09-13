@@ -754,7 +754,7 @@ class AuthManagerHandler(RequestHandler):
     """
     return self.__db.addClient(**kwargs)
 
-  types_getClientByID = [str]
+  types_getClientByID = [six.string_types]
   auth_getClientByID = []  # "authenticated", "TrustedHost"]
 
   def export_getClientByID(self, clientID):
