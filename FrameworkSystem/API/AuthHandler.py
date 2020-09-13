@@ -109,7 +109,7 @@ class AuthHandler(WebHandler):
     return cacheSession.get(session) if session else cacheSession.getDict()
   
   def updateSession(self, session, expTime=60, **data):
-    origData = self.getSession(session)
+    origData = self.getSession(session) or {}
     for k, v in data.items():
       origData[k] = v
     self.addSession(session, origData, expTime)
@@ -216,20 +216,19 @@ class AuthHandler(WebHandler):
         raise WErr(503, result['Message'])
       if idP not in result['Value']:
         raise WErr(503, 'Provider not exist.')
-      session = self.get_cookie('session')
-      self.clear_cookie('session')
-      if not session:
-        raise WErr(404, "session expired")
+      session = self.get_argument('session', generate_token(10))
       self.updateSession(session, Provider=idP)
       result = IdProviderFactory().getIdProvider(idP)
       if not result['OK']:
         raise WErr(503, result['Message'])
       provObj = result['Value']
-      result = provObj.getAuthURL(self.getSession(session))
+      result = provObj.submitNewSession(session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
-      self.redirect(result['Value'])
+      authURL, sessionParams = result['Value']
+      self.updateSession(session, **sessionParams)
+      self.redirect(authURL)
 
   @asyncGen
   def web_redirect(self):

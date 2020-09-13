@@ -97,7 +97,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text))
     return S_OK(self.metadata.get(parameter))
 
-  def submitNewSession(self, session=None, reqGroup=None):
+  def submitNewSession(self, session):
     """ Submit new authorization session
 
         :param str session: session number
@@ -105,18 +105,18 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         :return: S_OK(str)/S_ERROR()
     """
     provider = self.parameters['ProviderName']
-    result = self.isSessionManagerAble()
-    if not result['OK']:
-      return result
+    # result = self.isSessionManagerAble()
+    # if not result['OK']:
+    #   return result
     result = self.getServerParameter('authorization_endpoint')
     if not result['OK']:
       return result
     authEndpoint = result['Value']
-    result = self.sessionManager.createNewSession(provider, reqGroup) # TODO: add reqGroup #, session=session)
-    if not result['OK']:
-      return result
-    session = result['Value']
-    self.log.verbose(session, 'session was created.')
+    # result = self.sessionManager.createNewSession(provider, reqGroup) # TODO: add reqGroup #, session=session)
+    # if not result['OK']:
+    #   return result
+    # session = result['Value']
+    # self.log.verbose(session, 'session was created.')
     #url = self.create_authorization_url(authEndpoint, state=session)  
 
     #   result = self.sessionManager.updateSession(session, {'Provider': provider,
@@ -125,7 +125,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     #   kill = self.sessionManager.killSession(session)
     #   return result if kill['OK'] else kill
 
-    return S_OK((session, self.create_authorization_url(authEndpoint, state=session)))
+    return S_OK((self.create_authorization_url(authEndpoint, state=session), {}))
 
   def checkStatus(self, session):
     """ Read ready to work status of identity provider
