@@ -150,7 +150,7 @@ class AuthHandler(WebHandler):
       scope = self.get_argument('scope', None)
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
       if not client:
-        raise WErr(404, 'Client ID is unregistred.')
+        raise WErr(401, 'Client ID is unregistred.')
       data = {}
       data['expires_in'] = 300
       data['expires_at'] = int(time.time()) + data['expires_in']
