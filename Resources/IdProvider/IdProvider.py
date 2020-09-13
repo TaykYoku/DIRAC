@@ -40,7 +40,7 @@ class IdProvider(object):
     """
     self.sessionManager = sessionManager
   
-  def setLogger(self, logger=gLogger.getSubLogger(self.__class__.__name__)):
+  def setLogger(self, logger):
     """ Set logger
 
         :param object logger: logger
