@@ -23,6 +23,7 @@ from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 Model = declarative_base()
 
@@ -114,24 +115,32 @@ class AuthDB2(SQLAlchemyDB):
 
     session.close()
     return S_OK('Components successfully removed')
-  
+
   def getClientByID(self, clientID):
     session = self.session()
     try:
       client = session.query(Client).filter(client_id=clientID).one()
-      result = S_OK(client.client_info)
-      session.commit()
-    except MultipleResultsFound as e:
-      result = S_ERROR(str(e))
-    except NoResultFound, e:
-      result = S_ERROR(str(e))
+    except MultipleResultsFound:
+      return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
+    except NoResultFound:
+      return self.__result(session, S_ERROR("%s client not registred." % clientID))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+
+    return self.__result(session, S_OK(client.client_info))
+
+  def __result(self, session, result=None):
+    try:
+      if not result['OK']:
+        session.rollback()
+      else:
+        session.commit()
     except Exception as e:
       session.rollback()
-      result = S_ERROR('Could not commit changes: %s' % e)
-
+      result = S_ERROR('Could not commit: %s' % (e))
     session.close()
     return result
-  
+
   def addToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
                access_token=None, refresh_token=None, **metadata):
 
