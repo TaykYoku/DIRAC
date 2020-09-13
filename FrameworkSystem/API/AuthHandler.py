@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-from datetime import datetime
+from time import time
 
 from tornado import web, gen, template
 from tornado.template import Template
@@ -153,7 +153,7 @@ class AuthHandler(WebHandler):
         raise WErr(401, 'Client ID is unregistred.')
       data = {}
       data['expires_in'] = 300
-      data['expires_at'] = int(time.time()) + data['expires_in']
+      data['expires_at'] = int(time()) + data['expires_in']
       data['device_code'] = generate_token(20)
       data['user_code'] = generate_token(10)
       data['scope'] = ''
