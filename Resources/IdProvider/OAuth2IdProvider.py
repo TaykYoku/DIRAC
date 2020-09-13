@@ -40,6 +40,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            scope=scope, redirect_uri=redirect_uri,
                            token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
+    # Convert scope to list
+    self.scope = [s.strip() for s in scope.strip().replace('+',' ').split(',' if ',' in scope else ' ')]
     self.parameters = parameters
     self.exceptions = exceptions
     self.name = name or parameters.get('ProviderName')
