@@ -9,6 +9,7 @@ from time import time
 
 from tornado import web, gen, template
 from tornado.template import Template
+from tornado.escape import json_decode
 from authlib.common.security import generate_token
 from authlib.jose import jwt
 
@@ -252,7 +253,8 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       raise WErr(503, result['Message'])
     provObj = result['Value']
-    result = provObj.parseAuthResponse(**self.get_arguments)
+    print(json_decode(self.request.body))
+    result = provObj.parseAuthResponse(**json_decode(self.request.body))
     if not result['OK']:
       raise WErr(503, result['Message'])
     userProfile
