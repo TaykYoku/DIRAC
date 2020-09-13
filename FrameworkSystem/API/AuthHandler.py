@@ -153,7 +153,7 @@ class AuthHandler(WebHandler):
         raise WErr(401, 'Client ID is unregistred.')
       data = {}
       data['expires_in'] = 300
-      data['expires_at'] = int(time()) + data['expires_in']1
+      data['expires_at'] = int(time()) + data['expires_in']
       data['device_code'] = generate_token(20)
       data['user_code'] = generate_token(10)
       data['scope'] = ''
