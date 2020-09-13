@@ -147,7 +147,7 @@ class AuthHandler(WebHandler):
     """
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      scope = self.grt_argument('scope', None)
+      scope = self.get_argument('scope', None)
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
       if not client:
         raise WErr(404, 'Client ID is unregistred.')
