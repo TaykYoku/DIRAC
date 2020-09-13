@@ -127,7 +127,7 @@ class AuthDB2(SQLAlchemyDB):
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
 
-    return self.__result(session, S_OK(client.client_info))
+    return self.__result(session, S_OK(client.client_info))1
 
   def __result(self, session, result=None):
     try:
