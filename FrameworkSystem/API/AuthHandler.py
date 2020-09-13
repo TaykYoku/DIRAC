@@ -15,6 +15,7 @@ from authlib.jose import jwt
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
