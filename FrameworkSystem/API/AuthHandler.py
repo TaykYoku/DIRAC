@@ -182,9 +182,12 @@ class AuthHandler(WebHandler):
         session, _ = self.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
+        result = getProvidersForInstance('Id')
+        if not result['OK']:
+          raise WErr(503, result['Message'])
         self.set_cookie('session', session, 60)
         self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
-                              idPs=getProvidersForInstance('id')))
+                              idPs=result['Value']))
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
