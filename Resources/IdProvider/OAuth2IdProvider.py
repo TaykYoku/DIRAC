@@ -46,7 +46,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.issuer = issuer
     self.client_id = client_id
     self.client_secret = client_secret
-    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer))
+    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer, True))
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
 
@@ -126,8 +126,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # if not result['OK']:
     #   kill = self.sessionManager.killSession(session)
     #   return result if kill['OK'] else kill
-
-    return S_OK((self.create_authorization_url(authEndpoint, state=session), {}))
+    # uri, state = self.create_authorization_url(authEndpoint, state=session)
+    return S_OK(self.create_authorization_url(authEndpoint, state=session))
 
   def checkStatus(self, session):
     """ Read ready to work status of identity provider

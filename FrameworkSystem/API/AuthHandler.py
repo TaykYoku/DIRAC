@@ -227,8 +227,8 @@ class AuthHandler(WebHandler):
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
-      authURL, sessionParams = result['Value']
-      self.updateSession(session, **sessionParams)
+      authURL, idPSessionParams = result['Value']
+      self.updateSession(session, {'secondFlow': idPSessionParams})
       self.redirect(authURL)
 
   @asyncGen
