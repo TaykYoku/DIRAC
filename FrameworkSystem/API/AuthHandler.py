@@ -158,8 +158,8 @@ class AuthHandler(WebHandler):
       data['user_code'] = generate_token(10)
       data['scope'] = ''
       data['interval'] = 5
-      data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/device'
-      data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/device/%s' % data['user_code']
+      data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/oauth/device'
+      data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/oauth/device/%s' % data['user_code']
       # return DeviceCredentialDict(data)
       self.addSession(data['device_code'], data)
       self.write(data)
@@ -183,7 +183,7 @@ class AuthHandler(WebHandler):
         if not session:
           raise WErr(404, 'Session expired.')
         self.set_cookie('session', session, 60)
-        self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/authorization',
+        self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
                               idPs=getProvidersForInstance('id')))
       else:
         t = template.Template('''<!DOCTYPE html>
@@ -205,7 +205,7 @@ class AuthHandler(WebHandler):
             </script>
           </body>
         </html>''')
-        self.write(t.generate(deviceEndpoint='https://marosvn32.in2p3.fr/DIRAC/device'))
+        self.write(t.generate(deviceEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/device'))
     self.finish()
 
   path_authorization = ['([A-z0-9]*)']
@@ -239,7 +239,7 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       self.set_cookie('session', session, 60)
-      self.finish(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/authorization',
+      self.finish(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
                              idPs=getProvidersForInstance('id')))
     elif idP:
       if idP not in getProvidersForInstance('id'):
