@@ -145,6 +145,7 @@ class AuthHandler(WebHandler):
 
         POST: /device?client_id= &scope=
     """
+    userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
       scope = self.grt_argument('scope', None)
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
@@ -199,7 +200,7 @@ class AuthHandler(WebHandler):
             <script>
               function verification_uri_complete(){
                 var form = document.getElementById('user_code_form');
-                form.action = "{{deviceEndpoint}}" + document.getElementById('user_code').value;
+                form.action = "{{deviceEndpoint}}/" + document.getElementById('user_code').value;
               }
             </script>
           </body>
