@@ -165,7 +165,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     return S_OK()
 
-  def parseAuthResponse(self, response, session):
+  def parseAuthResponse(self, response):
     """ Make user info dict:
           - username(preferd user name)
           - nosupport(VOs in response that not in DIRAC)
@@ -173,11 +173,13 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           - Tokens(Contain refreshed tokens, type and etc.)
           - Groups(New DIRAC groups that need created)
 
-        :param dict response: response on request to get user profile
+        :param object response: response on request to get user profile
         :param str session: session
 
         :return: S_OK(dict)/S_ERROR()
     """
+    token = self.fetch_access_token(request.uri)
+    pprint.pprint(token)
     resDict = {}
     result = self.oauth2.fetchToken(response['code'])
     if not result['OK']:

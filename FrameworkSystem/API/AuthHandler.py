@@ -253,8 +253,7 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       raise WErr(503, result['Message'])
     provObj = result['Value']
-    print(json_decode(self.request.body))
-    result = provObj.parseAuthResponse(**json_decode(self.request.body))
+    result = provObj.parseAuthResponse(self.request)
     if not result['OK']:
       raise WErr(503, result['Message'])
     userProfile
