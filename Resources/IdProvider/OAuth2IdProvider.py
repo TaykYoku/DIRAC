@@ -75,7 +75,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         except exceptions.Timeout:
           return S_ERROR('Time out')
         except exceptions.RequestException as ex:
-          return S_ERROR(r.content or str(ex))
+          return S_ERROR(str(ex))
     return function_wrapper
   
   @checkResponse
