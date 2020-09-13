@@ -251,7 +251,7 @@ class AuthHandler(WebHandler):
       if idP not in result['Value']:
         raise WErr(503, 'Provider not exist.')
       session = self.get_cookie('session')
-      self.clean_cookie('session')
+      self.clear_cookie('session')
       if not session:
         raise WErr(404, "session expired")
       self.updateSession(session, Provider=idP)
