@@ -245,7 +245,10 @@ class AuthHandler(WebHandler):
       self.finish(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
                              idPs=getProvidersForInstance('id')))
     elif idP:
-      if idP not in getProvidersForInstance('id'):
+      result = getProvidersForInstance('Id')
+      if not result['OK']:
+        raise WErr(503, result['Message'])
+      if idP not in result['Value']:
         raise WErr(503, 'Provider not exist.')
       session = self.get_cookie('session')
       self.clean_cookie('session')
