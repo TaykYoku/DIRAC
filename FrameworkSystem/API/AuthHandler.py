@@ -217,20 +217,20 @@ class AuthHandler(WebHandler):
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
       self.addSession(session, sessionDict)
-        t = template.Template('''<!DOCTYPE html>
-        <html>
-          <head>
-            <title>Authetication</title>
-            <meta charset="utf-8" />
-          </head>
-          <body>
-            <ul>
-              {% for idP in idPs %}
-                <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
-              {% end %}
-            <ul>
-          </body>
-        </html>''')
+      t = template.Template('''<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Authetication</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <ul>
+            {% for idP in idPs %}
+              <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
+            {% end %}
+          <ul>
+        </body>
+      </html>''')
       self.set_cookie('session', session, 60)
       self.finish(t.generate(authEndpoint='https://dirac.egi.eu/DIRAC/authorization',
                              idPs=getProvidersForInstance('id')))
