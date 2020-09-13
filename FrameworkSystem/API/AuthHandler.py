@@ -165,29 +165,10 @@ class AuthHandler(WebHandler):
       self.write(data)
     elif self.request.method == 'GET':
       if userCode:
-        t = template.Template('''<!DOCTYPE html>
-        <html>
-          <head>
-            <title>Authetication</title>
-            <meta charset="utf-8" />
-          </head>
-          <body>
-            <ul>
-              {% for idP in idPs %}
-                <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
-              {% end %}
-            <ul>
-          </body>
-        </html>''')
         session, _ = self.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
-        result = getProvidersForInstance('Id')
-        if not result['OK']:
-          raise WErr(503, result['Message'])
-        self.set_cookie('session', session, 60)
-        self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
-                              idPs=result['Value']))
+        self.__authWelcome(session)
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
@@ -227,23 +208,8 @@ class AuthHandler(WebHandler):
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
       self.addSession(session, sessionDict)
-      t = template.Template('''<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Authetication</title>
-          <meta charset="utf-8" />
-        </head>
-        <body>
-          <ul>
-            {% for idP in idPs %}
-              <li> <a href="{{authEndpoint}}/{{idP}}">{{idP}}</a> </li>
-            {% end %}
-          <ul>
-        </body>
-      </html>''')
-      self.set_cookie('session', session, 60)
-      self.finish(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
-                             idPs=getProvidersForInstance('id')))
+      self.__authWelcome(session)
+      self.finish()
     elif idP:
       result = getProvidersForInstance('Id')
       if not result['OK']:
@@ -365,6 +331,27 @@ class AuthHandler(WebHandler):
       if not data['Token']:
         raise WErr(503, 'Cannot creat token.')
       self.finish(data['Token'])
+
+  def __authWelcome(self, session):
+    t = template.Template('''<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Authetication</title>
+        <meta charset="utf-8" />
+      </head>
+      <body>
+        <ul>
+          {% for idP in idPs %}
+            <li> <a href="{{authEndpoint}}/{{idP}}?session={{session}}">{{idP}}</a> </li>
+          {% end %}
+        <ul>
+      </body>
+    </html>''')
+    result = getProvidersForInstance('Id')
+    if not result['OK']:
+      raise WErr(503, result['Message'])
+    self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/oauth/authorization',
+                          idPs=result['Value'], session=session))
 
   # def __generateToken(self, header, payload):
 
