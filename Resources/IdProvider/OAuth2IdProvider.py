@@ -68,14 +68,14 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     input()
     return self.sessionManager.getSessionToken(IdP, group)
 
-  def checkResponse(self, func):
+  def checkResponse(func):
     def function_wrapper(*args, **kwargs):
         try:
           func(*args, **kwargs)
         except self.exceptions.Timeout:
           return S_ERROR('Time out')
         except self.exceptions.RequestException as ex:
-          return S_ERROR(r.content or ex)
+          return S_ERROR(r.content or str(ex))
     return function_wrapper
   
   @checkResponse
