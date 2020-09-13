@@ -7,7 +7,7 @@ from __future__ import print_function
 import re
 from datetime import datetime
 
-from tornado import web, gen
+from tornado import web, gen, template
 from tornado.template import Template
 from authlib.common.security import generate_token
 from authlib.jose import jwt
