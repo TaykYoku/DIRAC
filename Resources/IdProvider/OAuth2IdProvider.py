@@ -68,7 +68,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     input()
     return self.sessionManager.getSessionToken(IdP, group)
 
-  def checkResponse(self, func):1
+  def checkResponse(self, func):
     def function_wrapper(*args, **kwargs):
         try:
           func(*args, **kwargs)
