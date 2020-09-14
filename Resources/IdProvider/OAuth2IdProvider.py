@@ -10,6 +10,8 @@ from authlib.integrations.requests_client import OAuth2Session
 from authlib.oidc.discovery.well_known import get_well_known_url
 from requests import exceptions
 
+from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
+
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
@@ -186,7 +188,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     token = self.fetch_access_token(tokenEndpoint, authorization_response=response.uri)
     # Store token
     pprint.pprint(token)
-    result = self.__db.addToken(client_id=self.client_id, **token)
+    result = gSessionManager.storeToken(client_id=self.client_id, **token)
     if not result['OK']:
       return result
     result = self.getServerParameter('userinfo_endpoint')
@@ -206,16 +208,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return result
     userProfile = result['Value']
 
-    for key, value in userProfile.items():
-      resDict[key] = value
-
-    upDict = tokens
-    upDict['ID'] = resDict['UsrOptns']['ID']
-    result = self.sessionManager.updateSession(session, upDict)
-    if not result['OK']:
-      return result
-    self.log.debug('Got response dictionary:\n', pprint.pformat(resDict))
-    return S_OK(resDict)
+    self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
+    return S_OK(userProfile)
 
   def fetch(self, session):
     """ Fetch tokens and update session in DB

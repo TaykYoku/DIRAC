@@ -280,6 +280,7 @@ class AuthHandler(WebHandler):
     elif sessionDict['grant'] == 'code':
       if 'code_challenge' in sessionDict:
         # code = Create JWS
+        pass
       else:
         code = generate_token(10)
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
@@ -334,7 +335,7 @@ class AuthHandler(WebHandler):
                'iss': getSetup(),
                'exp': 12 * 3600}
     # Read private key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/privat.key', 'r') as f:
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
     return S_OK({'access_token': jwt.encode(header, payload, key),
                  'token_type': 'Baerer',

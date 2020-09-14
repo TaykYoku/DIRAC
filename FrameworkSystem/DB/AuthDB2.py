@@ -141,8 +141,8 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return result
 
-  def addToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
-               access_token=None, refresh_token=None, **metadata):
+  def storeToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
+                 access_token=None, refresh_token=None, **metadata):
 
     token = Token(client_id=client_id,
                     token_type=token_type or "Baerer",
