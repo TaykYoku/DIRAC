@@ -165,6 +165,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     return S_OK()
 
+  @checkResponse
   def parseAuthResponse(self, response):
     """ Make user info dict:
           - username(preferd user name)
@@ -182,7 +183,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if not result['OK']:
       return result
     tokenEndpoint = result['Value']
-    token = checkResponse(self.fetch_access_token(tokenEndpoint, authorization_response=response.uri))
+    token = self.fetch_access_token(tokenEndpoint, authorization_response=response.uri)
     pprint.pprint(token)
     resDict = {}
     result = self.oauth2.fetchToken(response['code'])
