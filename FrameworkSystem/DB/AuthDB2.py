@@ -38,7 +38,8 @@ class Token(Model, OAuth2TokenMixin):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
-  id_token = Column(String(255))
+  access_token = Column(String(400), unique=True, nullable=False)
+  id_token = Column(String(400))
 
 # Relationships
 # token = relationship("Token")
@@ -158,7 +159,7 @@ class AuthDB2(SQLAlchemyDB):
     except Exception as e:
       session.rollback()
       session.close()
-      return S_ERROR('Could not add Client: %s' % (e))
+      return S_ERROR('Could not add Token: %s' % (e))
 
     session.close()
     return S_OK('Component successfully added')
