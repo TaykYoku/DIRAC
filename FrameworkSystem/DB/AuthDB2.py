@@ -143,8 +143,13 @@ class AuthDB2(SQLAlchemyDB):
     return result
 
   def storeToken(self, client_id=None, token_type="Baerer", **metadata):
-
-    token = Token(client_id=client_id, token_type=token_type, **metadata)
+    attrts = {}
+    for k, v in metadata.items():
+      if k not in Token.__dict__.keys():
+        self.log.warn('%s is not expected as token attribute.' % k)
+      else:
+        attrts[k] = v
+    token = Token(client_id=client_id, token_type=token_type, **attrts)
     
     session = self.session()
     try:
