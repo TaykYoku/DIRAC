@@ -103,18 +103,18 @@ class AuthHandler(WebHandler):
     return data
   
   @gCacheSession
-  def addSession(self, session, data, expTime=300):
-    cacheSession.add(session, expTime, data)
+  def addSession(self, session, data, exp=300):
+    cacheSession.add(session, exp, data)
   
   @gCacheSession
   def getSession(self, session=None):
     return cacheSession.get(session) if session else cacheSession.getDict()
   
-  def updateSession(self, session, expTime=60, **data):
+  def updateSession(self, session, exp=300, **data):
     origData = self.getSession(session) or {}
     for k, v in data.items():
       origData[k] = v
-    self.addSession(session, origData, expTime)
+    self.addSession(session, origData, exp)
   
   def getSessionByOption(self, key, value=None):
     value = value or self.get_argument(key)
@@ -255,21 +255,15 @@ class AuthHandler(WebHandler):
     provObj = result['Value']
     result = provObj.parseAuthResponse(self.request)
     if not result['OK']:
+      self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
-    userProfile
-    #### GENERATE TOKEN
-    header = {}
-    payload = {'sub': result['Value']['ID'],
-               'grp': result['Value']['Group'],
-               'iss': getSetup(),
-               'exp': 12 * 3600}
-    #### key = READ Key
-    sessionDict['Token'] = {'access_token': jwt.encode(header, payload, key),
-                            'token_type': 'Baerer',
-                            'expires_at': 12 * 3600,
-                            'state': session}
-    sessionDict['Status'] = result['Value']['Status']
-    sessionDict['Comment'] = result['Value']['Comment']
+    userProfile = result['Value']
+
+    reuslt = self.__getAccessToken(userProfile)
+    if not result['OK']:
+      raise WErr(503, result['Message'])
+    self.updateSession(session, Token=result['Value'])
+
     if 'device_code' in sessionDict:
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -282,16 +276,15 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       self.finish(t.generate())
+
     elif sessionDict['grant'] == 'code':
       if 'code_challenge' in sessionDict:
         # code = Create JWS
-        self.finish({'code': code, 'state': session})
       else:
         code = generate_token(10)
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
-      sessionDict['code'] = code
-
-    self.updateSession(session, sessionDict, 300)
+      self.finish({'code': code, 'state': session})
+      self.updateSession(session, code=code)
 
   @asyncGen
   def web_token(self):
@@ -332,6 +325,21 @@ class AuthHandler(WebHandler):
       if not data['Token']:
         raise WErr(503, 'Cannot creat token.')
       self.finish(data['Token'])
+
+  def __getAccessToken(self, profile):
+    #### GENERATE TOKEN
+    header = {'alg': 'RS256'}
+    payload = {'sub': profile['ID'],
+               'grp': profile['Group'],
+               'iss': getSetup(),
+               'exp': 12 * 3600}
+    # Read private key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/privat.key', 'r') as f:
+      key = f.read()
+    return S_OK({'access_token': jwt.encode(header, payload, key),
+                 'token_type': 'Baerer',
+                 'expires_at': 12 * 3600,
+                 'state': session})
 
   def __authWelcome(self, session):
     t = template.Template('''<!DOCTYPE html>

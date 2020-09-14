@@ -109,7 +109,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(str)/S_ERROR()
     """
-    provider = self.parameters['ProviderName']
+    # provider = self.parameters['ProviderName']
     # result = self.isSessionManagerAble()
     # if not result['OK']:
     #   return result
@@ -184,16 +184,24 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return result
     tokenEndpoint = result['Value']
     token = self.fetch_access_token(tokenEndpoint, authorization_response=response.uri)
+    # Store token
     pprint.pprint(token)
-    resDict = {}
-    result = self.oauth2.fetchToken(response['code'])
+    result = self.__db.addToken(client_id=self.client_id, **token)
     if not result['OK']:
       return result
-    tokens = self.__parseTokens(result['Value'])
-    result = self.oauth2.getUserProfile(tokens['AccessToken'])
+    result = self.getServerParameter('userinfo_endpoint')
     if not result['OK']:
       return result
-    result = self.__parseUserProfile(result['Value'])
+    userinfoEndpoint = result['Value']
+    try:
+      r = self.request('GET', userinfoEndpoint,
+                       headers={'Authorization': 'Bearer ' + token['access_token']})
+      r.raise_for_status()
+      userinfo = r.json()
+    except (self.exceptions.RequestException, ValueError) as e:
+      return S_ERROR("%s: %s" % (e.message, r.text))
+
+    result = self.__parseUserProfile(userinfo)
     if not result['OK']:
       return result
     userProfile = result['Value']
