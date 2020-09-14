@@ -22,7 +22,7 @@ __RCSID__ = "$Id$"
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 Model = declarative_base()
@@ -38,6 +38,7 @@ class Token(Model, OAuth2TokenMixin):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
+  id_token = Column(String(255))
 
 # Relationships
 # token = relationship("Token")
@@ -141,12 +142,9 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return result
 
-  def storeToken(self, client_id=None, token_type=None, scope=None, revoked=None, issued_at=None, expires_in=None,
-                 access_token=None, refresh_token=None, **metadata):
+  def storeToken(self, client_id=None, token_type="Baerer", **metadata):
 
-    token = Token(client_id=client_id,
-                    token_type=token_type or "Baerer",
-                    **metadata)
+    token = Token(client_id=client_id, token_type=token_type, **metadata)
     
     session = self.session()
     try:
