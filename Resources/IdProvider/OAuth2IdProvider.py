@@ -189,7 +189,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Store token
     pprint.pprint(token)
     token['client_id'] = self.client_id
-    result = gSessionManager.storeToken(token)
+    result = gSessionManager.storeToken(dict(token))
     if not result['OK']:
       return result
     result = self.getServerParameter('userinfo_endpoint')
