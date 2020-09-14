@@ -22,7 +22,7 @@ __RCSID__ = "$Id$"
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, Text
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 Model = declarative_base()
@@ -38,8 +38,8 @@ class Token(Model, OAuth2TokenMixin):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
-  access_token = Column(String(400), unique=True, nullable=False)
-  id_token = Column(String(400))
+  access_token = Column(Text(), unique=True, nullable=False)
+  id_token = Column(Text())
 
 # Relationships
 # token = relationship("Token")
