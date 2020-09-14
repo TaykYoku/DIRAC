@@ -178,7 +178,11 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    token = self.fetch_access_token(authorization_response=response.uri)
+    result = self.getServerParameter('token_endpoint')
+    if not result['OK']:
+      return result
+    tokenEndpoint = result['Value']
+    token = checkResponse(self.fetch_access_token(tokenEndpoint, authorization_response=response.uri))
     pprint.pprint(token)
     resDict = {}
     result = self.oauth2.fetchToken(response['code'])
