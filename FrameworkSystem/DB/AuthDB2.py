@@ -38,8 +38,8 @@ class Token(Model, OAuth2TokenMixin):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
-  access_token = Column(Text(400), unique=True, nullable=False)
-  id_token = Column(Text(400))
+  access_token = Column(Text, unique=True, nullable=False)
+  id_token = Column(Text)
 
 # Relationships
 # token = relationship("Token")
