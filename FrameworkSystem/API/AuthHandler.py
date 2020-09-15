@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import re
 from time import time
+from pprint import pprint
 
 from tornado import web, gen, template
 from tornado.template import Template
@@ -19,6 +20,7 @@ from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
+from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
@@ -81,6 +83,10 @@ class AuthHandler(WebHandler):
     """
     print('---->> initializeHandler')
     global cacheSession
+    # {<main session id>: {<param 1>: <value>,
+    #                      <param 2>: <value>,
+    #                      <another session flow id>: {<param 1>: <value>,
+    #                                                  <param 2>: <value>}}
     global cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
@@ -151,7 +157,6 @@ class AuthHandler(WebHandler):
     """
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      scope = self.get_argument('scope', None)
       client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
       if not client:
         raise WErr(401, 'Client ID is unregistred.')
@@ -160,7 +165,8 @@ class AuthHandler(WebHandler):
       data['expires_at'] = int(time()) + data['expires_in']
       data['device_code'] = generate_token(20)
       data['user_code'] = generate_token(10)
-      data['scope'] = ''
+      data['scope'] = self.get_argument('scope', '')
+      data['group'] = self.get_argument('group', None)
       data['interval'] = 5
       data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
       data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
@@ -169,10 +175,8 @@ class AuthHandler(WebHandler):
       self.write(data)
     elif self.request.method == 'GET':
       if userCode:
-        session, _ = self.getSessionByOption('user_code', userCode)
-        if not session:
-          raise WErr(404, 'Session expired.')
-        self.__authWelcome(session)
+        authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
+        self.redirect('%s?user_code=%s&session=%s' % (authURL, userCode, session))
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
@@ -188,40 +192,80 @@ class AuthHandler(WebHandler):
             <script>
               function verification_uri_complete(){
                 var form = document.getElementById('user_code_form');
-                form.action = "{{deviceEndpoint}}/" + document.getElementById('user_code').value;
+                form.action = "{{base_url}}/" + document.getElementById('user_code').value + "/{{uri}}";
               }
             </script>
           </body>
         </html>''')
-        self.write(t.generate(deviceEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/device'))
+        self.write(t.generate(base_url=self.request.protocol + "://" + self.request.host,
+                              uri=self.request.uri))
     self.finish()
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
   def web_authorization(self, idP=None):
+    # Only GET method supported
     if self.request.method != 'GET':
-      raise WErr(404, '%s request method not supported.')
+      raise WErr(404, '%s request method not supported.' % self.request.method)
     self.log.info('web_authorization: %s' % self.request)
-    if self.get_argument('response_type', None) == 'code':
-      client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
-      if not client:
-        raise WErr(404, 'Client ID is unregistred.')
-      session = self.get_argument('state', generate_token(10))
-      codeChallenge = self.get_argument('code_challenge', None)
-      if codeChallenge:
-        sessionDict['code_challenge'] = codeChallenge
-        sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
-      self.addSession(session, sessionDict)
-      self.__authWelcome(session)
-      self.finish()
-    elif idP:
+    
+    # Check client
+    client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
+    if not client:
+      raise WErr(404, 'Client ID is unregistred.')
+    
+    # Research supported IdPs
+    result = getProvidersForInstance('Id')
+    if not result['OK']:
+      raise WErr(503, result['Message'])
+    idPs = result['Value']
+    if not idP:
+      t = template.Template('''<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Authetication</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <ul>
+            {% for idP in idPs %}
+              <li> <a href="{{base_url}}/{{idP}}/{{uri}}">{{idP}}</a> </li>
+            {% end %}
+          <ul>
+        </body>
+      </html>''')
       result = getProvidersForInstance('Id')
       if not result['OK']:
         raise WErr(503, result['Message'])
-      if idP not in result['Value']:
+      self.finish(t.generate(base_url=self.request.protocol + "://" + self.request.host,
+                             uri=self.request.uri, idPs=idPs))
+                            # authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
+                            # idPs=idPs, session=session))
+    else:
+      if idP not in idPs:
         raise WErr(503, 'Provider not exist.')
-      session = self.get_argument('session', generate_token(10))
+    
+      # Authorization code flow
+      if self.get_argument('response_type', None) == 'code':
+        session = self.get_argument('state', generate_token(10))
+        sessionDict = {}
+        codeChallenge = self.get_argument('code_challenge', None)
+        if codeChallenge:
+          sessionDict['code_challenge'] = codeChallenge
+          sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
+        self.addSession(session, sessionDict)
+      
+      # Device flow
+      elif self.get_argument('user_code'):
+        session, _ = self.getSessionByOption('user_code', userCode)
+        if not session:
+          raise WErr(404, 'Session expired.')
+        # session = self.get_argument('session', generate_token(10))
+      
+      # Add IdP name to session
       self.updateSession(session, Provider=idP)
+
+      # Submit second auth flow through IdP
       result = IdProviderFactory().getIdProvider(idP)
       if not result['OK']:
         raise WErr(503, result['Message'])
@@ -231,7 +275,7 @@ class AuthHandler(WebHandler):
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
       authURL, idPSessionParams = result['Value']
-      self.updateSession(session, secondFlow=idPSessionParams)
+      self.updateSession(session, **{idP:idPSessionParams})
       self.redirect(authURL)
 
   @asyncGen
@@ -249,7 +293,8 @@ class AuthHandler(WebHandler):
       description = self.get_argument('error_description', '')
       raise WErr(500, '%s session crashed with error:\n%s\n%s' % (session, error,
                                                                   description))
-
+    
+    # Parse result of the second authentication flow
     self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
     result = IdProviderFactory().getIdProvider(sessionDict['Provider'])
     if not result['OK']:
@@ -259,13 +304,31 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
+    
+    # FINISHING with IdP auth result
     userProfile = result['Value']['UsrOptns']
+    username = result['Value']['username']
 
+    # researche Group
+    reqGroup = self.get_argument('group', sessionDict.get('group'))
+    if not reqGroup:
+      self.finish('You need to choose group')
+      raise
+      # self.__chooseGroup(session)
+
+    # Check group
+    result = gProxyManager.getGroupsStatusByUsername(username, [reqGroup])
+    if not result['OK']:
+      raise WErr(503, result['Message'])
+    userProfile['Group'] = reqGroup
+
+    # Create DIRAC access token for username/group
     reuslt = self.__getAccessToken(userProfile)
     if not result['OK']:
       raise WErr(503, result['Message'])
-    self.updateSession(session, Token=result['Value'])
+    self.updateSession(session, Status='authed', Token=result['Value'])
 
+    # Device flow
     if 'device_code' in sessionDict:
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -279,6 +342,7 @@ class AuthHandler(WebHandler):
       </html>''')
       self.finish(t.generate())
 
+    # Authorization code flow
     elif sessionDict['grant'] == 'code':
       if 'code_challenge' in sessionDict:
         # code = Create JWS
@@ -286,36 +350,46 @@ class AuthHandler(WebHandler):
       else:
         code = generate_token(10)
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
-      self.finish({'code': code, 'state': session})
       self.updateSession(session, code=code)
+      self.finish({'code': code, 'state': session})
 
   @asyncGen
   def web_token(self):
+    # Support only POST method
     if self.request.method != 'POST':
       raise
+    
+    # Check client
     client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
     if not client:
       raise
+    
     grantType = self.get_argument('grant_type')
+
+    # Device flow
     if grantType == 'device_code':
       session, data = self.getSessionByOption('device_code')
       if not session:
         raise
+      
+      # Waiting IdP auth result
       if data['Status'] not in ['authed', 'failed']:
-        self.write('Status: %s Wait..' % data['Status'])
+        self.finish('Status: %s Wait..' % data['Status'])
       else:
+        
+        # Remove session and return DIRAC access token
         cacheSession.delete(session)
         if data['Status'] != 'authed':
-          raise
-        if not data['Token']:
-          raise
-        self.write(data['Token'])
-      self.finish()
+          raise WErr(401, data['Comment'])
+        self.finish(data['Token'])
+    
+    # Authentication code flow
     elif grantType == 'authorization_code':
       session, data = self.getSessionByOption('code')
       if not session:
         raise
-      cacheSession.delete(session)
+
+      # Check client params
       if self.get_argument('redirect_uri') != client['redirect_uri']:
         raise
       if data['code_challenge_method']:
@@ -325,8 +399,10 @@ class AuthHandler(WebHandler):
         if codeVerifier != data['code_challenge']:
           raise WErr(404, 'code_verifier is not correct.')
 
-      if not data['Token']:
-        raise WErr(503, 'Cannot creat token.')
+      # Remove session and return DIRAC access token
+      cacheSession.delete(session)
+      if data['Status'] != 'authed':
+        raise WErr(401, data['Comment'])
       self.finish(data['Token'])
 
   def __getAccessToken(self, profile):
@@ -344,26 +420,77 @@ class AuthHandler(WebHandler):
                  'expires_at': 12 * 3600,
                  'state': session})
 
-  def __authWelcome(self, session):
-    t = template.Template('''<!DOCTYPE html>
-    <html>
-      <head>
-        <title>Authetication</title>
-        <meta charset="utf-8" />
-      </head>
-      <body>
-        <ul>
-          {% for idP in idPs %}
-            <li> <a href="{{authEndpoint}}/{{idP}}?session={{session}}">{{idP}}</a> </li>
-          {% end %}
-        <ul>
-      </body>
-    </html>''')
-    result = getProvidersForInstance('Id')
-    if not result['OK']:
-      raise WErr(503, result['Message'])
-    self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
-                          idPs=result['Value'], session=session))
+  # def __chooseIdP(self, session):
+  #   t = template.Template('''<!DOCTYPE html>
+  #   <html>
+  #     <head>
+  #       <title>Authetication</title>
+  #       <meta charset="utf-8" />
+  #     </head>
+  #     <body>
+  #       <ul>
+  #         {% for idP in idPs %}
+  #           <li> <a href="{{authEndpoint}}/{{idP}}?session={{session}}">{{idP}}</a> </li>
+  #         {% end %}
+  #       <ul>
+  #     </body>
+  #   </html>''')
+  #   result = getProvidersForInstance('Id')
+  #   if not result['OK']:
+  #     raise WErr(503, result['Message'])
+  #   self.write(t.generate(authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
+  #                         idPs=result['Value'], session=session))
+
+  # def __chooseGroup(self, session):
+  #   sessionDict = self.getSession(session)
+  #   if not sessionDict:
+  #     raise WErr(500, "Session expired.")
+    
+  #   reqGroup = self.get_argument('group', sessionDict.get('group'))
+  #   result = gProxyManager.getGroupsStatusByUsername(username, [reqGroup])
+  #   if not result['OK']:
+  #     raise WErr(503, result['Message'])
+  #   pprint(result['Value'])
+  #   groupsStates = result['Value']
+  #   if not reqGroup:
+  #     t = template.Template('''<!DOCTYPE html>
+  #     <html>
+  #       <head>
+  #         <title>Authetication</title>
+  #         <meta charset="utf-8" />
+  #       </head>
+  #       <body>
+  #         Please choose group:
+  #         <ul>
+  #           {% for group, status, comment in groups %}
+  #             <li> <a href="{{url}}/{{idP}}?session={{session}}">{{idP}}</a> </li>
+  #           {% end %}
+  #         <ul>
+  #       </body>
+  #     </html>''')
+  #     self.write(t.generate(url=self.request.full_url(),
+  #                           groups=result['Value'], session=session))
+  #   elif not self.get_argument('ignoreGroupCheck', sessionDict.get('ignoreGroupCheck'))
+  #     if groupsStates[reqGroup]['Status'] not in ['unknown', 'ready']:
+  #       if groupsStates[reqGroup].get('Action'):
+  #         t = template.Template('''<!DOCTYPE html>
+  #         <html>
+  #           <head>
+  #             <title>Authetication</title>
+  #             <meta charset="utf-8" />
+  #           </head>
+  #           <body>
+  #             Authentication process stuck
+  #             Status of {{group}} group: {{status}}
+  #             <a href={{url}}>{{comment}}</a>
+
+  #           </body>
+  #         </html>''')
+  #         self.write(t.generate(group=reqGroup, status=groupsStates[reqGroup]['Status'],
+  #                               url=groupsStates[reqGroup]['Action'][1],
+  #                               comment=groupsStates[reqGroup]['Comment']))
+  #   else:
+      
 
   # def __generateToken(self, header, payload):
 
