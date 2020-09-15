@@ -222,6 +222,8 @@ class AuthHandler(WebHandler):
       raise WErr(503, result['Message'])
     idPs = result['Value']
     if not idP:
+
+      # Choose IdP
       t = template.Template('''<!DOCTYPE html>
       <html>
         <head>
@@ -241,9 +243,9 @@ class AuthHandler(WebHandler):
         raise WErr(503, result['Message'])
       self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
                              query='?' + self.request.query, idPs=idPs))
-                            # authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
-                            # idPs=idPs, session=session))
     else:
+
+      # Check IdP
       if idP not in idPs:
         raise WErr(503, 'Provider not exist.')
       
@@ -271,11 +273,19 @@ class AuthHandler(WebHandler):
       self.updateSession(session, Provider=idP)
 
       # Submit second auth flow through IdP
-      result = IdProviderFactory().getIdProvider(idP)
-      if not result['OK']:
-        raise WErr(503, result['Message'])
-      provObj = result['Value']
-      result = provObj.submitNewSession(session)
+
+      # ##########AuthManager:submitAuthFlow########################################################################
+      # result = IdProviderFactory().getIdProvider(idP)
+      # if not result['OK']:
+      #   raise WErr(503, result['Message'])
+      # provObj = result['Value']
+      # result = provObj.submitNewSession(session)
+      # if not result['OK']:
+      #   raise WErr(503, result['Message'])
+      # self.log.notice('Redirect to', result['Value'])
+      # authURL, idPSessionParams = result['Value']
+      # ##################################################################################
+      result = AuthManagerClient().submitAuthorizeFlow(idP, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
@@ -301,18 +311,43 @@ class AuthHandler(WebHandler):
     
     # Parse result of the second authentication flow
     self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-    result = IdProviderFactory().getIdProvider(sessionDict['Provider'])
-    if not result['OK']:
-      raise WErr(503, result['Message'])
-    provObj = result['Value']
-    result = provObj.parseAuthResponse(self.request)
+    
+    # ##########AuthManager:readResponse########################################################################
+    # result = IdProviderFactory().getIdProvider(sessionDict['Provider'])
+    # if not result['OK']:
+    #   return result
+    #   # raise WErr(503, result['Message'])
+    # provObj = result['Value']
+    # result = provObj.parseAuthResponse(self.request)
+    # if not result['OK']:
+    #   return result
+    #   # # --
+    #   # self.updateSession(session, Status='failed', Comment=result['Message'])
+    #   # # --
+    #   # raise WErr(503, result['Message'])
+    
+    # # FINISHING with IdP auth result
+    # userProfile = result['Value']['UsrOptns']
+    # username = result['Value']['username']
+
+    # # Is ID registred?
+    # userID = userProfile['ID']
+    # result = getUsernameForID(userID)
+    # if not result['OK']:
+    #   comment = '%s ID is not registred in the DIRAC.' % userID
+    #   result = self.__registerNewUser(provider, parseDict)
+    #   if result['OK']:
+    #     comment += ' Administrators have been notified about you.'
+    #   else:
+    #     comment += ' Please, contact the DIRAC administrators.'
+    #   return S_ERROR(comment)
+    # return S_OK((result['Value'], userProfile))
+    # ##################################################################################
+    result = AuthManagerClient().parseAuthResponse(idP, self.request, sessionDict[idP])
     if not result['OK']:
       self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
-    
-    # FINISHING with IdP auth result
-    userProfile = result['Value']['UsrOptns']
-    username = result['Value']['username']
+    username, userProfile = result['Value']
 
     # researche Group
     reqGroup = self.get_argument('group', sessionDict.get('group'))
