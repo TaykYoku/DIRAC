@@ -157,10 +157,10 @@ class AuthHandler(WebHandler):
     """
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      client = yield self.threadTask(self.getClient, self.get_argument('client_id'))
+      data = {'client_id': self.get_argument('client_id')}
+      client = yield self.threadTask(self.getClient, data['client_id'])
       if not client:
         raise WErr(401, 'Client ID is unregistred.')
-      data = {}
       data['expires_in'] = 300
       data['expires_at'] = int(time()) + data['expires_in']
       data['device_code'] = generate_token(20)
