@@ -175,8 +175,11 @@ class AuthHandler(WebHandler):
       self.finish(data)
     elif self.request.method == 'GET':
       if userCode:
+        session, data = self.getSessionByOption('user_code', userCode)
+        if not session:
+          raise WErr(404, 'Session expired.')
         authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
-        self.redirect('%s?user_code=%s' % (authURL, userCode))
+        self.redirect('%s?user_code=%s&client_id=%s' % (authURL, userCode, data['client_id']))
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
