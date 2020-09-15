@@ -11,8 +11,10 @@ import requests
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base.Client import Client, createClient
 from DIRAC.Core.Utilities import DIRACSingleton
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
+
 
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
