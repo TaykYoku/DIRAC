@@ -285,7 +285,7 @@ class AuthHandler(WebHandler):
       # self.log.notice('Redirect to', result['Value'])
       # authURL, idPSessionParams = result['Value']
       # ##################################################################################
-      result = AuthManagerClient().submitAuthorizeFlow(idP, session)
+      result = gSessionManager.submitAuthorizeFlow(idP, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
@@ -343,7 +343,7 @@ class AuthHandler(WebHandler):
     #   return S_ERROR(comment)
     # return S_OK((result['Value'], userProfile))
     # ##################################################################################
-    result = AuthManagerClient().parseAuthResponse(idP, self.request, sessionDict[idP])
+    result = gSessionManager.parseAuthResponse(idP, self.request, sessionDict[idP])
     if not result['OK']:
       self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
