@@ -511,7 +511,7 @@ class ProxyManagerHandler(RequestHandler):
                              requester, requesterGroup)
     return self.__proxyDB.generateToken(requester, requesterGroup, numUses=tokenUses)
 
-  types_getVOMSProxyWithToken = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
+  types_getVOMSProxyWithToken = [six.string_types, six.string_types, six.string_types, six.integer_types, [six.string_types, type(None)]]
 
   @deprecated("This method is deprecated, you can use export_getProxy with token and vomsAttribute parameter")
   def export_getVOMSProxyWithToken(self, user, userGroup, requestPem, requiredLifetime, token, vomsAttribute=None):
@@ -527,7 +527,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, token=token, vomsAttribute=vomsAttribute)
 
-  types_getProxyWithToken = [basestring, basestring, basestring, six.integer_types, basestring]
+  types_getProxyWithToken = [six.string_types, six.string_types, six.string_types, six.integer_types, six.string_types]
 
   @deprecated("This method is deprecated, you can use export_getProxy with token parameter")
   def export_getProxyWithToken(self, user, userGroup, requestPem, requiredLifetime, token):
@@ -543,7 +543,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, token=token)
 
-  types_getVOMSProxy = [basestring, basestring, basestring, six.integer_types, [basestring, type(None)]]
+  types_getVOMSProxy = [six.string_types, six.string_types, six.string_types, six.integer_types, [six.string_types, type(None)]]
 
   @deprecated("This method is deprecated, you can use export_getProxy with vomsAttribute parameter")
   def export_getVOMSProxy(self, user, userGroup, requestPem, requiredLifetime, vomsAttribute=None):
@@ -559,7 +559,7 @@ class ProxyManagerHandler(RequestHandler):
     """
     return self.export_getProxy(user, userGroup, requestPem, requiredLifetime, vomsAttribute=vomsAttribute)
 
-  types_getGroupsStatusByUsername = [str]
+  types_getGroupsStatusByUsername = [six.string_types]
 
   def export_getGroupsStatusByUsername(self, username, groups=None):
     """ Get status of every group for DIRAC user:
