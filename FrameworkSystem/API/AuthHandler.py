@@ -246,9 +246,12 @@ class AuthHandler(WebHandler):
     else:
       if idP not in idPs:
         raise WErr(503, 'Provider not exist.')
-    
+      
+      userCode = self.get_argument('user_code', None)
+      flow = self.get_argument('response_type', 'device' if userCode else None)
+
       # Authorization code flow
-      if self.get_argument('response_type', None) == 'code':
+      if flow == 'code':
         session = self.get_argument('state', generate_token(10))
         sessionDict = {}
         codeChallenge = self.get_argument('code_challenge', None)
@@ -258,7 +261,7 @@ class AuthHandler(WebHandler):
         self.addSession(session, sessionDict)
       
       # Device flow
-      elif self.get_argument('user_code'):
+      elif flow == 'device':
         session, _ = self.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
