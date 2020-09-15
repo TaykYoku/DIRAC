@@ -364,7 +364,7 @@ class AuthHandler(WebHandler):
     userProfile['Group'] = reqGroup
 
     # Create DIRAC access token for username/group
-    reuslt = self.__getAccessToken(userProfile)
+    reuslt = self.__getAccessToken(userProfile, session)
     if not result['OK']:
       raise WErr(503, result['Message'])
     self.updateSession(session, Status='authed', Token=result['Value'])
@@ -446,7 +446,7 @@ class AuthHandler(WebHandler):
         raise WErr(401, data['Comment'])
       self.finish(data['Token'])
 
-  def __getAccessToken(self, profile):
+  def __getAccessToken(self, profile, session):
     #### GENERATE TOKEN
     header = {'alg': 'RS256'}
     payload = {'sub': profile['ID'],
@@ -456,6 +456,7 @@ class AuthHandler(WebHandler):
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
+    # Need to use enum==0.3.1 for python 2.7
     return S_OK({'access_token': jwt.encode(header, payload, key),
                  'token_type': 'Baerer',
                  'expires_at': 12 * 3600,
