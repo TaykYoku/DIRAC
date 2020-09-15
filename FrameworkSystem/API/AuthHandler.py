@@ -195,13 +195,13 @@ class AuthHandler(WebHandler):
             <script>
               function verification_uri_complete(){
                 var form = document.getElementById('user_code_form');
-                form.action = "{{base_url}}/" + document.getElementById('user_code').value + "/{{uri}}";
+                form.action = "{{url}}/" + document.getElementById('user_code').value + "{{query}}";
               }
             </script>
           </body>
         </html>''')
-        self.finish(t.generate(base_url=self.request.protocol + "://" + self.request.host,
-                               uri=self.request.uri))
+        self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+                             query='?' + self.request.query))
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
@@ -231,7 +231,7 @@ class AuthHandler(WebHandler):
         <body>
           <ul>
             {% for idP in idPs %}
-              <li> <a href="{{base_url}}/{{idP}}/{{uri}}">{{idP}}</a> </li>
+              <li> <a href="{{url}}/{{idP}}{{query}}">{{idP}}</a> </li>
             {% end %}
           <ul>
         </body>
@@ -239,8 +239,8 @@ class AuthHandler(WebHandler):
       result = getProvidersForInstance('Id')
       if not result['OK']:
         raise WErr(503, result['Message'])
-      self.finish(t.generate(base_url=self.request.protocol + "://" + self.request.host,
-                             uri=self.request.uri, idPs=idPs))
+      self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+                             query='?' + self.request.query, idPs=idPs))
                             # authEndpoint='https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
                             # idPs=idPs, session=session))
     else:
