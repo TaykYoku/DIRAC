@@ -21,6 +21,8 @@ from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
+from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
+
 
 __RCSID__ = "$Id$"
 
@@ -257,7 +259,7 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
-    userProfile = result['Value']
+    userProfile = result['Value']['UsrOptns']
 
     reuslt = self.__getAccessToken(userProfile)
     if not result['OK']:
