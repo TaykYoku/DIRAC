@@ -172,7 +172,7 @@ class AuthHandler(WebHandler):
       data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
       # return DeviceCredentialDict(data)
       self.addSession(data['device_code'], data)
-      self.write(data)
+      self.finish(data)
     elif self.request.method == 'GET':
       if userCode:
         authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
@@ -197,9 +197,8 @@ class AuthHandler(WebHandler):
             </script>
           </body>
         </html>''')
-        self.write(t.generate(base_url=self.request.protocol + "://" + self.request.host,
-                              uri=self.request.uri))
-    self.finish()
+        self.finish(t.generate(base_url=self.request.protocol + "://" + self.request.host,
+                               uri=self.request.uri))
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
