@@ -343,7 +343,8 @@ class AuthHandler(WebHandler):
     #   return S_ERROR(comment)
     # return S_OK((result['Value'], userProfile))
     # ##################################################################################
-    result = gSessionManager.parseAuthResponse(idP, self.request, sessionDict[idP])
+    result = gSessionManager.parseAuthResponse(sessionDict['Provider'], self.request,
+                                               sessionDict[sessionDict['Provider']])
     if not result['OK']:
       self.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
