@@ -53,7 +53,7 @@ class AuthManagerClient(Client):
                  UserName -- user name, returned if status is 'ready'
                  Session -- session id, returned if status is 'needToAuth'
     """
-    result = IdProviderFactory().getIdProvider(idP)
+    result = IdProviderFactory().getIdProvider(providerName)
     if not result['OK']:
       return result
     provObj = result['Value']
