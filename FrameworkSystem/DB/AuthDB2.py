@@ -22,7 +22,7 @@ __RCSID__ = "$Id$"
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Text
+from sqlalchemy import Column, Integer, Text, BigInteger
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 Model = declarative_base()
@@ -37,7 +37,7 @@ class Token(Model, OAuth2TokenMixin):
   __tablename__ = 'Tokens'
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
-  id = Column(Integer, primary_key=True, nullable=False)
+  id = Column(BigInteger, unique=True, primary_key=True, nullable=False)
   # access_token too large for varchar(255)
   # 767 bytes is the stated prefix limitation for InnoDB tables in MySQL version 5.6
   # https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
