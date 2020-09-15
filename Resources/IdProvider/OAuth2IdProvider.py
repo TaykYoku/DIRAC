@@ -168,7 +168,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     return S_OK()
 
   @checkResponse
-  def parseAuthResponse(self, response):
+  def parseAuthResponse(self, response, session=None):
     """ Make user info dict:
           - username(preferd user name)
           - nosupport(VOs in response that not in DIRAC)
