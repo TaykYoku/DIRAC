@@ -38,7 +38,10 @@ class Token(Model, OAuth2TokenMixin):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(Integer, primary_key=True, nullable=False)
-  access_token = Column(Text, unique=True, nullable=False)
+  # access_token too large for varchar(255)
+  # 767 bytes is the stated prefix limitation for InnoDB tables in MySQL version 5.6
+  # https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
+  access_token = Column(Text, nullable=False)
   id_token = Column(Text)
 
 # Relationships
@@ -150,6 +153,7 @@ class AuthDB2(SQLAlchemyDB):
         self.log.warn('%s is not expected as token attribute.' % k)
       else:
         attrts[k] = v
+    attrts['id'] = hash(attrts['access_token'])
     token = Token(client_id=client_id, token_type=token_type, **attrts)
     
     session = self.session()
