@@ -176,7 +176,7 @@ class AuthHandler(WebHandler):
     elif self.request.method == 'GET':
       if userCode:
         authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
-        self.redirect('%s?user_code=%s&session=%s' % (authURL, userCode, session))
+        self.redirect('%s?user_code=%s' % (authURL, userCode))
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
