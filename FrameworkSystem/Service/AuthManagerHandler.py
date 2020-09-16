@@ -342,7 +342,7 @@ class AuthManagerHandler(RequestHandler):
     return S_OK(data)
 
 
-  types_parseAuthResponse = [six.string_types, string_types, dict]  #dict, six.string_types]
+  types_parseAuthResponse = [six.string_types, six.string_types, dict]  #dict, six.string_types]
 
   def export_parseAuthResponse(self, providerName, username, userProfile):  #response, session):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
