@@ -61,7 +61,7 @@ class AuthManagerClient(Client):
     """
     result = self._getRPC().parseAuthResponse(providerName, response, session)
     if result['OK'] and result['Value']:
-      _ profile = result['Value']
+      _, profile = result['Value']
       gAuthManagerData.updateProfiles(profile['ID'], profile)
     return result
 
