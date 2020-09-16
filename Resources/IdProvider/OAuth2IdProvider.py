@@ -50,24 +50,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Here "t" is `OAuth2Token` type
     self.update_token = lambda t, rt: gSessionManager.updateToken(dict(t), rt)
 
-  # def getTokenWithAuth(self, group, tokenLivetime, logger=None):
-  #   result = self.isSessionManagerAble()
-  #   if not result['OK']:
-  #     return result
-    
-  #   if logger:
-  #     self.log = logger
-    
-  #   res = self.sessionManager.submitAuthorizeFlow(IdP, group)
-  #   if not res['OK']:
-  #     return res
-  #   session, url = res['Value']
-  #   self.log.info('%s session will active 5 min', session)
-  #   self.log.info('Use next URL to login:\n', url)
-  #   self.log.info("After successfully authentication press [Enter] to continue or CTRL+C to exit..")
-  #   input()
-  #   return self.sessionManager.getSessionToken(IdP, group)
-
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
         try:
@@ -127,61 +109,11 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(str)/S_ERROR()
     """
-    # provider = self.parameters['ProviderName']
-    # result = self.isSessionManagerAble()
-    # if not result['OK']:
-    #   return result
     result = self.getServerParameter('authorization_endpoint')
     if not result['OK']:
       return result
     authEndpoint = result['Value']
-    # result = self.sessionManager.createNewSession(provider, reqGroup) # TODO: add reqGroup #, session=session)
-    # if not result['OK']:
-    #   return result
-    # session = result['Value']
-    # self.log.verbose(session, 'session was created.')
-    #url = self.create_authorization_url(authEndpoint, state=session)  
-
-    #   result = self.sessionManager.updateSession(session, {'Provider': provider,
-    #                                                        'Comment': url})
-    # if not result['OK']:
-    #   kill = self.sessionManager.killSession(session)
-    #   return result if kill['OK'] else kill
-    # uri, state = self.create_authorization_url(authEndpoint, state=session)
     return S_OK(self.create_authorization_url(authEndpoint, state=session))
-
-  def checkStatus(self, session):
-    """ Read ready to work status of identity provider
-
-        :param str session: if need to check session
-
-        :return: S_OK(dict)/S_ERROR() -- dictionary contain fields:
-                 - 'Status' with ready to work status[ready, needToAuth]
-                 - 'AccessToken' with list of access token
-    """
-    result = self.isSessionManagerAble()
-    if not result['OK']:
-      return result
-
-    result = self.sessionManager.getSessionLifetime(session)
-    if not result['OK']:
-      return result
-    if result['Value'] < 10 * 60:
-      self.log.debug('%s session tokens are expired, try to refresh' % session)
-      result = self.sessionManager.getSessionTokens(session)
-      if not result['OK']:
-        return result
-      tokens = result['Value']
-      result = self.__fetchTokens(tokens)
-      if result['OK']:
-        tokens = result['Value']
-        if not tokens.get('RefreshToken'):
-          return S_ERROR('No refresh token found in response.')
-        return self.sessionManager.updateSession(session, tokens)
-      kill = self.sessionManager.killSession(session)
-      return result if kill['OK'] else kill
-
-    return S_OK()
 
   @checkResponse
   def parseAuthResponse(self, response, session=None):
@@ -222,69 +154,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
     return S_OK(userProfile)
-
-  def fetch(self, session):
-    """ Fetch tokens and update session in DB
-
-        :param str,dict session: session number or dictionary with tokens
-
-        :return: S_OK()/S_ERROR()
-    """
-    tokens = session
-    if isinstance(session, str):
-      result = self.sessionManager.getSessionTokens(session)
-      if not result['OK']:
-        return result
-      tokens = result['Value']
-    result = self.__fetchTokens(tokens)
-    if not result['OK']:
-      kill = self.sessionManager.killSession(session)
-      return result if kill['OK'] else kill
-    tokens = result['Value']
-    if not tokens.get('RefreshToken'):
-      return S_ERROR('No refresh token found in response.')
-    return self.sessionManager.updateSession(session, tokens)
-
-  def __fetchTokens(self, **kwargs):
-    """ Fetch tokens
-
-        :param dict tokens: tokens
-
-        :return: S_OK(dict)/S_ERROR() -- dictionary contain tokens
-    """
-    result = self.getServerParameter('token_endpoint')
-    if not result['OK']:
-      return result
-    tokenEndpoint = result['Value']
-    token = self.fetch_access_token(tokenEndpoint, **kwargs)
-    # Store token
-    pprint.pprint(token)
-    token['user_id'] = 
-    token['provider'] = self.name
-    token['client_id'] = self.client_id
-
-    result = gSessionManager.storeToken(dict(token))
-    
-
-    token = self.refresh_token(refresh_token=tokens['RefreshToken'])
-    result = self.oauth2.fetchToken(refreshToken=tokens['RefreshToken'])
-    if not result['OK']:
-      return result
-    return S_OK(self.__parseTokens(result['Value']))
-
-  # def __parseTokens(self, tokens):
-  #   """ Parse session tokens
-
-  #       :param dict tokens: tokens
-
-  #       :return: dict
-  #   """
-  #   resDict = {}
-  #   resDict['ExpiresIn'] = tokens.get('expires_in') or 0
-  #   resDict['TokenType'] = tokens.get('token_type') or 'bearer'
-  #   resDict['AccessToken'] = tokens.get('access_token')
-  #   resDict['RefreshToken'] = tokens.get('refresh_token')
-  #   return resDict
 
   def __getUserInfo(self, token):
     if token.is_expired():
@@ -392,44 +261,3 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           profile['DNs'][dnInfo['DN']] = dnInfo
 
     return S_OK(username, profile)
-
-  def getUserProfile(self, session):
-    """ Get user information from identity provider
-
-        :param str,dict session: session number or dictionary
-
-        :return: S_OK(dict)/S_ERROR() -- dictionary contain user profile information
-    """
-    tokens = session
-    if isinstance(session, str):
-      result = self.sessionManager.getSessionTokens(session)
-      if not result['OK']:
-        return result
-      tokens = result['Value']
-    result = self.oauth2.getUserProfile(tokens['AccessToken'])
-    if not result['OK']:
-      result = self.__fetchTokens(tokens)
-      if result['OK']:
-        tokens = result['Value']
-        result = self.oauth2.getUserProfile(result['Value']['AccessToken'])
-    if not result['OK']:
-      kill = self.sessionManager.killSession(session)
-      return result if kill['OK'] else kill
-    userProfile = result['Value']
-    result = self.sessionManager.updateSession(session, tokens)
-    if not result['OK']:
-      return result
-    return self.__parseUserProfile(userProfile)
-
-  def logOut(self, session):
-    """ Revoke tokens
-
-        :param str session: session number
-
-        :return: S_OK()/S_ERROR()
-    """
-    result = self.sessionManager.getSessionTokens(session)
-    if not result['OK']:
-      return result
-    tokens = result['Value']
-    return self.oauth2.revokeToken(tokens['AccessToken'], tokens['RefreshToken'])
