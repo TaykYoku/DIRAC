@@ -36,6 +36,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
     # Convert scope to list
+    scope = scope or ''
     self.scope = [s.strip() for s in scope.strip().replace('+',' ').split(',' if ',' in scope else ' ')]
     self.parameters = parameters
     self.exceptions = exceptions
