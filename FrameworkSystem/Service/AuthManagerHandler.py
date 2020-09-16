@@ -375,7 +375,7 @@ class AuthManagerHandler(RequestHandler):
       else:
         comment += ' Please, contact the DIRAC administrators.'
       return S_ERROR(comment)
-    self.__addProfiles(userProfile)
+    self.__addProfiles({userProfile['ID']: userProfile})
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
