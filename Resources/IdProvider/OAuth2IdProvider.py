@@ -99,9 +99,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if result['OK']:
         result = self.__parseUserProfile(result['Value'])
         if result['OK']:
-          metadatatoken['user_id'] = result['Value']
+          metadata[token['user_id']] = result['Value']
     
-    return S_OK(resDict)
+    return S_OK(metadata)
 
   def submitNewSession(self, session):
     """ Submit new authorization session
@@ -228,7 +228,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except Exception as e:
       if not profile['Groups']:
         self.log.warn('No "DiracGroups", no claim with DNs decsribe in Syntax/DNs section found.')
-      return S_OK(resDict)
+      return S_OK((username, profile))
 
     if not userProfile.get(dnClaim) and not profile['Groups']:
       self.log.warn('No "DiracGroups", no claim "%s" that decsribe DNs found.' % dnClaim)
