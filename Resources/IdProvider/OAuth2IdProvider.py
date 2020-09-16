@@ -261,4 +261,4 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
             dnInfo['PROVIDER'] = result['Value'] if result['OK'] else 'Certificate'
           profile['DNs'][dnInfo['DN']] = dnInfo
 
-    return S_OK(username, profile)
+    return S_OK((username, profile))
