@@ -68,7 +68,7 @@ class AuthManagerClient(Client):
   
   @gCacheSession
   def removeSession(self, session):
-    return self.cacheSession.delete(session)
+    self.cacheSession.delete(session)
 
   def updateSession(self, session, exp=300, **data):
     origData = self.getSession(session) or {}
@@ -76,8 +76,7 @@ class AuthManagerClient(Client):
       origData[k] = v
     self.addSession(session, origData, exp)
   
-  def getSessionByOption(self, key, value=None):
-    value = value or self.get_argument(key)
+  def getSessionByOption(self, key, value):
     sessions = self.getSession()
     for session, data in sessions.items():
       if data[key] == value:

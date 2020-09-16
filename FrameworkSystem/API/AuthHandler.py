@@ -331,9 +331,10 @@ class AuthHandler(WebHandler):
 
     # Device flow
     if grantType == 'device_code':
-      session, data = gSessionManager.getSessionByOption('device_code')
+      session, data = gSessionManager.getSessionByOption('device_code', self.get_argument('device_code'))
       if not session:
-        raise
+        print('=====>> %s' % gSessionManager.getSession())
+        raise 
 
       # Waiting IdP auth result
       if data['Status'] not in ['authed', 'failed']:
@@ -348,7 +349,7 @@ class AuthHandler(WebHandler):
     
     # Authentication code flow
     elif grantType == 'authorization_code':
-      session, data = gSessionManager.getSessionByOption('code')
+      session, data = gSessionManager.getSessionByOption('code', self.get_argument('code'))
       if not session:
         raise
 
