@@ -59,7 +59,16 @@ class AuthManagerClient(Client):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    result = self._getRPC().parseAuthResponse(providerName, response, session)
+    result = IdProviderFactory().getIdProvider(providerName, sessionManager=self._getRPC())
+    if not result['OK']:
+      return result
+    provObj = result['Value']
+    result = provObj.parseAuthResponse(response, session)
+    if not result['OK']:
+      return result    
+    # # FINISHING with IdP auth result
+    # username, userProfile = result['Value']
+    result = self._getRPC().parseAuthResponse(providerName, *result)
     if result['OK'] and result['Value']:
       _, profile = result['Value']
       gAuthManagerData.updateProfiles(profile['ID'], profile)
