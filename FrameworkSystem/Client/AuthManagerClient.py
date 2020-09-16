@@ -8,6 +8,9 @@ from __future__ import print_function
 import six
 import requests
 
+from DIRAC.Core.Utilities import ThreadSafe
+from DIRAC.Core.Utilities.DictCache import DictCache
+
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base.Client import Client, createClient
 from DIRAC.Core.Utilities import DIRACSingleton
@@ -17,6 +20,10 @@ from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
 __RCSID__ = "$Id$"
+
+
+gCacheClient = ThreadSafe.Synchronizer()
+gCacheSession = ThreadSafe.Synchronizer()
 
 
 @createClient('Framework/AuthManager')
@@ -30,6 +37,52 @@ class AuthManagerClient(Client):
     """
     super(AuthManagerClient, self).__init__(*args, **kwargs)
     self.setServer('Framework/AuthManager')
+    self.cacheSession = DictCache()
+    self.cacheClient = DictCache()
+  
+  @gCacheClient
+  def addClient(self, data):
+    result = self._getRPC().createClient(data)
+    if result['OK']:
+      data = result['Value']
+      self.cacheClient.add(data['client_id'], 24 * 3600, data)
+    return result
+
+  @gCacheClient
+  def getClient(self, clientID):
+    data = self.cacheClient.get(clientID)
+    if not data:
+      result = self._getRPC().getClientByID(clientID)
+      if result['OK']:
+        data = result['Value']
+        self.cacheClient.add(data['client_id'], 24 * 3600, data)
+    return data
+  
+  @gCacheSession
+  def addSession(self, session, data, exp=300):
+    self.cacheSession.add(session, exp, data)
+  
+  @gCacheSession
+  def getSession(self, session=None):
+    return self.cacheSession.get(session) if session else self.cacheSession.getDict()
+  
+  @gCacheSession
+  def removeSession(self, session):
+    return self.cacheSession.delete(session)
+
+  def updateSession(self, session, exp=300, **data):
+    origData = self.getSession(session) or {}
+    for k, v in data.items():
+      origData[k] = v
+    self.addSession(session, origData, exp)
+  
+  def getSessionByOption(self, key, value=None):
+    value = value or self.get_argument(key)
+    sessions = self.getSession()
+    for session, data in sessions.items():
+      if data[key] == value:
+        return session, data
+    return None, {}
 
   def submitAuthorizeFlow(self, providerName, session):
     """ Register new session and return dict with authorization url and session number
