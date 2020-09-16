@@ -68,7 +68,7 @@ class AuthManagerClient(Client):
       return result    
     # # FINISHING with IdP auth result
     # username, userProfile = result['Value']
-    result = self._getRPC().parseAuthResponse(providerName, *result)
+    result = self._getRPC().parseAuthResponse(providerName, *result['Value'])
     if result['OK'] and result['Value']:
       _, profile = result['Value']
       gAuthManagerData.updateProfiles(profile['ID'], profile)
