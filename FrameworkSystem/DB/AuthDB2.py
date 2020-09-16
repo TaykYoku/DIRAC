@@ -19,10 +19,11 @@ from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
 
 __RCSID__ = "$Id$"
 
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Text, BigInteger
+from sqlalchemy import Column, Integer, Text, BigInteger, String
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 Model = declarative_base()
@@ -42,7 +43,24 @@ class Token(Model, OAuth2TokenMixin):
   # 767 bytes is the stated prefix limitation for InnoDB tables in MySQL version 5.6
   # https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
   access_token = Column(Text, nullable=False)
-  id_token = Column(Text)
+  provider = Column(Text)
+  user_id = Column(String(255), nullable=False)
+  
+  # def toDict(self):
+  #   return {'access_token': self.access_token,
+  #           '': self.system,
+  #                 'Module': self.module,
+  #                 'Type': self.cType}
+
+  # @property
+  # def tokenToDict(self):
+
+  #     return dict(
+  #         Provider=self.client_id,
+  #         UserID=self.sub,
+  #         access_token=self.access_token,
+  #         refresh_token=self.client_secret_expires_at,
+  #     )
 
 # Relationships
 # token = relationship("Token")
@@ -146,7 +164,7 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return result
 
-  def storeToken(self, client_id=None, token_type="Baerer", **metadata):
+  def storeToken(self, client_id=None, token_type=None, **metadata):
     attrts = {}
     for k, v in metadata.items():
       if k not in Token.__dict__.keys():
@@ -154,11 +172,12 @@ class AuthDB2(SQLAlchemyDB):
       else:
         attrts[k] = v
     attrts['id'] = hash(attrts['access_token'])
-    token = Token(client_id=client_id, token_type=token_type, **attrts)
-    
+    attrts['client_id'] = client_id
+    attrts['token_type'] = token_type or "Baerer"
+
     session = self.session()
     try:
-      session.add(token)
+      session.add(Token(**attrts))
       session.commit()
     except Exception as e:
       session.rollback()
@@ -168,6 +187,23 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return S_OK('Component successfully added')
   
+  def updateToken(self, token, refreshToken):
+    session = self.session()
+    try:
+      # tokenDict = dict(session.query(Token).filter(Token.refresh_token==refreshToken).one())
+      # for k, v in dict(token).items():
+      #   tokenDict[k] = v
+      # session.add(Token.from_dict(tokenDict))
+      session.update(Token(**token)).where(Token.refresh_token==refreshToken)
+    except MultipleResultsFound:
+      return self.__result(session, S_ERROR("%s is not unique." % refreshToken))
+    except NoResultFound:
+      return self.__result(session, S_ERROR("%s token not found." % refreshToken))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+
+    return self.__result(session, S_OK(OAuth2Token(token)))
+
   def removeToken(self, access_token=None, refresh_token=None):
     session = self.session()
     d = {}
@@ -195,6 +231,29 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return S_OK('Components successfully removed')
   
+  def getTokenByUserID(self, userID):
+    session = self.session()
+    try:
+      token = session.query(Token).filter(Token.user_id==userID).first()
+    except NoResultFound:
+      return self.__result(session, S_ERROR("Token not found."))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK(dict(token)))
+  
+  def getIdPTokens(self, IdP, userIDs=None):
+    session = self.session()
+    try:
+      if userIDs:
+        tokens = session.query(Token).filter(Token.provider==IdP).filter(Token.user_id.in_(set(userIDs))).all()
+      else:
+        tokens = session.query(Token).filter(Token.provider==IdP).all()
+    except NoResultFound:
+      return self.__result(session, S_ERROR("Tokens not found."))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK([OAuth2Token(t) for t in tokens]))
+
   def getToken(self, params):
     session = self.session()
     try:

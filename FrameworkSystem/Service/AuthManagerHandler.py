@@ -8,6 +8,7 @@ import re
 import six
 import time
 import pprint
+import threading
 from authlib.jose import jwt  # TODO: need to add authlib to DIRACOS
 
 from DIRAC import gLogger, S_OK, S_ERROR
@@ -15,7 +16,7 @@ from DIRAC.Core.DISET.RequestHandler import RequestHandler
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo, getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, getIDsForUsername, getEmailsForGroup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
@@ -48,6 +49,12 @@ class AuthManagerHandler(RequestHandler):
   # # {
   # #   <ID1>: [ <sessions> ],
   # #   <ID2>: ...
+  # # }
+
+  __cahceIdPIDs = DictCache()
+  # # {
+  # #   <IdP1>: [ <IDs> ],
+  # #   <IdP2>: ...
   # # }
 
   __cacheProfiles = DictCache()
@@ -203,7 +210,7 @@ class AuthManagerHandler(RequestHandler):
     """ Handler initialization
     """
     cls.__db = AuthDB2()
-    return S_OK()
+    # return S_OK()
     # cls.__authServ = AuthServerHandler(cls.__db)
     # gThreadScheduler.addPeriodicTask(15 * 60, cls.__refreshReservedSessions)
     #gThreadScheduler.addPeriodicTask(3600, cls.__cleanAuthDB)
@@ -211,7 +218,7 @@ class AuthManagerHandler(RequestHandler):
     #result = cls.__cleanAuthDB()
     #if result['OK']:
     #  result = cls.__updateSessionsFromDB()
-    #return cls.__refreshProfiles() if result['OK'] else result
+    return cls.__refreshProfiles() #if result['OK'] else result
 
   @classmethod
   def __refreshProfiles(cls):
@@ -219,40 +226,27 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    # TODO: Here need to use metadata resources not sessions
-    idPsDict = {}
-    for session, data in cls.__cacheSessions.getDict().items():
-      if data['Status'] == 'authed' and data['Reserved'] == 'yes':
-        uid = data['ID']
-        provider = data['Provider']
-        if provider not in idPsDict:
-          idPsDict[provider] = {}
-        if uid not in idPsDict[provider]:
-          idPsDict[provider][uid] = []
-        idPsDict[provider][uid].append(session)
+    def refreshIdP(idP):
+      """ Process to get information from VOMS API
 
-    for idP, data in idPsDict.items():
+          :param str vo: VO name
+      """
       result = IdProviderFactory().getIdProvider(idP, sessionManager=cls.__db)
+      if result['OK']:
+        provObj = result['Value']
+        result = provObj.getIDsMetadata()
+        if result['OK']:
+          cls.__addProfiles(result['Value'])
       if not result['OK']:
         return result
-      provObj = result['Value']
-      for uid, sessions in data.items():
-        for session in sessions:
-          result = provObj.checkStatus(session=session)
-          if result['OK']:
-            if not cls.__getProfiles(uid):
-              result = provObj.getUserProfile(session)
-              if result['OK']:
-                dns = result['Value']['UsrOptns']['DNs']
-                if dns:
-                  cacheData = cls.__getProfiles(userID=uid) or {}
-                  cacheData['DNs'] = dns
-                  cls.__addProfiles({uid: cacheData})
-                continue
 
-          if not result['OK']:
-            cls.log.error('%s session, with %s IdP, cannot log out:' % (session, idP), result['Message'])
-            continue
+    result = getProvidersForInstance('Id')
+    if not result['OK']:
+      return result
+    for idP in result['Value']:
+      processThread = threading.Thread(target=refreshIdP, args=[idP])
+      processThread.start()
+
     return S_OK()
 
   def __checkAuth(self, session=None):
@@ -281,6 +275,39 @@ class AuthManagerHandler(RequestHandler):
 
     return S_OK((user, userIDs))
 
+  types_updateProfile = []
+  auth_updateProfile = ["authenticated", "TrustedHost"]
+
+  def export_updateProfile(self, userID=None):
+    """ Return fresh info from identity providers about users with actual sessions
+
+        :params: str userID: user ID
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    result = self.__checkAuth()
+    if not result['OK']:
+      return result
+    user, ids = result["Value"]
+
+    # For host
+    if ids == 'all':
+      return S_OK(self.__getProfiles(userID=userID))
+
+    # For user
+    if userID:
+      if userID not in ids:
+        return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
+      return S_OK(self.__getProfiles(userID=userID))
+
+    data = {}
+    for uid in ids:
+      idDict = self.__getProfiles(userID=uid)
+      if idDict:
+        data[uid] = idDict
+
+    return S_OK(data)
+
   types_getIdProfiles = []
   auth_getIdProfiles = ["authenticated", "TrustedHost"]
 
@@ -304,7 +331,7 @@ class AuthManagerHandler(RequestHandler):
     if userID:
       if userID not in ids:
         return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
-      return self.__getProfiles(userID=userID)
+      return S_OK(self.__getProfiles(userID=userID))
 
     data = {}
     for uid in ids:
@@ -314,177 +341,42 @@ class AuthManagerHandler(RequestHandler):
 
     return S_OK(data)
 
-  types_getSessionsInfo = []
-  auth_getSessionsInfo = ["authenticated", "TrustedHost"]
 
-  def export_getSessionsInfo(self, session=None, userID=None):
-    """ Return fresh info from identity providers about users with actual sessions
+  types_parseAuthResponse = [six.string_types, dict, six.string_types]
 
-        :param str session: session
-        :param str userID: user ID
+  def export_parseAuthResponse(self, providerName, response, session):
+    """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
+        Prepare dict with user parameters, if DN is absent there try to get it.
+        Create new or modify existend DIRAC user and store the session
+
+        :param dict response: authorization response
+        :param str session: session number
 
         :return: S_OK(dict)/S_ERROR()
-    """
-    result = self.__checkAuth()
-    if not result['OK']:
-      return result
-    user, ids = result["Value"]
-
-    # For host
-    if ids == "all":
-      return S_OK(self.__getSessions(session=session, userID=userID))
-
-    # For user
-    if userID:
-      if userID not in ids:
-        return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
-      return self.__getSessions(session=session, userID=userID)
-
-    if session:
-      data = self.__getSessions(session=session, userID=userID)
-      if data.get('ID') not in ids:
-        return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
-      return S_OK(data)
-
-    data = {}
-    for uid in ids:
-      for session, data in self.__getSessions(userID=uid):
-        if data['ID'] in ids:
-          data[session] = data
-
-    return S_OK(data)
-
-  types_submitAuthorizeFlow = [six.string_types]
-
-  def export_submitAuthorizeFlow(self, providerName, group=None):
-    """ Register new session and return dict with authorization url and session number
-
-        :param str providerName: provider name
-        :param str session: session identificator
-
-        :return: S_OK(dict)/S_ERROR() -- dictionary contain next keys:
-                 Status -- session status
-                 UserName -- user name, returned if status is 'ready'
-                 Session -- session id, returned if status is 'needToAuth'
-                 URL -- link to start authetication flow, returned if status is 'needToAuth'
     """
     result = IdProviderFactory().getIdProvider(providerName, sessionManager=self.__db)
     if not result['OK']:
       return result
     provObj = result['Value']
-    return provObj.submitNewSession()
-
-  types_parseAuthResponse = [dict, six.string_types]
-
-  def export_parseAuthResponse(self, response, session):
-    """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
-        Prepare dict with user parameters, if DN is absent there try to get it.
-        Create new or modify existend DIRAC user and store the session
-
-        :param dict response: authorization response
-        :param str session: session number
-
-        :return: S_OK(dict)/S_ERROR()
-    """
-    result = self.__db.getSessionStatus(session)
-    if result['OK']:
-      if result['Value']['Status'] not in ['prepared', 'in progress']:
-        return S_ERROR('The current session has already been submitted.')
-
-      result = self.__db.updateSession(session, {'Status': 'finishing'})
-      if result['OK']:
-        result = self.__parseAuthResponse(response, session)
-
-    if not result['OK']:
-      cansel = self.__db.updateSession(session, {'Status': 'failed', 'Comment': result['Message']})
-      return result if cansel['OK'] else cansel
-
-    responseData = result['Value']
-    if responseData['Status'] in ['authed', 'redirect']:
-      # Cached data
-      profile = responseData['UserProfile']['UsrOptns']
-      cacheData = self.__getProfiles(userID=profile['ID']) or {}
-      if profile['DNs']:
-        cacheData['DNs'] = profile['DNs']
-      self.__addProfiles({profile['ID']: cacheData})
-      result = self.__updateSessionsFromDB(session=session)
-      if not result['OK']:
-        return result
-      responseData['upProfile'] = {profile['ID']: cacheData}
-      responseData['upSession'] = result['Value']
-
-    return S_OK(responseData)
-
-  def __parseAuthResponse(self, response, session):
-    """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
-        Prepare dict with user parameters, if DN is absent there try to get it.
-        Create new or modify existend DIRAC user and store the session
-
-        :param dict response: authorization response
-        :param str session: session number
-
-        :return: S_OK(dict)/S_ERROR()
-    """
-    # Search provider by session
-    result = self.__db.getSessionProvider(session)
-    if not result['OK']:
-      return result
-    provider = result['Value']
-    result = IdProviderFactory().getIdProvider(provider, sessionManager=self.__db)
-    if not result['OK']:
-      return result
-    provObj = result['Value']
-
-    # Parsing response
     result = provObj.parseAuthResponse(response, session)
     if not result['OK']:
       return result
-    parseDict = result['Value']
-
-    status = 'authed'
-    comment = ''
+    
+    # FINISHING with IdP auth result
+    username, userProfile = result['Value']
 
     # Is ID registred?
-    userID = parseDict['UsrOptns']['ID']
-    result = getUsernameForID(userID)
+    result = getUsernameForID(userProfile['ID'])
     if not result['OK']:
-      status = 'failed'
-      comment = '%s ID is not registred in the DIRAC.' % userID
-      result = self.__registerNewUser(provider, parseDict)
+      comment = '%s ID is not registred in the DIRAC.' % userProfile['ID']
+      result = self.__registerNewUser(providerName, username, userProfile)
       if result['OK']:
         comment += ' Administrators have been notified about you.'
       else:
         comment += ' Please, contact the DIRAC administrators.'
-
-    else:
-      # This session to reserve?
-      if not self.__db.isReservedSession(session):
-        # If not, search reserved session
-        result = self.__db.getReservedSessions([userID], [provider])
-        if not result['OK']:
-          return result
-
-        if not result['Value']:
-          # If no found reserved session, submit second flow to create it
-          result = provObj.submitNewSession(session='reserved_%s' % session)
-          if not result['OK']:
-            return result
-
-          status = 'redirect'
-          comment = '%s/auth/%s' % (getAuthAPI().strip('/'), result['Value'])
-
-      else:
-        # Update status in source session
-        result = self.__db.updateSession(session.replace('reserved_', ''), {'Status': status})
-        if not result['OK']:
-          return result
-
-    # Update status in current session
-    result = self.__db.updateSession(session, {'Status': status, 'Comment': comment})
-    if not result['OK']:
-      return result
-
-    return S_OK({'Status': status, 'Comment': comment, 'UserProfile': parseDict, 'Provider': provider})
+      return S_ERROR(comment)
+    self.__addProfiles(userProfile)
+    return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
     """ Register new user
@@ -516,6 +408,53 @@ class AuthManagerHandler(RequestHandler):
       self.log.info(result['Value'], "administrators have been notified of a new user.")
     return result
 
+  types_createClient = [dict]
+  auth_createClient = []#"authenticated", "TrustedHost"]
+
+  def export_createClient(self, kwargs):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.addClient(**kwargs)
+
+  types_getClientByID = [six.string_types]
+  auth_getClientByID = []  # "authenticated", "TrustedHost"]
+
+  def export_getClientByID(self, clientID):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.getClientByID(clientID)
+  
+  types_storeToken = [dict]
+  auth_storeToken = ["authenticated"]
+  def export_storeToken(self, kwargs):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.storeToken(**kwargs)
+
+
+
+
+
+
+
+
+
+  ###########################
   types_getSessionLifetime = [six.string_types]
   auth_getSessionLifetime = ["authenticated", "TrustedHost"]
 
@@ -740,41 +679,3 @@ class AuthManagerHandler(RequestHandler):
       return S_ERROR(repr(e))
     res = self.__db.killSession(session)
     return S_OK(token) if res['OK'] else res
-  
-  types_createClient = [dict]
-  auth_createClient = []#"authenticated", "TrustedHost"]
-
-  def export_createClient(self, kwargs):
-    """ Generates a state string to be used in authorizations
-
-        :param str provider: provider
-        :param str session: session number
-
-        :return: S_OK(str)/S_ERROR()
-    """
-    return self.__db.addClient(**kwargs)
-
-  types_getClientByID = [six.string_types]
-  auth_getClientByID = []  # "authenticated", "TrustedHost"]
-
-  def export_getClientByID(self, clientID):
-    """ Generates a state string to be used in authorizations
-
-        :param str provider: provider
-        :param str session: session number
-
-        :return: S_OK(str)/S_ERROR()
-    """
-    return self.__db.getClientByID(clientID)
-  
-  types_storeToken = [dict]
-  auth_storeToken = ["authenticated"]
-  def export_storeToken(self, kwargs):
-    """ Generates a state string to be used in authorizations
-
-        :param str provider: provider
-        :param str session: session number
-
-        :return: S_OK(str)/S_ERROR()
-    """
-    return self.__db.storeToken(**kwargs)

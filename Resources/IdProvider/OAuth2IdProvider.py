@@ -16,15 +16,8 @@ from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
 
-# from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
-
 __RCSID__ = "$Id$"
 
-# auth = AuthMangerClient()
-# res = auth.submitAuthorizeFlow(IdP, group, livetime)
-# if not res['OK']:
-#   return res
-# sessionToken = res['Value']
 
 class OAuth2IdProvider(IdProvider, OAuth2Session):
   def __init__(self, name=None, issuer=None, client_id=None,
@@ -54,24 +47,26 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer, True))
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
+    # Here "t" is `OAuth2Token` type
+    self.update_token = lambda t, rt: gSessionManager.updateToken(dict(t), rt)
 
-  def getTokenWithAuth(self, group, tokenLivetime, logger=None):
-    result = self.isSessionManagerAble()
-    if not result['OK']:
-      return result
+  # def getTokenWithAuth(self, group, tokenLivetime, logger=None):
+  #   result = self.isSessionManagerAble()
+  #   if not result['OK']:
+  #     return result
     
-    if logger:
-      self.log = logger
+  #   if logger:
+  #     self.log = logger
     
-    res = self.sessionManager.submitAuthorizeFlow(IdP, group)
-    if not res['OK']:
-      return res
-    session, url = res['Value']
-    self.log.info('%s session will active 5 min', session)
-    self.log.info('Use next URL to login:\n', url)
-    self.log.info("After successfully authentication press [Enter] to continue or CTRL+C to exit..")
-    input()
-    return self.sessionManager.getSessionToken(IdP, group)
+  #   res = self.sessionManager.submitAuthorizeFlow(IdP, group)
+  #   if not res['OK']:
+  #     return res
+  #   session, url = res['Value']
+  #   self.log.info('%s session will active 5 min', session)
+  #   self.log.info('Use next URL to login:\n', url)
+  #   self.log.info("After successfully authentication press [Enter] to continue or CTRL+C to exit..")
+  #   input()
+  #   return self.sessionManager.getSessionToken(IdP, group)
 
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
@@ -103,6 +98,27 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       except ValueError as e:
         return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     return S_OK(self.metadata.get(parameter))
+
+  def getIDsMetadata(self, ids=None):
+    """ Metadata for IDs
+    """
+    metadata = {}
+    result = self.isSessionManagerAble()
+    if not result['OK']:
+      return result
+    result = self.sessionManager.getIdPTokens(self.name, ids)
+    if not result['OK']:
+      return result
+    for token in result['Value']:
+      if token['user_id'] in metadata:
+        continue
+      result = self.__getUserInfo(token)
+      if result['OK']:
+        result = self.__parseUserProfile(result['Value'])
+        if result['OK']:
+          metadatatoken['user_id'] = result['Value']
+    
+    return S_OK(resDict)
 
   def submitNewSession(self, session):
     """ Submit new authorization session
@@ -186,28 +202,23 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return result
     tokenEndpoint = result['Value']
     token = self.fetch_access_token(tokenEndpoint, authorization_response=response.uri)
-    # Store token
-    pprint.pprint(token)
-    token['client_id'] = self.client_id
-    result = gSessionManager.storeToken(dict(token))
-    if not result['OK']:
-      return result
-    result = self.getServerParameter('userinfo_endpoint')
-    if not result['OK']:
-      return result
-    userinfoEndpoint = result['Value']
-    try:
-      r = self.request('GET', userinfoEndpoint,
-                       headers={'Authorization': 'Bearer ' + token['access_token']})
-      r.raise_for_status()
-      userinfo = r.json()
-    except (self.exceptions.RequestException, ValueError) as e:
-      return S_ERROR("%s: %s" % (e.message, r.text))
-
-    result = self.__parseUserProfile(userinfo)
+    
+    # Get user info
+    result = self.__getUserInfo(token)
+    if result['OK']:
+      result = self.__parseUserProfile(result['Value'])
     if not result['OK']:
       return result
     userProfile = result['Value']
+    
+    # Store token
+    pprint.pprint(token)
+    token['client_id'] = self.client_id
+    token['provider'] = self.name
+    token['user_id'] = userProfile['ID']
+    result = gSessionManager.storeToken(dict(token))
+    if not result['OK']:
+      return result
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
     return S_OK(userProfile)
@@ -234,32 +245,68 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return S_ERROR('No refresh token found in response.')
     return self.sessionManager.updateSession(session, tokens)
 
-  def __fetchTokens(self, tokens):
+  def __fetchTokens(self, **kwargs):
     """ Fetch tokens
 
         :param dict tokens: tokens
 
         :return: S_OK(dict)/S_ERROR() -- dictionary contain tokens
     """
+    result = self.getServerParameter('token_endpoint')
+    if not result['OK']:
+      return result
+    tokenEndpoint = result['Value']
+    token = self.fetch_access_token(tokenEndpoint, **kwargs)
+    # Store token
+    pprint.pprint(token)
+    token['user_id'] = 
+    token['provider'] = self.name
+    token['client_id'] = self.client_id
+
+    result = gSessionManager.storeToken(dict(token))
+    
+
     token = self.refresh_token(refresh_token=tokens['RefreshToken'])
     result = self.oauth2.fetchToken(refreshToken=tokens['RefreshToken'])
     if not result['OK']:
       return result
     return S_OK(self.__parseTokens(result['Value']))
 
-  def __parseTokens(self, tokens):
-    """ Parse session tokens
+  # def __parseTokens(self, tokens):
+  #   """ Parse session tokens
 
-        :param dict tokens: tokens
+  #       :param dict tokens: tokens
 
-        :return: dict
-    """
-    resDict = {}
-    resDict['ExpiresIn'] = tokens.get('expires_in') or 0
-    resDict['TokenType'] = tokens.get('token_type') or 'bearer'
-    resDict['AccessToken'] = tokens.get('access_token')
-    resDict['RefreshToken'] = tokens.get('refresh_token')
-    return resDict
+  #       :return: dict
+  #   """
+  #   resDict = {}
+  #   resDict['ExpiresIn'] = tokens.get('expires_in') or 0
+  #   resDict['TokenType'] = tokens.get('token_type') or 'bearer'
+  #   resDict['AccessToken'] = tokens.get('access_token')
+  #   resDict['RefreshToken'] = tokens.get('refresh_token')
+  #   return resDict
+
+  def __getUserInfo(self, token):
+    if token.is_expired():
+      result = self.getServerParameter('token_endpoint')
+      if not result['OK']:
+        return result
+      tokenEndpoint = result['Value']
+      token = self.refresh_token(tokenEndpoint, refresh_token=token['refresh_token'])
+
+    result = self.getServerParameter('userinfo_endpoint')
+    if not result['OK']:
+      return result
+    userinfoEndpoint = result['Value']
+    try:
+      r = self.request('GET', userinfoEndpoint,
+                      headers={'Authorization': 'Bearer ' + token['access_token']})
+      r.raise_for_status()
+      userinfo = r.json()
+    except (self.exceptions.RequestException, ValueError) as e:
+      return S_ERROR("%s: %s" % (e.message, r.text))
+
+    return S_OK(userinfo)
 
   def __parseUserProfile(self, userProfile):
     """ Parse user profile
@@ -268,34 +315,38 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK()/S_ERROR()
     """
-    resDict = {}
+    # Generate username
     gname = userProfile.get('given_name')
     fname = userProfile.get('family_name')
     pname = userProfile.get('preferred_username')
     name = userProfile.get('name') and userProfile['name'].split(' ')
-    resDict['username'] = pname or gname and fname and gname[0] + fname
-    resDict['username'] = resDict['username'] or name and len(name) > 1 and name[0][0] + name[1] or ''
-    resDict['username'] = re.sub('[^A-Za-z0-9]+', '', resDict['username'].lower())[:13]
-    self.log.debug('Parse user name:', resDict['username'])
+    username = pname or gname and fname and gname[0] + fname
+    username = username or name and len(name) > 1 and name[0][0] + name[1] or ''
+    username = re.sub('[^A-Za-z0-9]+', '', username.lower())[:13]
+    self.log.debug('Parse user name:', username)
 
-    # Collect user info
-    resDict['UsrOptns'] = {}
-    resDict['UsrOptns']['DNs'] = {}
-    resDict['UsrOptns']['ID'] = userProfile.get('sub')
-    if not resDict['UsrOptns']['ID']:
+    profile = {}
+
+    # Set provider
+    profile['Provider'] = self.name
+
+    # Collect user info    
+    profile['ID'] = userProfile.get('sub')
+    if not profile['ID']:
       return S_ERROR('No ID of user found.')
-    resDict['UsrOptns']['Email'] = userProfile.get('email')
-    resDict['UsrOptns']['FullName'] = gname and fname and ' '.join([gname, fname]) or name and ' '.join(name) or ''
-    self.log.debug('Parse user profile:\n', resDict['UsrOptns'])
+    profile['Email'] = userProfile.get('email')
+    profile['FullName'] = gname and fname and ' '.join([gname, fname]) or name and ' '.join(name) or ''
+    self.log.debug('Parse user profile:\n', profile)
 
     # Default DIRAC groups
-    resDict['UsrOptns']['Groups'] = self.parameters.get('DiracGroups') or []
-    if not isinstance(resDict['UsrOptns']['Groups'], list):
-      resDict['UsrOptns']['Groups'] = resDict['UsrOptns']['Groups'].replace(' ', '').split(',')
-    self.log.debug('Default for groups:', ', '.join(resDict['UsrOptns']['Groups']))
+    profile['Groups'] = self.parameters.get('DiracGroups') or []
+    if not isinstance(profile['Groups'], list):
+      profile['Groups'] = profile['Groups'].replace(' ', '').split(',')
+    self.log.debug('Default for groups:', ', '.join(profile['Groups']))
     self.log.debug('Response Information:', pprint.pformat(userProfile))
 
     # Read regex syntax to get DNs describe dictionary
+    profile['DNs'] = {}
     dictItemRegex, listItemRegex = {}, None
     try:
       dnClaim = self.parameters['Syntax']['DNs']['claim']
@@ -305,11 +356,11 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         elif k == 'item':
           listItemRegex = v
     except Exception as e:
-      if not resDict['UsrOptns']['Groups']:
+      if not profile['Groups']:
         self.log.warn('No "DiracGroups", no claim with DNs decsribe in Syntax/DNs section found.')
       return S_OK(resDict)
 
-    if not userProfile.get(dnClaim) and not resDict['UsrOptns']['Groups']:
+    if not userProfile.get(dnClaim) and not profile['Groups']:
       self.log.warn('No "DiracGroups", no claim "%s" that decsribe DNs found.' % dnClaim)
     else:
 
@@ -338,9 +389,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           if dnInfo.get('PROVIDER'):
             result = getProviderByAlias(dnInfo['PROVIDER'], instance='Proxy')
             dnInfo['PROVIDER'] = result['Value'] if result['OK'] else 'Certificate'
-          resDict['UsrOptns']['DNs'][dnInfo['DN']] = dnInfo
+          profile['DNs'][dnInfo['DN']] = dnInfo
 
-    return S_OK(resDict)
+    return S_OK(username, profile)
 
   def getUserProfile(self, session):
     """ Get user information from identity provider
