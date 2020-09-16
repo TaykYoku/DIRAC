@@ -142,7 +142,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       result = self.__parseUserProfile(result['Value'])
     if not result['OK']:
       return result
-    userProfile = result['Value']
+    username, userProfile = result['Value']
     
     # Store token
     pprint.pprint(token)
@@ -154,7 +154,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return result
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
-    return S_OK(userProfile)
+    return S_OK((username, userProfile))
 
   def __getUserInfo(self, token):
     if token.is_expired():
