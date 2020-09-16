@@ -41,6 +41,7 @@ class IdProviderFactory(object):
       return result
     pDict = result['Value']
     pDict['ProviderName'] = idProvider
+    pDict['sessionManager'] = sessionManager
     pType = pDict['ProviderType']
 
     self.log.verbose('Creating IdProvider of %s type with the name %s' % (pType, idProvider))
@@ -54,7 +55,7 @@ class IdProviderFactory(object):
 
     pClass = result['Value']
     try:
-      provider = pClass(**pDict, sessionManager=sessionManager)
+      provider = pClass(**pDict)
       # provider.setParameters(pDict)
       # provider.setManager(sessionManager)
     except Exception as x:
