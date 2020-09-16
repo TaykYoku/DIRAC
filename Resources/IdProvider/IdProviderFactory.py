@@ -54,7 +54,7 @@ class IdProviderFactory(object):
 
     pClass = result['Value']
     try:
-      provider = pClass(**pDict)  #, sessionManager=sessionManager)
+      provider = pClass(**pDict, sessionManager=sessionManager)
       # provider.setParameters(pDict)
       # provider.setManager(sessionManager)
     except Exception as x:
