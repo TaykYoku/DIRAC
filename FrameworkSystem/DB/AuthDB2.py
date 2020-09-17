@@ -89,7 +89,7 @@ class AuthDB2(SQLAlchemyDB):
   def removeClient(self, clientID):
     session = self.session()
     try:
-      session.query(Client).filter_by(client_id==clientID).delete()
+      session.query(Client).filter(Client.client_id==clientID).delete()
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK())
@@ -97,7 +97,7 @@ class AuthDB2(SQLAlchemyDB):
   def getClientByID(self, clientID):
     session = self.session()
     try:
-      client = session.query(Client).filter_by(client_id==clientID).one()
+      client = session.query(Client).filter(Client.client_id==clientID).one()
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
@@ -140,9 +140,9 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       if access_token:
-        session.query(Token).filter_by(access_token==access_token).delete()
+        session.query(Token).filter(Token.access_token==access_token).delete()
       if refresh_token:
-        session.query(Token).filter_by(refresh_token==refresh_token).delete()
+        session.query(Token).filter(Token.refresh_token==refresh_token).delete()
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK('Token successfully removed'))
