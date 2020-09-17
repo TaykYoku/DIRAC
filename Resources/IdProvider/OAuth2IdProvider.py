@@ -186,6 +186,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # if not result['OK']:
     #   return result
     # userinfoEndpoint = result['Value']
+    r = None
     try:
       r = self.request('GET', self.metadata['userinfo_endpoint'])
                       # headers={'Authorization': 'Bearer ' + token['access_token']})
