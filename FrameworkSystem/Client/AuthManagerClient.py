@@ -96,10 +96,11 @@ class AuthManagerClient(Client):
     self.addSession(session, origData, exp)
   
   def getSessionByOption(self, key, value):
-    sessions = self.getSession()
-    for session, data in sessions.items():
-      if data[key] == value:
-        return session, data
+    if key and value:
+      sessions = self.getSession()
+      for session, data in sessions.items():
+        if data.get(key) == value:
+          return session, data
     return None, {}
 
   def submitAuthorizeFlow(self, providerName, mainSession):
