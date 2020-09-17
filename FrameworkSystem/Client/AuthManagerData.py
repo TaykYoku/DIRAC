@@ -117,7 +117,7 @@ class AuthManagerData(object):
     profile = self.getProfiles()
     for resfreshed in [0, 1]:
       for uid, data in profile.items():
-        if dn not in data.get('DNs', []) or (provider and data[dn]['PROVIDER'] != provider):
+        if dn not in data.get('DNs', []) or (provider and data['DNs'][dn]['PROVIDER'] != provider):
           continue
         userIDs.append(uid)
       if userIDs or resfreshed:
