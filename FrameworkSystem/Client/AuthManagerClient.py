@@ -17,7 +17,7 @@ from DIRAC.Core.Base.Client import Client, createClient
 from DIRAC.Core.Utilities import DIRACSingleton
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
-
+from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
 __RCSID__ = "$Id$"
