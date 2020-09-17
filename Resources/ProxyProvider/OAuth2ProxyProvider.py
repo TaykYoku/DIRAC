@@ -36,7 +36,6 @@ class OAuth2ProxyProvider(ProxyProvider):
       if not result['OK']:
         return result
       self.idProviders = result['Value']
-    self.oauth2 = None
 
   def checkStatus(self, userDN):
     """ Read ready to work status of proxy provider
@@ -47,13 +46,17 @@ class OAuth2ProxyProvider(ProxyProvider):
                  - 'Status' with ready to work status[ready, needToAuth]
                  - 'AccessTokens' with list of access token
     """
-    result = getIDForDNAndProvider(userDN, self.name)
-    result = self.__findReadySessions(userDN)
+    result = gAuthManagerData.getIDsForDN(userDN, provider=self.name)
     if not result['OK']:
       self.log.error(result['Message'])
       return result
-    sessions = result['Value']
-    if not sessions:
+    uid = result['Value'][0]
+    result = gSessionManager.getTokenByUserID(uid)
+    if not result['OK']:
+      self.log.error(result['Message'])
+      return result
+    token = result['Value']
+    if not token:
       idP = self.idProviders[0]
       return S_OK({'Status': 'needToAuth', 'Comment': 'Need to auth with %s identity provider' % idP,
                    'Action': ['auth', [idP, 'inThread', '%s/auth/%s' % (getAuthAPI().strip('/'), idP)]]})

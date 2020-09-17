@@ -233,7 +233,7 @@ class AuthHandler(WebHandler):
     if thisGroup['Status'] == 'needToAuth':
       
       # Submit second auth flow through IdP
-      result = gSessionManager.submitAuthorizeFlow(idP, mainSession)
+      result = gSessionManager.submitAuthorizeFlow(thisGroup['Action'][1][0], mainSession)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])

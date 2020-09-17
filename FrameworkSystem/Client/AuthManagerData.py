@@ -106,7 +106,7 @@ class AuthManagerData(object):
           self.updateProfiles(uid, data)
     return result
 
-  def getIDsForDN(self, dn):
+  def getIDsForDN(self, dn, provider=None):
     """ Find ID for DN
 
         :param str dn: user DN
@@ -115,17 +115,17 @@ class AuthManagerData(object):
     """
     userIDs = []
     profile = self.getProfiles()
-    for uid, data in profile.items():
-      if dn in data.get('DNs', []):
+    for resfreshed in [0, 1]:
+      for uid, data in profile.items():
+        if dn not in data.get('DNs', []) or provider and data[dn]['PROVIDER'] != provider:
+          continue
         userIDs.append(uid)
-
-    if not userIDs:
+      if userIDs or resfreshed:
+        break
       result = self.resfreshProfiles()
       if not result['OK']:
         return result
-      for uid, data in result['Value'].items():
-        if dn in data.get('DNs', []):
-          userIDs.append(uid)
+      profile = result['Value']
 
     return S_OK(userIDs)
 
