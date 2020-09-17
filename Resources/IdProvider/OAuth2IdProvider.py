@@ -132,7 +132,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # if not result['OK']:
     #   return result
     # authEndpoint = result['Value']
-    return S_OK(self.create_authorization_url(self.metadata['authorization_endpoint'], state=session))
+    url, _ = self.create_authorization_url(self.metadata['authorization_endpoint'], state=session)
+    return S_OK((url, {}))
 
   @checkResponse
   def parseAuthResponse(self, response, session=None):
