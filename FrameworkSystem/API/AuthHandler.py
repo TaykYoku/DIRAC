@@ -15,9 +15,6 @@ from authlib.common.security import generate_token
 from authlib.jose import jwt
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
-# from DIRAC.Core.Utilities import ThreadSafe
-# from DIRAC.Core.Utilities.DictCache import DictCache
-# from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
@@ -27,11 +24,6 @@ from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 
 
 __RCSID__ = "$Id$"
-
-# cacheSession = DictCache()
-# cacheClient = DictCache()
-# gCacheClient = ThreadSafe.Synchronizer()
-# gCacheSession = ThreadSafe.Synchronizer()
 
 from authlib.oauth2.rfc8628 import (
     DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
@@ -52,56 +44,9 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    # global cacheSession
-    # {<main session id>: {<param 1>: <value>,
-    #                      <param 2>: <value>,
-    #                      <another session flow id>: {<param 1>: <value>,
-    #                                                  <param 2>: <value>}}
-    # global cacheClient
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
-
-  # @gCacheClient
-  # def addClient(self, data):
-  #   result = gSessionManager.createClient(data)
-  #   if result['OK']:
-  #     data = result['Value']
-  #     cacheClient.add(data['client_id'], 24 * 3600, data)
-  #   return result
-
-  # @gCacheClient
-  # def getClient(self, clientID):
-  #   data = cacheClient.get(clientID)
-  #   if not data:
-  #     result = gSessionManager.getClientByID(clientID)
-  #     if result['OK']:
-  #       data = result['Value']
-  #       cacheClient.add(data['client_id'], 24 * 3600, data)
-  #   return data
-  
-  # @gCacheSession
-  # def addSession(self, session, data, exp=300):
-  #   cacheSession.add(session, exp, data)
-  
-  # @gCacheSession
-  # def getSession(self, session=None):
-  #   return cacheSession.get(session) if session else cacheSession.getDict()
-  
-  # def updateSession(self, session, exp=300, **data):
-  #   origData = self.getSession(session) or {}
-  #   for k, v in data.items():
-  #     origData[k] = v
-  #   self.addSession(session, origData, exp)
-  
-  # def getSessionByOption(self, key, value=None):
-  #   value = value or self.get_argument(key)
-  #   sessions = self.getSession()
-  #   for session, data in sessions.items():
-  #     if data[key] == value:
-  #       return session, data
-  #   return None, {}
-
   @asyncGen
   def web_register(self):
     """ Device authorization flow
@@ -144,8 +89,8 @@ class AuthHandler(WebHandler):
         session, data = gSessionManager.getSessionByOption('user_code', userCode)
         if not session:
           raise WErr(404, 'Session expired.')
-        authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
-        self.redirect('%s?user_code=%s&client_id=%s' % (authURL, userCode, data['client_id']))
+        authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization?response_type=device'
+        self.redirect('%s&user_code=%s&client_id=%s' % (authURL, userCode, data['client_id']))
       else:
         t = template.Template('''<!DOCTYPE html>
         <html>
@@ -167,11 +112,25 @@ class AuthHandler(WebHandler):
           </body>
         </html>''')
         self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
-                             query='?' + self.request.query))
+                               query='?' + self.request.query))
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
   def web_authorization(self, idP=None):
+    """ Authorization endpoint
+
+        GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)
+
+        Device flow:
+          &user_code=..                         (required)
+
+        Authentication code flow:
+          &state=..                             (main session id, optional)
+          &code_challenge=..                    (PKCE, optional)
+          &code_challenge_method=(pain|S256)    ('pain' by default, optional)
+
+
+    """
     # Only GET method supported
     if self.request.method != 'GET':
       raise WErr(404, '%s request method not supported.' % self.request.method)
@@ -204,9 +163,6 @@ class AuthHandler(WebHandler):
           <ul>
         </body>
       </html>''')
-      result = getProvidersForInstance('Id')
-      if not result['OK']:
-        raise WErr(503, result['Message'])
       self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
                              query='?' + self.request.query, idPs=idPs))
     else:
@@ -214,9 +170,8 @@ class AuthHandler(WebHandler):
       # Check IdP
       if idP not in idPs:
         raise WErr(503, 'Provider not exist.')
-      
-      userCode = self.get_argument('user_code', None)
-      flow = self.get_argument('response_type', 'device' if userCode else None)
+
+      flow = self.get_argument('response_type')
 
       # Authorization code flow
       if flow == 'code':
@@ -230,63 +185,66 @@ class AuthHandler(WebHandler):
       
       # Device flow
       elif flow == 'device':
-        session, _ = gSessionManager.getSessionByOption('user_code', userCode)
+        session, _ = gSessionManager.getSessionByOption('user_code', self.get_argument('user_code'))
         if not session:
           raise WErr(404, 'Session expired.')
-        # session = self.get_argument('session', generate_token(10))
-      
-      # Add IdP name to session
-      gSessionManager.updateSession(session, Provider=idP)
 
       # Submit second auth flow through IdP
       result = gSessionManager.submitAuthorizeFlow(idP, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
-      authURL, idPSessionParams = result['Value']
-      gSessionManager.updateSession(session, **{idP:idPSessionParams})
-      self.redirect(authURL)
+      self.redirect(result['Value'])
 
   @asyncGen
   def web_redirect(self):
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
-    session = self.get_argument('state', None)
-    if not session:
-      raise WErr(500, "In some case session was not keep in flow.")
-    sessionDict = gSessionManager.getSession(session)
-    if not sessionDict:
-      raise WErr(500, "Session expired.")
+
+    # Try to catch errors
     error = self.get_argument('error', None)
     if error:
       description = self.get_argument('error_description', '')
       raise WErr(500, '%s session crashed with error:\n%s\n%s' % (session, error,
                                                                   description))
-    
+
+    # Try to parse session id
+    session = self.get_argument('state', None)
+
     # Parse result of the second authentication flow
     self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-    result = gSessionManager.parseAuthResponse(sessionDict['Provider'], self.request,
-                                               sessionDict[sessionDict['Provider']])
+    result = gSessionManager.parseAuthResponse(self.request, session)
     if not result['OK']:
-      gSessionManager.updateSession(session, Status='failed', Comment=result['Message'])
       raise WErr(503, result['Message'])
-    username, userProfile = result['Value']
+    username, userID, groupStatuses, mainSession = result['Value']
 
     # researche Group
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
       self.finish('You need to choose group')
       raise
-      # self.__chooseGroup(session)
+      # self.__chooseGroup(session, groupStatuses)
 
-    # Check group
-    result = gProxyManager.getGroupsStatusByUsername(username, [reqGroup])
-    if not result['OK']:
-      raise WErr(503, result['Message'])
-    userProfile['Group'] = reqGroup
+    if reqGroup not in groupStatuses:
+      self.finish('Wrone group')
+      raise
+    
+    thisGroup = groupStatuses[reqGroup]
+    if thisGroup['Status'] == 'needToAuth':
+      
+      # Submit second auth flow through IdP
+      result = gSessionManager.submitAuthorizeFlow(idP, mainSession)
+      if not result['OK']:
+        raise WErr(503, result['Message'])
+      self.log.notice('Redirect to', result['Value'])
+      self.redirect(result['Value'])
+    
+    elif thisGroup['Status'] not in ['ready', 'unknown']:
+      self.finish('Wrone group')
+      raise
 
     # Create DIRAC access token for username/group
-    reuslt = self.__getAccessToken(userProfile, session)
+    reuslt = self.__getAccessToken(userID, reqGroup, mainSession)
     if not result['OK']:
       raise WErr(503, result['Message'])
     gSessionManager.updateSession(session, Status='authed', Token=result['Value'])
@@ -369,11 +327,11 @@ class AuthHandler(WebHandler):
         raise WErr(401, data['Comment'])
       self.finish(data['Token'])
 
-  def __getAccessToken(self, profile, session):
+  def __getAccessToken(self, uid, group, session):
     #### GENERATE TOKEN
     header = {'alg': 'RS256'}
-    payload = {'sub': profile['ID'],
-               'grp': profile['Group'],
+    payload = {'sub': uid,
+               'grp': group,
                'iss': getSetup(),
                'exp': 12 * 3600}
     # Read private key of DIRAC auth service

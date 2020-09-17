@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import six
 import requests
+from authlib.common.security import generate_token
 
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
@@ -24,6 +25,20 @@ __RCSID__ = "$Id$"
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
+SESSION_ATTRS = ['user_code',
+                 'device_code',
+                 'state',
+                 'code_challenge',
+                 'code_challenge_method',
+                 'code',
+                 'Provider',
+                 'Status',
+                 'Comment',
+                 'group',
+                 'Token',
+                 'grant',
+                 'redirect_uri',
+                 'subSession']
 
 
 @createClient('Framework/AuthManager')
@@ -59,7 +74,9 @@ class AuthManagerClient(Client):
     return data
   
   @gCacheSession
-  def addSession(self, session, data, exp=300):
+  def addSession(self, session, data={}, exp=300, **kwargs):
+    data.update(kwargs)
+    data['Status'] = data.get('Status', 'submited')
     self.cacheSession.add(session, exp, data)
   
   @gCacheSession
@@ -70,7 +87,8 @@ class AuthManagerClient(Client):
   def removeSession(self, session):
     self.cacheSession.delete(session)
 
-  def updateSession(self, session, exp=300, **data):
+  def updateSession(self, session, data={}, exp=300, **kwargs):
+    data.update(kwargs)
     origData = self.getSession(session) or {}
     for k, v in data.items():
       origData[k] = v
@@ -83,7 +101,7 @@ class AuthManagerClient(Client):
         return session, data
     return None, {}
 
-  def submitAuthorizeFlow(self, providerName, session):
+  def submitAuthorizeFlow(self, providerName, mainSession):
     """ Register new session and return dict with authorization url and session number
 
         :param str providerName: provider name
@@ -94,13 +112,19 @@ class AuthManagerClient(Client):
                  UserName -- user name, returned if status is 'ready'
                  Session -- session id, returned if status is 'needToAuth'
     """
-    result = IdProviderFactory().getIdProvider(providerName, sessionManager=self.__getRPC())
-    if not result['OK']:
-      return result
-    provObj = result['Value']
-    return provObj.submitNewSession(session)
+    # Start subsession
+    session = generate_token(10)
+    self.addSession(session, mainSession=mainSession, Provider=idP)
 
-  def parseAuthResponse(self, providerName, response, session):
+    result = IdProviderFactory().getIdProvider(providerName, sessionManager=self.__getRPC())
+    if result['OK']:
+      result = result['Value'].submitNewSession(session)
+      if result['OK']:
+        authURL, sessionParams = result['Value']
+        self.updateSession(session, sessionParams)
+    return S_OK(authURL) if result['OK'] else result
+
+  def parseAuthResponse(self, response, session):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existend DIRAC user and store the session
@@ -111,19 +135,39 @@ class AuthManagerClient(Client):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    # Check session
+    sessionDict = self.getSession(session)
+    if not sessionDict:
+      return S_ERROR("Session expired.")
+    
+    mainSession = sessionDict['mainSession']
+    providerName = sessionDict['Provider']
+
+    # Parse response
     result = IdProviderFactory().getIdProvider(providerName, sessionManager=self._getRPC())
+    if result['OK']:
+      result = result['Value'].parseAuthResponse(response, sessionDict)
+      if result['OK']:
+        self.removeSession(session)
+        # FINISHING with IdP auth result
+        username, userProfile = result['Value']
+        result = self._getRPC().parseAuthResponse(providerName, username, userProfile)
+    
     if not result['OK']:
+      self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
-    provObj = result['Value']
-    result = provObj.parseAuthResponse(response, session)
-    if not result['OK']:
-      return result    
-    # # FINISHING with IdP auth result
-    # username, userProfile = result['Value']
-    result = self._getRPC().parseAuthResponse(providerName, *result['Value'])
-    if result['OK'] and result['Value']:
-      _, profile = result['Value']
+    
+    username, profile = result['Value']
+    if username and profile:
       gAuthManagerData.updateProfiles(profile['ID'], profile)
-    return result
+      self.updateSession(mainSession, username=username, profile=profile)
+    
+    # Check groups
+    result = gProxyManager.getGroupsStatusByUsername(username)
+    if not result['OK']:
+      self.updateSession(mainSession, Status='failed', Comment=result['Message'])
+      return result
+
+    return S_OK((username, profile['ID'], result['Value'], mainSession))
 
 gSessionManager = AuthManagerClient()
