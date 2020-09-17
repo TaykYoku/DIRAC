@@ -324,7 +324,7 @@ class AuthHandler(WebHandler):
     gSessionManager.removeSession(session)
     if data['Status'] != 'authed':
       raise WErr(401, data['Comment'])
-    self.finish(data['Token'])
+    self.finish(dict(data['Token']))
 
   def __getAccessToken(self, uid, group, session):
     #### GENERATE TOKEN
