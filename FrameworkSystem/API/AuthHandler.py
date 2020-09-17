@@ -226,22 +226,22 @@ class AuthHandler(WebHandler):
       raise
       # self.__chooseGroup(session, groupStatuses)
 
-    if reqGroup not in groupStatuses:
-      self.finish('Wrone group')
+    thisGroup = groupStatuses.get(reqGroup)
+    if not thisGroup:
+      return self.finish('Wrone group')
       raise
     
-    thisGroup = groupStatuses[reqGroup]
-    if thisGroup['Status'] == 'needToAuth':
+    elif thisGroup['Status'] == 'needToAuth':
       
       # Submit second auth flow through IdP
       result = gSessionManager.submitAuthorizeFlow(thisGroup['Action'][1][0], mainSession)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
-      self.redirect(result['Value'])
+      return self.redirect(result['Value'])
     
     elif thisGroup['Status'] not in ['ready', 'unknown']:
-      self.finish('Wrone group')
+      self.finish('Bad group status')
       raise
 
     # Create DIRAC access token for username/group
