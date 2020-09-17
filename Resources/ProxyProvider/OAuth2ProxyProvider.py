@@ -51,7 +51,7 @@ class OAuth2ProxyProvider(ProxyProvider):
       self.log.error(result['Message'])
       return result
     uid = result['Value'][0]
-    result = gSessionManager.getTokenByUserID(uid)
+    result = gSessionManager.getTokenByUserIDAndProvider(uid, self.idProviders[0])
     if not result['OK']:
       self.log.error(result['Message'])
       return result

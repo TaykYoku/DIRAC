@@ -231,10 +231,10 @@ class AuthDB2(SQLAlchemyDB):
     session.close()
     return S_OK('Components successfully removed')
   
-  def getTokenByUserID(self, userID):
+  def getTokenByUserIDAndProvider(self, userID, provider):
     session = self.session()
     try:
-      token = session.query(Token).filter(Token.user_id==userID).first()
+      token = session.query(Token).filter(Token.user_id==userID, Token.provider==provider).first()
     except NoResultFound:
       return self.__result(session, S_ERROR("Token not found."))
     except Exception as e:
