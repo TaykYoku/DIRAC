@@ -239,7 +239,7 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR("Token not found."))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK(dict(token)))
+    return self.__result(session, S_OK(self.__rowToDict(token)))
   
   def getIdPTokens(self, IdP, userIDs=None):
     session = self.session()
@@ -252,7 +252,16 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR("Tokens not found."))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK([OAuth2Token(t) for t in tokens]))
+    return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
+
+  def __rowToDict(self, row):
+    """ Convert sqlalchemy row to dictionary
+
+        :param object row: sqlalchemy row
+    
+        :return: dict
+    """
+    return {c.name: str(getattr(row, c.name)) for c in row.__table__.columns}
 
   def getToken(self, params):
     session = self.session()
