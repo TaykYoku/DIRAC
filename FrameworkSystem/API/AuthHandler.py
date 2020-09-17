@@ -95,7 +95,7 @@ class AuthHandler(WebHandler):
         authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
         if data.get('Provider'):
           authURL += '/%s' % data['Provider']
-        authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id']))
+        authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
         self.redirect(authURL)
       else:
         t = template.Template('''<!DOCTYPE html>
