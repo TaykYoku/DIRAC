@@ -144,7 +144,7 @@ class OAuth2ProxyProvider(ProxyProvider):
       return result
     pDict = result['Value']
 
-    kwargs = {'access_token': token}
+    kwargs = {'access_token': token['access_token']}
     kwargs['access_type'] = 'offline'
     kwargs['proxylifetime'] = self.parameters.get('MaxProxyLifetime', 3600 * 24)
 
