@@ -14,6 +14,8 @@ from tornado.escape import json_decode
 from authlib.common.security import generate_token
 from authlib.jose import jwt
 
+from DIRAC.Core.Utilities.JEncode import encode
+
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
@@ -324,7 +326,7 @@ class AuthHandler(WebHandler):
     gSessionManager.removeSession(session)
     if data['Status'] != 'authed':
       raise WErr(401, data['Comment'])
-    self.finish(dict(data['Token']))
+    self.finish(encode(data['Token']))
 
   def __getAccessToken(self, uid, group, session):
     #### GENERATE TOKEN
