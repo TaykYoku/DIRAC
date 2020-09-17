@@ -51,6 +51,16 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Here "t" is `OAuth2Token` type
     self.update_token = lambda t, rt: gSessionManager.updateToken(dict(t), rt)
 
+  def checkResponse(func):
+    def function_wrapper(*args, **kwargs):
+        try:
+          return func(*args, **kwargs)
+        except exceptions.Timeout:
+          return S_ERROR('Time out')
+        except exceptions.RequestException as ex:
+          return S_ERROR(str(ex))
+    return function_wrapper
+
   @checkResponse
   def loadMetadata(self):
     r = None
@@ -64,16 +74,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except ValueError as e:
       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     return S_OK(metadata)
-
-  def checkResponse(func):
-    def function_wrapper(*args, **kwargs):
-        try:
-          return func(*args, **kwargs)
-        except exceptions.Timeout:
-          return S_ERROR('Time out')
-        except exceptions.RequestException as ex:
-          return S_ERROR(str(ex))
-    return function_wrapper
   
   # @checkResponse
   # def getServerParameter(self, parameter):
