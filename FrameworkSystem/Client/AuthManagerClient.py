@@ -115,7 +115,7 @@ class AuthManagerClient(Client):
     """
     # Start subsession
     session = generate_token(10)
-    self.addSession(session, mainSession=mainSession, Provider=idP)
+    self.addSession(session, mainSession=mainSession, Provider=providerName)
 
     result = self.idps.getIdProvider(providerName, sessionManager=self.__getRPC())
     if result['OK']:

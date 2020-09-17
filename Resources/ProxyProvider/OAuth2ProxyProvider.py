@@ -14,7 +14,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForIn
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.Resources.ProxyProvider.ProxyProvider import ProxyProvider
 
-from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
+#from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
@@ -47,6 +47,7 @@ class OAuth2ProxyProvider(ProxyProvider):
                  - 'Status' with ready to work status[ready, needToAuth]
                  - 'AccessTokens' with list of access token
     """
+    result = getIDForDNAndProvider(userDN, self.name)
     result = self.__findReadySessions(userDN)
     if not result['OK']:
       self.log.error(result['Message'])
