@@ -219,6 +219,7 @@ class AuthHandler(WebHandler):
     username, userID, groupStatuses, mainSession = result['Value']
 
     # researche Group
+    sessionDict = gSessionManager.getSession(mainSession)
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
       self.finish('You need to choose group')
