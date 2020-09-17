@@ -324,6 +324,18 @@ class AuthManagerHandler(RequestHandler):
     """
     return self.__db.storeToken(**kwargs)
   
+  types_updateToken = []
+  auth_updateToken = ["authenticated"]
+  def export_updateToken(self, token, refreshToken):
+    """ Generates a state string to be used in authorizations
+
+        :param str provider: provider
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    return self.__db.updateToken(token, refreshToken)
+
   types_getTokenByUserIDAndProvider = [six.string_types, six.string_types]
   auth_getTokenByUserIDAndProvider = ["authenticated"]
   def export_getTokenByUserIDAndProvider(self, uid, provider):

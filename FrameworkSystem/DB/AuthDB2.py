@@ -4,17 +4,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import re
-import json
-import pprint
-import random
-import string
 from authlib.common.security import generate_token
 
-from ast import literal_eval
 from datetime import datetime, timedelta
 
-from DIRAC import gConfig, S_OK, S_ERROR, gLogger
+from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
 
 __RCSID__ = "$Id$"
@@ -43,27 +37,10 @@ class Token(Model, OAuth2TokenMixin):
   # 767 bytes is the stated prefix limitation for InnoDB tables in MySQL version 5.6
   # https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
   access_token = Column(Text, nullable=False)
+  # client_id too large
+  client_id = Column(String(255))
   provider = Column(Text)
   user_id = Column(String(255), nullable=False)
-  
-  # def toDict(self):
-  #   return {'access_token': self.access_token,
-  #           '': self.system,
-  #                 'Module': self.module,
-  #                 'Type': self.cType}
-
-  # @property
-  # def tokenToDict(self):
-
-  #     return dict(
-  #         Provider=self.client_id,
-  #         UserID=self.sub,
-  #         access_token=self.access_token,
-  #         refresh_token=self.client_secret_expires_at,
-  #     )
-
-# Relationships
-# token = relationship("Token")
 
 class AuthDB2(SQLAlchemyDB):
   """ AuthDB class is a front-end to the OAuth Database
@@ -100,69 +77,34 @@ class AuthDB2(SQLAlchemyDB):
     return S_OK()
 
   def addClient(self, client_id=None, client_secret=None, **metadata):
-
-    client = Client(client_id=client_id or generate_token(30),
-                    client_secret=client_secret or generate_token(30),
-                    _client_metadata=str(metadata))
-    
     session = self.session()
     try:
-      session.add(client)
-      result = S_OK(client.client_info)
-      session.commit()
+      client = session.add(Client(client_id=client_id or generate_token(30),
+                                  client_secret=client_secret or generate_token(30),
+                                  _client_metadata=str(metadata)))
     except Exception as e:
-      session.rollback()
-      result = S_ERROR('Could not add Client: %s' % (e))
-
-    session.close()
-    return result
+      return self.__result(session, S_ERROR('Could not add Client: %s' % e))
+    return self.__result(session, S_OK(client.client_info))
   
   def removeClient(self, clientID):
     session = self.session()
-
-    result = self.__filterFields(session, Client, {'client_id': clientID})
-    if not result['OK']:
-      session.rollback()
-      session.close()
-      return result
-
-    for client in result['Value']:
-      session.delete(client)
-    
     try:
-      session.commit()
+      session.query(Client).filter_by(client_id==clientID).delete()
     except Exception as e:
-      session.rollback()
-      session.close()
-      return S_ERROR('Could not commit changes: %s' % (e))
-
-    session.close()
-    return S_OK('Components successfully removed')
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK())
 
   def getClientByID(self, clientID):
     session = self.session()
     try:
-      client = session.query(Client).filter(Client.client_id==clientID).one()
+      client = session.query(Client).filter_by(client_id==clientID).one()
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
       return self.__result(session, S_ERROR("%s client not registred." % clientID))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-
     return self.__result(session, S_OK(client.client_info))
-
-  def __result(self, session, result=None):
-    try:
-      if not result['OK']:
-        session.rollback()
-      else:
-        session.commit()
-    except Exception as e:
-      session.rollback()
-      result = S_ERROR('Could not commit: %s' % (e))
-    session.close()
-    return result
 
   def storeToken(self, client_id=None, token_type=None, **metadata):
     attrts = {}
@@ -178,22 +120,13 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       session.add(Token(**attrts))
-      session.commit()
     except Exception as e:
-      session.rollback()
-      session.close()
-      return S_ERROR('Could not add Token: %s' % (e))
-
-    session.close()
-    return S_OK('Component successfully added')
+      return self.__result(session, S_ERROR('Could not add Token: %s' % e))
+    return self.__result(session, S_OK('Component successfully added'))
   
   def updateToken(self, token, refreshToken):
     session = self.session()
     try:
-      # tokenDict = dict(session.query(Token).filter(Token.refresh_token==refreshToken).one())
-      # for k, v in dict(token).items():
-      #   tokenDict[k] = v
-      # session.add(Token.from_dict(tokenDict))
       session.update(Token(**token)).where(Token.refresh_token==refreshToken)
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique." % refreshToken))
@@ -201,35 +134,18 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR("%s token not found." % refreshToken))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-
     return self.__result(session, S_OK(OAuth2Token(token)))
 
   def removeToken(self, access_token=None, refresh_token=None):
     session = self.session()
-    d = {}
-    if access_token:
-      d['access_token'] = access_token
-    if refresh_token:
-      d['refresh_token'] = refresh_token
-    result = self.__filterFields(session, Token, d)
-    
-    if not result['OK']:
-      session.rollback()
-      session.close()
-      return result
-
-    for client in result['Value']:
-      session.delete(client)
-    
     try:
-      session.commit()
+      if access_token:
+        session.query(Token).filter_by(access_token==access_token).delete()
+      if refresh_token:
+        session.query(Token).filter_by(refresh_token==refresh_token).delete()
     except Exception as e:
-      session.rollback()
-      session.close()
-      return S_ERROR('Could not commit changes: %s' % (e))
-
-    session.close()
-    return S_OK('Components successfully removed')
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK('Token successfully removed'))
   
   def getTokenByUserIDAndProvider(self, userID, provider):
     session = self.session()
@@ -254,6 +170,18 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
 
+  def __result(self, session, result=None):
+    try:
+      if not result['OK']:
+        session.rollback()
+      else:
+        session.commit()
+    except Exception as e:
+      session.rollback()
+      result = S_ERROR('Could not commit: %s' % (e))
+    session.close()
+    return result
+
   def __rowToDict(self, row):
     """ Convert sqlalchemy row to dictionary
 
@@ -262,87 +190,3 @@ class AuthDB2(SQLAlchemyDB):
         :return: dict
     """
     return {c.name: str(getattr(row, c.name)) for c in row.__table__.columns} if row else {}
-
-  def getToken(self, params):
-    session = self.session()
-    try:
-      client = session.query(Token).filter(**params).one()
-      session.commit()
-    except MultipleResultsFound as e:
-      return S_ERROR(str(e))
-    except NoResultFound, e:
-      return S_ERROR(str(e))
-    except Exception as e:
-      session.rollback()
-      session.close()
-      return S_ERROR('Could not commit changes: %s' % (e))
-
-    session.close()
-    return S_OK(client)
-  
-  def __filterFields(self, session, table, matchFields=None):
-    """
-    Filters instances of a selection by finding matches on the given fields
-    session argument is a Session instance used to retrieve the items
-    table argument must be one the following three: Component, Host,
-    InstalledComponent
-    matchFields argument should be a dictionary with the fields to match.
-    matchFields accepts fields of the form <Field.bigger> and <Field.smaller>
-    to filter using > and < relationships.
-    If matchFields is empty, no filtering will be done
-    """
-
-    if matchFields is None:
-      matchFields = {}
-
-    filtered = session.query(table)
-
-    for key in matchFields:
-      actualKey = key
-
-      comparison = '='
-      if '.bigger' in key:
-        comparison = '>'
-        actualKey = key.replace('.bigger', '')
-      elif '.smaller' in key:
-        comparison = '<'
-        actualKey = key.replace('.smaller', '')
-
-      if matchFields[key] is None:
-        sql = '`%s` IS NULL' % (actualKey)
-      elif isinstance(matchFields[key], list):
-        if len(matchFields[key]) > 0 and None not in matchFields[key]:
-          sql = '`%s` IN ( ' % (actualKey)
-          for i, element in enumerate(matchFields[key]):
-            toAppend = element
-            if isinstance(toAppend, datetime):
-              toAppend = toAppend.strftime("%Y-%m-%d %H:%M:%S")
-            if isinstance(toAppend, six.string_types):
-              toAppend = '\'%s\'' % (toAppend)
-            if i == 0:
-              sql = '%s%s' % (sql, toAppend)
-            else:
-              sql = '%s, %s' % (sql, toAppend)
-          sql = '%s )' % (sql)
-        else:
-          continue
-      elif isinstance(matchFields[key], six.string_types):
-        sql = '`%s` %s \'%s\'' % (actualKey, comparison, matchFields[key])
-      elif isinstance(matchFields[key], datetime):
-        sql = '%s %s \'%s\'' % \
-            (actualKey,
-             comparison,
-             matchFields[key].strftime("%Y-%m-%d %H:%M:%S"))
-      else:
-        sql = '`%s` %s %s' % (actualKey, comparison, matchFields[key])
-
-      filteredTemp = filtered.filter(text(sql))
-      try:
-        session.execute(filteredTemp)
-        session.commit()
-      except Exception as e:
-        return S_ERROR('Could not filter the fields: %s' % (e))
-      filtered = filteredTemp
-
-    return S_OK(filtered)
-

@@ -6,13 +6,10 @@ from __future__ import print_function
 
 import re
 import pprint
+from requests import exceptions
 from authlib.integrations.requests_client import OAuth2Session
 from authlib.oidc.discovery.well_known import get_well_known_url
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
-
-from requests import exceptions
-
-from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
@@ -51,7 +48,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     # Here "t" is `OAuth2Token` type
-    self.update_token = lambda t, rt: gSessionManager.updateToken(dict(t), rt)
+    self.update_token = lambda t, rt: self.sessionManager.updateToken(dict(t), rt)
     self.metadata_class = AuthorizationServerMetadata
 
   def checkResponse(func):
@@ -77,27 +74,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except ValueError as e:
       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     return S_OK(metadata)
-  
-  # @checkResponse
-  # def getServerParameter(self, parameter):
-  #   """ Get identity server parameter
-
-  #       :param str parameter: requester parameter
-
-  #       :return: S_OK()/S_ERROR()
-  #   """
-  #   if parameter not in self.metadata and not self.metadata.get('updated'):
-  #     r = None
-  #     try:
-  #       r = self.request('GET', self.server_metadata_url, withhold_token=True)
-  #       servMetadata = r.json()
-  #       for k, v in servMetadata.items():
-  #         if k not in self.metadata:
-  #           self.metadata[k] = v
-  #       self.metadata['updated'] = True
-  #     except ValueError as e:
-  #       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
-  #   return S_OK(self.metadata.get(parameter))
 
   def getIDsMetadata(self, ids=None):
     """ Metadata for IDs
@@ -128,10 +104,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(str)/S_ERROR()
     """
-    # result = self.getServerParameter('authorization_endpoint')
-    # if not result['OK']:
-    #   return result
-    # authEndpoint = result['Value']
     url, _ = self.create_authorization_url(self.metadata['authorization_endpoint'], state=session)
     return S_OK((url, {}))
 
@@ -149,10 +121,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    # result = self.getServerParameter('token_endpoint')
-    # if not result['OK']:
-    #   return result
-    # tokenEndpoint = result['Value']
     self.fetch_access_token(authorization_response=response.uri)
     
     # Get user info
@@ -168,7 +136,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['client_id'] = self.client_id
     self.token['provider'] = self.name
     self.token['user_id'] = userProfile['ID']
-    result = gSessionManager.storeToken(dict(self.token))
+    result = self.sessionManager.storeToken(dict(self.token))
     if not result['OK']:
       return result
 
@@ -176,21 +144,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     return S_OK((username, userProfile))
 
   def __getUserInfo(self):
-    # if token.is_expired():
-    #   result = self.getServerParameter('token_endpoint')
-    #   if not result['OK']:
-    #     return result
-    #   tokenEndpoint = result['Value']
-    #   token = self.refresh_token(tokenEndpoint, refresh_token=token['refresh_token'])
-
-    # result = self.getServerParameter('userinfo_endpoint')
-    # if not result['OK']:
-    #   return result
-    # userinfoEndpoint = result['Value']
     r = None
     try:
       r = self.request('GET', self.metadata['userinfo_endpoint'])
-                      # headers={'Authorization': 'Bearer ' + token['access_token']})
       r.raise_for_status()
       return S_OK(r.json())
     except (self.exceptions.RequestException, ValueError) as e:
