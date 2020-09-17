@@ -46,7 +46,7 @@ class OAuth2ProxyProvider(ProxyProvider):
                  - 'Status' with ready to work status[ready, needToAuth]
                  - 'AccessTokens' with list of access token
     """
-    result = gAuthManagerData.getIDsForDN(userDN, provider=self.name)
+    result = gAuthManagerData.getIDsForDN(userDN, provider=self.parameters['ProviderName'])
     if not result['OK']:
       self.log.error(result['Message'])
       return result
