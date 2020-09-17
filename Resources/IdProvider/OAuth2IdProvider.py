@@ -153,7 +153,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # if not result['OK']:
     #   return result
     # tokenEndpoint = result['Value']
-    self.token = self.fetch_access_token(authorization_response=response.uri)
+    self.fetch_access_token(authorization_response=response.uri)
     
     # Get user info
     result = self.__getUserInfo()
@@ -164,11 +164,11 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     username, userProfile = result['Value']
     
     # Store token
-    pprint.pprint(token)
-    token['client_id'] = self.client_id
-    token['provider'] = self.name
-    token['user_id'] = userProfile['ID']
-    result = gSessionManager.storeToken(dict(token))
+    pprint.pprint(self.token)
+    self.token['client_id'] = self.client_id
+    self.token['provider'] = self.name
+    self.token['user_id'] = userProfile['ID']
+    result = gSessionManager.storeToken(dict(self.token))
     if not result['OK']:
       return result
 
