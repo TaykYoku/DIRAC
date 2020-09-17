@@ -117,7 +117,7 @@ class OAuth2ProxyProvider(ProxyProvider):
     self.log.verbose('For proxy request use token:', token)
 
     # Get proxy request
-    result = self.__getProxyRequest(token, pDict)
+    result = self.__getProxyRequest(token)
     if not result['OK']:
       return result
       
