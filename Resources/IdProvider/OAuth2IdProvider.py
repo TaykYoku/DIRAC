@@ -8,6 +8,8 @@ import re
 import pprint
 from authlib.integrations.requests_client import OAuth2Session
 from authlib.oidc.discovery.well_known import get_well_known_url
+from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
+
 from requests import exceptions
 
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
@@ -50,6 +52,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     # Here "t" is `OAuth2Token` type
     self.update_token = lambda t, rt: gSessionManager.updateToken(dict(t), rt)
+    self.metadata_class = AuthorizationServerMetadata
 
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
