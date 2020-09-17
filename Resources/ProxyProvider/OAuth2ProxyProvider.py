@@ -119,17 +119,13 @@ class OAuth2ProxyProvider(ProxyProvider):
     # Get proxy request
     result = self.__getProxyRequest(token, pDict)
     if not result['OK']:
-      self.log.error(result['Message'])
+      return result
       
     if not result['Value']:
-      result = S_ERROR('Returned proxy is empty.')
-      continue
+      return S_ERROR('Returned proxy is empty.')
 
     self.log.info('Proxy is taken')
-    break
 
-    if not result['OK']:
-      return result
     proxyStr = result['Value'].encode("utf-8")
 
     # Get DN
