@@ -11,11 +11,14 @@ from __future__ import division
 from __future__ import print_function
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.Core.Utilities import ObjectLoader
+from DIRAC.Core.Utilities import ObjectLoader, ThreadSafe
+from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
 
 __RCSID__ = "$Id$"
 
+
+gCacheMetadata = ThreadSafe.Synchronizer()
 
 class IdProviderFactory(object):
 
@@ -24,6 +27,16 @@ class IdProviderFactory(object):
     """ Standard constructor
     """
     self.log = gLogger.getSubLogger('IdProviderFactory')
+    self.cacheMetadata = DictCache()
+
+  @gCacheMetadata
+  def getMetadata(self, idP):
+    return self.cacheMetadata.get(idP)
+
+  @gCacheMetadata
+  def addMetadata(self, idP, data, time=24 * 3600):
+    if data:
+      self.cacheMetadata.add(idP, time, data)
 
   #############################################################################
   def getIdProvider(self, idProvider, sessionManager=None):
@@ -55,7 +68,15 @@ class IdProviderFactory(object):
 
     pClass = result['Value']
     try:
+      meta = self.getMetadata(idProvider)
+      if meta:
+        pDict.update(meta)
       provider = pClass(**pDict)
+      if not meta:
+        result = provider.loadMetadata()
+        if not result['OK']:
+          return result
+        self.addMetadata(idProvider, result['Value'])
       # provider.setParameters(pDict)
       # provider.setManager(sessionManager)
     except Exception as x:

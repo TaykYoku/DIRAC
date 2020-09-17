@@ -54,6 +54,7 @@ class AuthManagerClient(Client):
     self.setServer('Framework/AuthManager')
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
+    self.idps = IdProviderFactory()
   
   @gCacheClient
   def addClient(self, data):
@@ -116,7 +117,7 @@ class AuthManagerClient(Client):
     session = generate_token(10)
     self.addSession(session, mainSession=mainSession, Provider=idP)
 
-    result = IdProviderFactory().getIdProvider(providerName, sessionManager=self.__getRPC())
+    result = self.idps.getIdProvider(providerName, sessionManager=self.__getRPC())
     if result['OK']:
       result = result['Value'].submitNewSession(session)
       if result['OK']:
@@ -144,7 +145,7 @@ class AuthManagerClient(Client):
     providerName = sessionDict['Provider']
 
     # Parse response
-    result = IdProviderFactory().getIdProvider(providerName, sessionManager=self._getRPC())
+    result = self.idps.getIdProvider(providerName, sessionManager=self._getRPC())
     if result['OK']:
       result = result['Value'].parseAuthResponse(response, sessionDict)
       if result['OK']:

@@ -21,6 +21,13 @@ class IdProvider(object):
     self.parameters = kwargs.get('parameters', {})
     self.sessionManager = kwargs.get('sessionManager')
     self._initialization()
+  
+  def loadMetadata(self):
+    """ Load metadata to cache if needed
+
+        :return: S_OK()/S_ERROR()
+    """
+    return S_OK()
 
   def _initialization(self):
     """ Initialization """
