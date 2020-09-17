@@ -324,9 +324,9 @@ class AuthManagerHandler(RequestHandler):
     """
     return self.__db.storeToken(**kwargs)
   
-  types_getTokenByUserID = [six.string_types, six.string_types]
-  auth_getTokenByUserID = ["authenticated"]
-  def export_getTokenByUserID(self, uid, provider):
+  types_getTokenByUserIDAndProvider = [six.string_types, six.string_types]
+  auth_getTokenByUserIDAndProvider = ["authenticated"]
+  def export_getTokenByUserIDAndProvider(self, uid, provider):
     """ Generates a state string to be used in authorizations
 
         :param str provider: provider
@@ -334,4 +334,4 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(str)/S_ERROR()
     """
-    return self.__db.getTokenByUserID(uid, provider)
+    return self.__db.getTokenByUserIDAndProvider(uid, provider)
