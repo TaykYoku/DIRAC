@@ -252,7 +252,7 @@ class AuthHandler(WebHandler):
     reuslt = self.__getAccessToken(userID, reqGroup, mainSession)
     if not result['OK']:
       raise WErr(503, result['Message'])
-    gSessionManager.updateSession(session, Status='authed', Token=result['Value'])
+    gSessionManager.updateSession(mainSession, Status='authed', Token=result['Value'])
 
     # Device flow
     if 'device_code' in sessionDict:
@@ -301,14 +301,7 @@ class AuthHandler(WebHandler):
 
       # Waiting IdP auth result
       if data['Status'] not in ['authed', 'failed']:
-        self.finish('Status: %s Wait..' % data['Status'])
-      else:
-
-        # Remove session and return DIRAC access token
-        gSessionManager.removeSession(session)
-        if data['Status'] != 'authed':
-          raise WErr(401, data['Comment'])
-        self.finish(data['Token'])
+        return self.finish('Status: %s Wait..' % data['Status'])
     
     # Authentication code flow
     elif grantType == 'authorization_code':
@@ -326,11 +319,11 @@ class AuthHandler(WebHandler):
         if codeVerifier != data['code_challenge']:
           raise WErr(404, 'code_verifier is not correct.')
 
-      # Remove session and return DIRAC access token
-      gSessionManager.removeSession(session)
-      if data['Status'] != 'authed':
-        raise WErr(401, data['Comment'])
-      self.finish(data['Token'])
+    # Remove session and return DIRAC access token
+    gSessionManager.removeSession(session)
+    if data['Status'] != 'authed':
+      raise WErr(401, data['Comment'])
+    self.finish(data['Token'])
 
   def __getAccessToken(self, uid, group, session):
     #### GENERATE TOKEN
