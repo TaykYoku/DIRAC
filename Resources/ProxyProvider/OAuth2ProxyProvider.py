@@ -6,6 +6,8 @@ from __future__ import print_function
 
 import pprint
 import datetime
+import requests
+from requests import exceptions
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
@@ -76,21 +78,6 @@ class OAuth2ProxyProvider(ProxyProvider):
 
     return S_OK({'Status': 'ready'})
 
-  def __findReadySessions(self, userDN):
-    """ Read ready to work status of proxy provider
-
-        :param str userDN: user DN
-
-        :return: S_OK(dict)/S_ERROR() -- dictionary contain fields:
-                 - 'Status' with ready to work status[ready, needToAuth]
-                 - 'AccessTokens' with list of access token
-    """
-    result = Registry.getUsernameForDN(userDN)
-    if not result['OK']:
-      return result
-    userName = result['Value']
-    return gSessionManager.getReservedSessions(Registry.getIDsForUsername(userName), self.idProviders, True)
-
   def getProxy(self, userDN, token=None):
     """ Generate user proxy with OIDC flow authentication
 
@@ -120,12 +107,10 @@ class OAuth2ProxyProvider(ProxyProvider):
     result = self.__getProxyRequest(token)
     if not result['OK']:
       return result
-      
     if not result['Value']:
       return S_ERROR('Returned proxy is empty.')
 
     self.log.info('Proxy is taken')
-
     proxyStr = result['Value'].encode("utf-8")
 
     # Get DN
@@ -144,10 +129,8 @@ class OAuth2ProxyProvider(ProxyProvider):
 
     # Store proxy in proxy manager
     result = self.proxyManager._storeProxy(DN, chain)
-    if not result['OK']:
-      return result
 
-    return S_OK(chain)  # {'proxy': proxyStr, 'DN': DN})
+    return S_OK(chain) if result['OK'] else result # {'proxy': proxyStr, 'DN': DN})
 
   def __getProxyRequest(self, token):
     """ Get user proxy from proxy provider
@@ -171,8 +154,8 @@ class OAuth2ProxyProvider(ProxyProvider):
     kwargs['client_secret'] = pDict.get('client_secret')
     r = None
     try:
-      r = self.oauth2.request('GET', self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
+      r = requests.get(self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
       r.raise_for_status()
       return S_OK(r.text)
-    except self.oauth2.exceptions.RequestException as e:
+    except exceptions.RequestException as e:
       return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
