@@ -261,7 +261,7 @@ class AuthDB2(SQLAlchemyDB):
     
         :return: dict
     """
-    return {c.name: str(getattr(row, c.name)) for c in row.__table__.columns}
+    return {c.name: str(getattr(row, c.name)) for c in row.__table__.columns} if row else {}
 
   def getToken(self, params):
     session = self.session()
