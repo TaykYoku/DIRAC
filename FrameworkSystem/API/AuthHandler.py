@@ -301,7 +301,8 @@ class AuthHandler(WebHandler):
 
       # Waiting IdP auth result
       if data['Status'] not in ['authed', 'failed']:
-        return self.finish('Status: %s Wait..' % data['Status'])
+        self.finish('Status: %s Wait..' % data['Status'])
+        return
     
     # Authentication code flow
     elif grantType == 'authorization_code':
