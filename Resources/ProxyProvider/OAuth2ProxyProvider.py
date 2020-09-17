@@ -10,7 +10,7 @@ import datetime
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.Resources.ProxyProvider.ProxyProvider import ProxyProvider
 
@@ -51,6 +51,7 @@ class OAuth2ProxyProvider(ProxyProvider):
       self.log.error(result['Message'])
       return result
     uid = result['Value'][0]
+    # TODO: authManagerService must get token throgh iDP with requested lifetime
     result = gSessionManager.getTokenByUserIDAndProvider(uid, self.idProviders[0])
     if not result['OK']:
       self.log.error(result['Message'])
@@ -68,7 +69,7 @@ class OAuth2ProxyProvider(ProxyProvider):
       return result
     if not result['Value']:
       # Proxy not uploaded in DB, lets generate and upload
-      result = self.getProxy(userDN, sessions=sessions)
+      result = self.getProxy(userDN, token=token)
       if not result['OK']:
         self.log.error(result['Message'])
         return result
@@ -90,7 +91,7 @@ class OAuth2ProxyProvider(ProxyProvider):
     userName = result['Value']
     return gSessionManager.getReservedSessions(Registry.getIDsForUsername(userName), self.idProviders, True)
 
-  def getProxy(self, userDN, sessions=None):
+  def getProxy(self, userDN, token=None):
     """ Generate user proxy with OIDC flow authentication
 
         :param str userDN: user DN
@@ -98,46 +99,34 @@ class OAuth2ProxyProvider(ProxyProvider):
 
         :return: S_OK/S_ERROR, Value is a proxy string
     """
-    if not sessions:
-      result = self.__findReadySessions(userDN)
-      if not result['OK']:
-        return result
-      sessions = result['Value']
-    if not sessions:
-      return S_ERROR('No sessions found for proxy request.')
-
-    for session in sessions:
-      result = gAuthManagerData.getIdPForSession(session)
-      if not result['OK']:
-        return result
-
-      self.oauth2 = OAuth2(result['Value'])
-
-      self.log.verbose('For proxy request use session:', session)
-
-      # Get proxy request
-      result = self.__getProxyRequest(session)
+    if not token:
+      result = gAuthManagerData.getIDsForDN(userDN, provider=self.parameters['ProviderName'])
       if not result['OK']:
         self.log.error(result['Message'])
-        result = gSessionManager.refreshSession(session)
-        if not result['OK']:
-          self.log.error(result['Message'])
-          continue
+        return result
+      uid = result['Value'][0]
+      # TODO: authManagerService must get token throgh iDP with requested lifetime
+      result = gSessionManager.getTokenByUserIDAndProvider(uid, self.idProviders[0])
+      if not result['OK']:
+        self.log.error(result['Message'])
+        return result
+      token = result['Value']
+    if not token:
+      return S_ERROR('Token not found for proxy request.')
 
-        # Try to get proxy request again
-        result = self.__getProxyRequest(session)
-        if not result['OK']:
-          self.log.error(result['Message'])
-          result = gSessionManager.logOutSession(session)
-          if not result['OK']:
-            self.log.error(result['Message'])
-          continue
-        if not result['Value']:
-          result = S_ERROR('Returned proxy is empty.')
-          continue
+    self.log.verbose('For proxy request use token:', token)
 
-      self.log.info('Proxy is taken')
-      break
+    # Get proxy request
+    result = self.__getProxyRequest(token, pDict)
+    if not result['OK']:
+      self.log.error(result['Message'])
+      
+    if not result['Value']:
+      result = S_ERROR('Returned proxy is empty.')
+      continue
+
+    self.log.info('Proxy is taken')
+    break
 
     if not result['OK']:
       return result
@@ -164,30 +153,30 @@ class OAuth2ProxyProvider(ProxyProvider):
 
     return S_OK(chain)  # {'proxy': proxyStr, 'DN': DN})
 
-  def __getProxyRequest(self, session):
+  def __getProxyRequest(self, token):
     """ Get user proxy from proxy provider
 
         :param str session: access token
 
         :return: S_OK(basestring)/S_ERROR()
     """
-    # Get tokens
-    result = gSessionManager.getSessionTokens(session)
+    result = getProviderInfo(self.idProviders[0])
     if not result['OK']:
       return result
-    tokens = result['Value']
+    pDict = result['Value']
 
-    kwargs = {'access_token': tokens['AccessToken']}
+    kwargs = {'access_token': token}
     kwargs['access_type'] = 'offline'
-    kwargs['proxylifetime'] = self.parameters['MaxProxyLifetime'] or 3600 * 24
+    kwargs['proxylifetime'] = self.parameters.get('MaxProxyLifetime', 3600 * 24)
 
     # Get proxy request
     self.log.verbose('Send proxy request to %s' % self.parameters['GetProxyEndpoint'])
-    kwargs['client_id'] = self.oauth2.get('client_id')
-    kwargs['client_secret'] = self.oauth2.get('client_secret')
+    kwargs['client_id'] = pDict.get('client_id')
+    kwargs['client_secret'] = pDict.get('client_secret')
+    r = None
     try:
       r = self.oauth2.request('GET', self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
       r.raise_for_status()
       return S_OK(r.text)
     except self.oauth2.exceptions.RequestException as e:
-      return S_ERROR("%s: %s" % (e.message, r.text))
+      return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
