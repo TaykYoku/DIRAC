@@ -233,7 +233,7 @@ class AuthHandler(WebHandler):
       return self.finish('You need to choose group')
       
       # self.__chooseGroup(session, groupStatuses)
-
+    pprint(groupStatuses)
     thisGroup = groupStatuses.get(reqGroup)
     if not thisGroup:
       return self.finish('Wrone group')
