@@ -146,37 +146,18 @@ class OAuth2ProxyProvider(ProxyProvider):
     if not result['OK']:
       return result
     provObj = result['Value']
-    # result = getProviderInfo(self.idProviders[0])
-    # if not result['OK']:
-    #   return result
-    # pDict = result['Value']
-    # kwargs = {}
-    # # kwargs['access_token'] = token['access_token']
-    # kwargs['access_type'] = 'offline'
-    # kwargs['proxylifetime'] = self.parameters.get('MaxProxyLifetime', 3600 * 24)
 
     # Get proxy request
     self.log.verbose('Send proxy request to %s' % self.proxy_endpoint)
-    # kwargs['client_id'] = pDict.get('client_id')
-    # kwargs['client_secret'] = pDict.get('client_secret')
-    # r = None
-    # try:
-    #   r = requests.get(self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
-    #   r.raise_for_status()
-    #   return S_OK(r.text)
-    # except exceptions.RequestException as e:
-    #   return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
-    
+
     r = None
     try:
       provObj.token = token
-      # kwargs['client_id'] = provObj.client_id
-      # kwargs['client_secret'] = provObj.client_secret
       url = '%s?access_type=offline' % self.proxy_endpoint
       url += '&proxylifetime=%s' % self.parameters.get('MaxProxyLifetime', 3600 * 24)
       url += '&client_id=%s&client_secret=%s' % (provObj.client_id, provObj.client_secret)
       r = provObj.request('GET', url)
       r.raise_for_status()
-      return S_OK(r.json())
-    except (provObj.exceptions.RequestException, ValueError) as e:
+      return S_OK(r.text())
+    except provObj.exceptions.RequestException as e:
       return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
