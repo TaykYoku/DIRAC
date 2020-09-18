@@ -169,9 +169,9 @@ class OAuth2ProxyProvider(ProxyProvider):
     r = None
     try:
       provObj.token = token
+      print(provObj.token)
       r = provObj.request('GET', self.parameters['GetProxyEndpoint'])
       r.raise_for_status()
       return S_OK(r.json())
     except (provObj.exceptions.RequestException, ValueError) as e:
       return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
-
