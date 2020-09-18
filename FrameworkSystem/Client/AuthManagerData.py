@@ -40,18 +40,6 @@ class AuthManagerData(object):
   # #   <ID2>: { ... }
   # # }
 
-
-username
-    IDs = []
-    DNs = []
-    DN = {
-      ProxyProvider = ..
-      VOMSRoles = ..
-
-    }
-
-
-
   __service = DictCache()
   # # {
   # #   crash: bool
