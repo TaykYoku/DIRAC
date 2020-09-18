@@ -261,8 +261,10 @@ class AuthManagerHandler(RequestHandler):
     self.__addProfiles({userProfile['ID']: userProfile})
     print('================== export_parseAuthResponse ==================')
     print('userID: %s' % userProfile['ID'])
+    print('profile: %s' % userProfile)
+
     p = self.__getProfiles()
-    pprint(p)
+    print(str(p))
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
