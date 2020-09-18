@@ -15,6 +15,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.Resources.ProxyProvider.ProxyProvider import ProxyProvider
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 #from DIRAC.FrameworkSystem.Utilities.OAuth2 import OAuth2
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
@@ -27,6 +28,7 @@ class OAuth2ProxyProvider(ProxyProvider):
 
   def __init__(self, parameters=None):
     super(OAuth2ProxyProvider, self).__init__(parameters) # TODO: need do self.idpObj -- idP in contex(access tokens) we do request
+    self.__idps = IdProviderFactory()
 
   def setParameters(self, parameters):
     self.parameters = parameters
