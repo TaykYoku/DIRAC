@@ -251,7 +251,7 @@ class AuthHandler(WebHandler):
       return self.finish('Bad group status')
 
     # Create DIRAC access token for username/group
-    reuslt = self.__getAccessToken(userID, reqGroup, mainSession)
+    result = self.__getAccessToken(userID, reqGroup, mainSession)
     print(result)
     if not result['OK']:
       raise WErr(503, result['Message'])
