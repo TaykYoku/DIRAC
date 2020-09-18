@@ -70,7 +70,7 @@ class AuthManagerData(object):
     """
     profileDict = self.__cacheProfiles.get(userID) or {}
     for k, v in data.items():
-      if v not None:
+      if v is not None:
         profileDict[k] = v
     self.__cacheProfiles.add(userID, time, value=profileDict)
     ids = self.__cahceIdPToIDs.get(profileDict['Provider'])
