@@ -169,7 +169,8 @@ class OAuth2ProxyProvider(ProxyProvider):
     r = None
     try:
       provObj.token = token
-      # print(provObj.token)
+      kwargs['client_id'] = provObj.client_id
+      kwargs['client_secret'] = provObj.client_secret
       r = provObj.request('GET', self.parameters['GetProxyEndpoint'])
       r.raise_for_status()
       return S_OK(r.json())
