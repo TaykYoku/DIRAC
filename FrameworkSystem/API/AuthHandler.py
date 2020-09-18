@@ -252,9 +252,12 @@ class AuthHandler(WebHandler):
 
     # Create DIRAC access token for username/group
     reuslt = self.__getAccessToken(userID, reqGroup, mainSession)
+    print(result)
     if not result['OK']:
       raise WErr(503, result['Message'])
     gSessionManager.updateSession(mainSession, Status='authed', Token=result['Value'])
+    print('---- Token ---')
+    print(result['Value'])
 
     # Device flow
     if 'device_code' in sessionDict:
@@ -323,13 +326,15 @@ class AuthHandler(WebHandler):
           raise WErr(404, 'code_verifier is not correct.')
 
     # Remove session and return DIRAC access token
+    print('remove session')
     gSessionManager.removeSession(session)
+    pprint(data)
     if data['Status'] != 'authed':
       raise WErr(401, data['Comment'])
     self.finish(encode(data['Token']))
 
   def __getAccessToken(self, uid, group, session):
-    #### GENERATE TOKEN
+    print('GENERATE ACCESS TOKEN')
     header = {'alg': 'RS256'}
     payload = {'sub': uid,
                'grp': group,
