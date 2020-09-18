@@ -214,7 +214,8 @@ class AuthManagerHandler(RequestHandler):
     user, ids = result["Value"]
 
     print('================== export_getIdProfiles ==================')
-    pprint(self.__getProfiles(userID=userID))
+    print('userID: %s' % userID)
+    pprint(self.__getProfiles())
 
     # For host
     if ids == 'all':
@@ -258,7 +259,8 @@ class AuthManagerHandler(RequestHandler):
       return S_ERROR(comment)
     self.__addProfiles({userProfile['ID']: userProfile})
     print('================== export_parseAuthResponse ==================')
-    pprint(self.__getProfiles(userID=userID))
+    print('userID: %s' % userProfile['ID'])
+    pprint(self.__getProfiles())
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
