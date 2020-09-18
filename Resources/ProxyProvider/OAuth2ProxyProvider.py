@@ -158,18 +158,18 @@ class OAuth2ProxyProvider(ProxyProvider):
     self.log.verbose('Send proxy request to %s' % self.parameters['GetProxyEndpoint'])
     # kwargs['client_id'] = pDict.get('client_id')
     # kwargs['client_secret'] = pDict.get('client_secret')
-    r = None
-    try:
-      r = requests.get(self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
-      r.raise_for_status()
-      return S_OK(r.text)
-    except exceptions.RequestException as e:
-      return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
+    # r = None
+    # try:
+    #   r = requests.get(self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
+    #   r.raise_for_status()
+    #   return S_OK(r.text)
+    # except exceptions.RequestException as e:
+    #   return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
     
     r = None
     try:
       provObj.token = token
-      print(provObj.token)
+      # print(provObj.token)
       r = provObj.request('GET', self.parameters['GetProxyEndpoint'])
       r.raise_for_status()
       return S_OK(r.json())
