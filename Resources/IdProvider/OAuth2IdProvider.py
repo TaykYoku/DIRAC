@@ -50,6 +50,10 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Here "t" is `OAuth2Token` type
     self.update_token = lambda t, rt: self.sessionManager.updateToken(dict(t), rt)
     self.metadata_class = AuthorizationServerMetadata
+    print('========= %s ===========' % self.name)
+    print(self.client_id)
+    print(self.client_secret)
+    print(self.token)
 
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
