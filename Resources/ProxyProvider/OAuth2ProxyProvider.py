@@ -174,7 +174,7 @@ class OAuth2ProxyProvider(ProxyProvider):
       # kwargs['client_secret'] = provObj.client_secret
       url = '%s?access_type=offline' % self.proxy_endpoint
       url += '&proxylifetime=%s' % self.parameters.get('MaxProxyLifetime', 3600 * 24)
-      url += '&client_id=%s&client_secret=' % (provObj.client_id, provObj.client_secret)
+      url += '&client_id=%s&client_secret=%s' % (provObj.client_id, provObj.client_secret)
       r = provObj.request('GET', url)
       r.raise_for_status()
       return S_OK(r.json())
