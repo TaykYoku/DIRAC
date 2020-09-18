@@ -141,7 +141,7 @@ class OAuth2ProxyProvider(ProxyProvider):
 
         :return: S_OK(basestring)/S_ERROR()
     """
-    result = self.__idps.getIdProvider(self.idProviders[0], sessionManager=cls.__db)
+    result = self.__idps.getIdProvider(self.idProviders[0])
     if not result['OK']:
       return result
     provObj = result['Value']
