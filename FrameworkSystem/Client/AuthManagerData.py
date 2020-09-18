@@ -40,6 +40,18 @@ class AuthManagerData(object):
   # #   <ID2>: { ... }
   # # }
 
+
+username
+    IDs = []
+    DNs = []
+    DN = {
+      ProxyProvider = ..
+      VOMSRoles = ..
+
+    }
+
+
+
   __service = DictCache()
   # # {
   # #   crash: bool
@@ -70,7 +82,8 @@ class AuthManagerData(object):
     """
     profileDict = self.__cacheProfiles.get(userID) or {}
     for k, v in data.items():
-      profileDict[k] = v
+      if v not None:
+        profileDict[k] = v
     self.__cacheProfiles.add(userID, time, value=profileDict)
     ids = self.__cahceIdPToIDs.get(profileDict['Provider'])
     if isinstance(ids, list) and userID not in ids:

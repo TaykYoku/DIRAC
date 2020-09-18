@@ -193,14 +193,14 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.log.debug('Parse user profile:\n', profile)
 
     # Default DIRAC groups
-    profile['Groups'] = self.parameters.get('DiracGroups') or []
-    if not isinstance(profile['Groups'], list):
+    profile['Groups'] = self.parameters.get('DiracGroups')
+    if profile['Groups'] and not isinstance(profile['Groups'], list):
       profile['Groups'] = profile['Groups'].replace(' ', '').split(',')
     self.log.debug('Default for groups:', ', '.join(profile['Groups']))
     self.log.debug('Response Information:', pprint.pformat(userProfile))
 
     # Read regex syntax to get DNs describe dictionary
-    profile['DNs'] = {}
+    userDNs = {}
     dictItemRegex, listItemRegex = {}, None
     try:
       dnClaim = self.parameters['Syntax']['DNs']['claim']
@@ -243,6 +243,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           if dnInfo.get('PROVIDER'):
             result = getProviderByAlias(dnInfo['PROVIDER'], instance='Proxy')
             dnInfo['PROVIDER'] = result['Value'] if result['OK'] else 'Certificate'
-          profile['DNs'][dnInfo['DN']] = dnInfo
+          userDNs[dnInfo['DN']] = dnInfo
+      if userDNs:
+        profile['DNs'] = userDNs
 
     return S_OK((username, profile))
