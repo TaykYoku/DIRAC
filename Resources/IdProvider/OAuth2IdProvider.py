@@ -196,7 +196,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     profile['Groups'] = self.parameters.get('DiracGroups')
     if profile['Groups'] and not isinstance(profile['Groups'], list):
       profile['Groups'] = profile['Groups'].replace(' ', '').split(',')
-    self.log.debug('Default for groups:', ', '.join(profile['Groups']))
+    self.log.debug('Default for groups:', ', '.join(profile['Groups'] or []))
     self.log.debug('Response Information:', pprint.pformat(userProfile))
 
     # Read regex syntax to get DNs describe dictionary
