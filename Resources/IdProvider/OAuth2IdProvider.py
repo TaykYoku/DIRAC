@@ -142,6 +142,12 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
     return S_OK((username, userProfile))
+  
+  # def getTokenByUserID(self, uid):
+  #   result = self.sessionManager.getTokenByUserIDAndProvider(uid, self.name)
+  #   if not result['OK']:
+  #     return result
+    
 
   def __getUserInfo(self):
     r = None

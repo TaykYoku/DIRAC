@@ -346,4 +346,11 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(str)/S_ERROR()
     """
-    return self.__db.getTokenByUserIDAndProvider(uid, provider)
+    # if provider:
+    #   result = self.__idps.getIdProvider(provider, sessionManager=cls.__db)
+    #   if result['OK']:
+    #     provObj = result['Value']
+    #     result = provObj.getTokenByUserID(uid)
+    # else:
+    result = self.__db.getTokenByUserIDAndProvider(uid, provider)
+    return result

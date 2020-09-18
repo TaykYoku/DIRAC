@@ -139,19 +139,23 @@ class OAuth2ProxyProvider(ProxyProvider):
 
         :return: S_OK(basestring)/S_ERROR()
     """
-    result = getProviderInfo(self.idProviders[0])
+    result = self.__idps.getIdProvider(self.idProviders[0], sessionManager=cls.__db)
     if not result['OK']:
       return result
-    pDict = result['Value']
-
-    kwargs = {'access_token': token['access_token']}
+    provObj = result['Value']
+    # result = getProviderInfo(self.idProviders[0])
+    # if not result['OK']:
+    #   return result
+    # pDict = result['Value']
+    kwargs = {}
+    # kwargs['access_token'] = token['access_token']
     kwargs['access_type'] = 'offline'
     kwargs['proxylifetime'] = self.parameters.get('MaxProxyLifetime', 3600 * 24)
 
     # Get proxy request
     self.log.verbose('Send proxy request to %s' % self.parameters['GetProxyEndpoint'])
-    kwargs['client_id'] = pDict.get('client_id')
-    kwargs['client_secret'] = pDict.get('client_secret')
+    # kwargs['client_id'] = pDict.get('client_id')
+    # kwargs['client_secret'] = pDict.get('client_secret')
     r = None
     try:
       r = requests.get(self.parameters['GetProxyEndpoint'], params=kwargs, headers={})
@@ -159,3 +163,13 @@ class OAuth2ProxyProvider(ProxyProvider):
       return S_OK(r.text)
     except exceptions.RequestException as e:
       return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
+    
+    r = None
+    try:
+      provObj.token = token
+      r = provObj.request('GET', self.parameters['GetProxyEndpoint'])
+      r.raise_for_status()
+      return S_OK(r.json())
+    except (provObj.exceptions.RequestException, ValueError) as e:
+      return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
+
