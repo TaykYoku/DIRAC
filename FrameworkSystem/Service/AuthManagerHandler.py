@@ -165,38 +165,38 @@ class AuthManagerHandler(RequestHandler):
 
     return S_OK((user, userIDs))
 
-  types_updateProfile = []
-  auth_updateProfile = ["authenticated", "TrustedHost"]
+  # types_updateProfile = []
+  # auth_updateProfile = ["authenticated", "TrustedHost"]
 
-  def export_updateProfile(self, userID=None):
-    """ Return fresh info from identity providers about users with actual sessions
+  # def export_updateProfile(self, userID=None):
+  #   """ Return fresh info from identity providers about users with actual sessions
 
-        :params: str userID: user ID
+  #       :params: str userID: user ID
 
-        :return: S_OK(dict)/S_ERROR()
-    """
-    result = self.__checkAuth()
-    if not result['OK']:
-      return result
-    user, ids = result["Value"]
+  #       :return: S_OK(dict)/S_ERROR()
+  #   """
+  #   result = self.__checkAuth()
+  #   if not result['OK']:
+  #     return result
+  #   user, ids = result["Value"]
 
-    # For host
-    if ids == 'all':
-      return S_OK(self.__getProfiles(userID=userID))
+  #   # For host
+  #   if ids == 'all':
+  #     return S_OK(self.__getProfiles(userID=userID))
 
-    # For user
-    if userID:
-      if userID not in ids:
-        return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
-      return S_OK(self.__getProfiles(userID=userID))
+  #   # For user
+  #   if userID:
+  #     if userID not in ids:
+  #       return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
+  #     return S_OK(self.__getProfiles(userID=userID))
 
-    data = {}
-    for uid in ids:
-      idDict = self.__getProfiles(userID=uid)
-      if idDict:
-        data[uid] = idDict
+  #   data = {}
+  #   for uid in ids:
+  #     idDict = self.__getProfiles(userID=uid)
+  #     if idDict:
+  #       data[uid] = idDict
 
-    return S_OK(data)
+  #   return S_OK(data)
 
   types_getIdProfiles = []
   auth_getIdProfiles = ["authenticated", "TrustedHost"]
@@ -212,6 +212,9 @@ class AuthManagerHandler(RequestHandler):
     if not result['OK']:
       return result
     user, ids = result["Value"]
+
+    print('================== export_getIdProfiles ==================')
+    pprint(self.__getProfiles(userID=userID))
 
     # For host
     if ids == 'all':
@@ -254,6 +257,8 @@ class AuthManagerHandler(RequestHandler):
         comment += ' Please, contact the DIRAC administrators.'
       return S_ERROR(comment)
     self.__addProfiles({userProfile['ID']: userProfile})
+    print('================== export_parseAuthResponse ==================')
+    pprint(self.__getProfiles(userID=userID))
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
