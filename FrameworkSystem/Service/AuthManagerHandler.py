@@ -216,7 +216,7 @@ class AuthManagerHandler(RequestHandler):
     print('================== export_getIdProfiles ==================')
     print('userID: %s' % userID)
     p = self.__getProfiles()
-    pprint(p)
+    pprint.pprint(p)
 
     # For host
     if ids == 'all':
@@ -264,7 +264,7 @@ class AuthManagerHandler(RequestHandler):
     print('profile: %s' % userProfile)
 
     p = self.__getProfiles()
-    print(str(p))
+    pprint.pprint(p)
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):

@@ -69,6 +69,10 @@ class AuthManagerData(object):
         :param int time: lifetime
     """
     profileDict = self.__cacheProfiles.get(userID) or {}
+    print('================== CLI DATA updateProfiles ==================')
+    from pprint import pprint
+    pprint(profileDict)
+    pprint(data)
     for k, v in data.items():
       if v is not None:
         profileDict[k] = v
