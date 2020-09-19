@@ -230,7 +230,11 @@ class AuthHandler(WebHandler):
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
-      username, userID, session = result['Value']
+      session = result['Value']
+
+    sessionDict = gSessionManager.getSession(session)
+    username = sessionDict['username']
+    profile = sessionDict['profile']
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username)
@@ -239,7 +243,6 @@ class AuthHandler(WebHandler):
       return result
     groupStatuses = result['Value']
 
-    sessionDict = gSessionManager.getSession(session)
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
       t = template.Template('''<!DOCTYPE html>
