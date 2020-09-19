@@ -273,12 +273,14 @@ class AuthHandler(WebHandler):
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
       query = '%s&session=%s' % (self.request.query, session)
-      return self.finish(t.generate(url=url, query=query, groups=groupStatuses))
+      self.finish(t.generate(url=url, query=query, groups=groupStatuses))
+      return
 
     pprint(groupStatuses)
     thisGroup = groupStatuses.get(reqGroup)
     if not thisGroup:
-      return self.finish('%s - wrone group for %s user.' % (reqGroup, username))
+      self.finish('%s - wrone group for %s user.' % (reqGroup, username))
+      return
     
     elif thisGroup['Status'] == 'needToAuth':
       
@@ -287,10 +289,12 @@ class AuthHandler(WebHandler):
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
-      return self.redirect(result['Value'])
+      self.redirect(result['Value'])
+      return
     
     elif thisGroup['Status'] not in ['ready', 'unknown']:
-      return self.finish('%s - bad group status' % thisGroup['Status'])
+      self.finish('%s - bad group status' % thisGroup['Status'])
+      return
 
     # Create DIRAC access token for username/group
     result = self.__getAccessToken(userID, reqGroup, session)
@@ -313,7 +317,8 @@ class AuthHandler(WebHandler):
           <script type="text/javascript"> window.close() </script>
         </body>
       </html>''')
-      return self.finish(t.generate())
+      self.finish(t.generate())
+      return
 
     # Authorization code flow
     elif sessionDict['flow'] == 'code':
@@ -324,7 +329,8 @@ class AuthHandler(WebHandler):
         code = generate_token(10)
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
       gSessionManager.updateSession(session, code=code)
-      return self.finish({'code': code, 'state': session})
+      self.finish({'code': code, 'state': session})
+      return
 
   @asyncGen
   def web_token(self):
