@@ -127,7 +127,7 @@ class AuthHandler(WebHandler):
   def web_authorization(self, idP=None):
     """ Authorization endpoint
 
-        GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)
+        GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)&group=..
 
         Device flow:
           &user_code=..                         (required)
@@ -187,6 +187,7 @@ class AuthHandler(WebHandler):
         sessionDict = {}
         codeChallenge = self.get_argument('code_challenge', None)
         if codeChallenge:
+          sessionDict['group'] = self.get_argument('group', None)
           sessionDict['code_challenge'] = codeChallenge
           sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
         gSessionManager.addSession(session, sessionDict)
@@ -230,7 +231,31 @@ class AuthHandler(WebHandler):
     sessionDict = gSessionManager.getSession(mainSession)
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
-      return self.finish('You need to choose group')
+      t = template.Template('''<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Authetication</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          Please choose group:
+          <ul>
+            {% for group in groups %}
+              <li> <a href="{{url}}?{{query}}&chooseGroup={{group}}">{{group}}</a>
+                : {{data['Status']}} </br>
+                {{data['Comment']}} </br>
+                {% if data.get('Action') %}
+                  {{data['Action'][0]}} : {{data['Action'][1]}}
+                {% end %}
+              </li>
+            {% end %}
+          <ul>
+        </body>
+      </html>''')
+      url = self.request.protocol + "://" + self.request.host + self.request.path
+      query = '%s&session=%s' % (self.request.query, mainSession)
+      self.write(t.generate(url=url, query=query, groups=groupStatuses.key(), data=groupStatuses))
+      return self.redirect(result['Value'])
       
       # self.__chooseGroup(session, groupStatuses)
     pprint(groupStatuses)
