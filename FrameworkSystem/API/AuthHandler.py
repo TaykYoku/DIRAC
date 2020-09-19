@@ -254,8 +254,7 @@ class AuthHandler(WebHandler):
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
       query = '%s&session=%s' % (self.request.query, mainSession)
-      self.write(t.generate(url=url, query=query, groups=groupStatuses))
-      return self.redirect(result['Value'])
+      return self.finish(t.generate(url=url, query=query, groups=groupStatuses))
       
       # self.__chooseGroup(session, groupStatuses)
     pprint(groupStatuses)
