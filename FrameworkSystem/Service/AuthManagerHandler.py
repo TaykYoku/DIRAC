@@ -313,7 +313,7 @@ class AuthManagerHandler(RequestHandler):
   types_getClientByID = [six.string_types]
   auth_getClientByID = []  # "authenticated", "TrustedHost"]
 
-  def export_getClientByID(self, clientID):
+  def export_getClientByID(self, clientID, metadata):
     """ Generates a state string to be used in authorizations
 
         :param str provider: provider
@@ -321,7 +321,7 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(str)/S_ERROR()
     """
-    return self.__db.getClientByID(clientID)
+    return self.__db.getClientByID(clientID, **metadata)
   
   types_storeToken = [dict]
   auth_storeToken = ["authenticated"]

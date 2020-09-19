@@ -65,10 +65,10 @@ class AuthManagerClient(Client):
     return result
 
   @gCacheClient
-  def getClient(self, clientID):
+  def getClient(self, clientID, metadata):
     data = self.cacheClient.get(clientID)
     if not data:
-      result = self._getRPC().getClientByID(clientID)
+      result = self._getRPC().getClientByID(clientID, metadata)
       if result['OK']:
         data = result['Value']
         self.cacheClient.add(data['client_id'], 24 * 3600, data)

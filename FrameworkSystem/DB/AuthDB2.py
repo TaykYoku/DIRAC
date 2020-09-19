@@ -94,17 +94,23 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK())
 
-  def getClientByID(self, clientID):
+  def getClientByID(self, clientID, redirect_uri=None, **kwargs):
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).one()
+      if not redirect_uri:
+        redirect_uri = client.get_default_redirect_uri()
+      if not client.check_redirect_uri(redirect_uri):
+        self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
+      resDict = client.client_info()
+      resDict['redirect_uri'] = redirect_uri
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
       return self.__result(session, S_ERROR("%s client not registred." % clientID))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK(client.client_info))
+    return self.__result(session, S_OK(resDict))
 
   def storeToken(self, client_id=None, token_type=None, **metadata):
     attrts = {}

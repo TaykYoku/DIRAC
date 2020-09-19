@@ -55,7 +55,7 @@ class AuthHandler(WebHandler):
   def web_register(self):
     """ Device authorization flow
 
-        POST: /device?client_id= &scope=
+        POST: /device?client_id=.. &scope=.. &redirect_uri=..
     """
     if self.request.method == 'POST':
       result = yield self.threadTask(gSessionManager.addClient, self.request.arguments)
@@ -80,8 +80,6 @@ class AuthHandler(WebHandler):
       client = yield self.threadTask(gSessionManager.getClient, data['client_id'])
       if not client:
         raise WErr(401, 'Client ID is unregistred.')
-      data['expires_in'] = 300
-      data['expires_at'] = int(time()) + data['expires_in']
       data['device_code'] = generate_token(20)
       data['user_code'] = generate_token(10)
       data['scope'] = self.get_argument('scope', '')
@@ -137,6 +135,8 @@ class AuthHandler(WebHandler):
           &user_code=..                         (required)
 
         Authentication code flow:
+          &scope=..                             (optional)
+          &redirect_uri=..                      (optional)
           &state=..                             (main session id, optional)
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
@@ -149,7 +149,8 @@ class AuthHandler(WebHandler):
     self.log.info('web_authorization: %s' % self.request)
     
     # Check client
-    client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'))
+    client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'),
+                                   {'redirect_uri': self.get_argument('redirect_uri', None)})
     if not client:
       raise WErr(404, 'Client ID is unregistred.')
     
@@ -190,6 +191,7 @@ class AuthHandler(WebHandler):
         session = self.get_argument('state', generate_token(10))
         sessionDict = {}
         sessionDict['flow'] = flow
+        sessionDict['redirect_uri'] = client['redirect_uri']
         sessionDict['group'] = self.get_argument('group', None)
         codeChallenge = self.get_argument('code_challenge', None)
         if codeChallenge:
@@ -325,14 +327,14 @@ class AuthHandler(WebHandler):
     # Authorization code flow
     elif sessionDict['flow'] == 'code':
       if 'code_challenge' in sessionDict:
-        # code = Create JWS
+        # code = Create JWS ?
         code = generate_token(10)
       else:
         code = generate_token(10)
-        requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
+        self.redirect('%s?code=%s&state=%s' % (sessionDict['redirect_uri'], code, state))
+        return
       gSessionManager.updateSession(session, code=code)
       self.finish({'code': code, 'state': session})
-      return
 
   @asyncGen
   def web_token(self):
@@ -340,18 +342,21 @@ class AuthHandler(WebHandler):
     if self.request.method != 'POST':
       raise
 
+    grant = self.get_argument('grant_type')
+
     # Check client
-    client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'))
+    kwargs = {}
+    if grant == 'authorization_code':
+      kwargs['redirect_uri'] = self.get_argument('redirect_uri')
+    client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'), kwargs)
     if not client:
       raise
 
-    grantType = self.get_argument('grant_type')
-
     # Device flow
-    if grantType == 'device_code':
+    if grant == 'device_code':
+      #### it can be jws
       session, data = gSessionManager.getSessionByOption('device_code', self.get_argument('device_code'))
       if not session:
-        print('=====>> %s' % gSessionManager.getSession())
         raise 
 
       # Waiting IdP auth result
@@ -360,15 +365,13 @@ class AuthHandler(WebHandler):
         return
     
     # Authentication code flow
-    elif grantType == 'authorization_code':
+    elif grant == 'authorization_code':
+      #### it can be jws
       session, data = gSessionManager.getSessionByOption('code', self.get_argument('code'))
       if not session:
         self.finish('%s session expired.' % session)
         return
 
-      # Check client params
-      if (self.get_argument('redirect_uri') or None) != client['redirect_uri']:
-        raise
       if data['code_challenge_method']:
         codeVerifier = self.get_argument('code_verifier')
         if data['code_challenge_method'] == 'S256':
@@ -400,6 +403,6 @@ class AuthHandler(WebHandler):
                  'expires_at': 12 * 3600,
                  'state': session})
   
-  def __createOAuth2Request(self):
-    return OAuth2Request(self.request.method, self.request.uri,
-                         json_decode(self.request.body), self.request.headers)
+  # def __createOAuth2Request(self):
+  #   return OAuth2Request(self.request.method, self.request.uri,
+  #                        json_decode(self.request.body), self.request.headers)
