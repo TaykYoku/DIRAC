@@ -72,7 +72,9 @@ class AuthHandler(WebHandler):
     """
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      data = {'client_id': self.get_argument('client_id')}
+      data = {}
+      data['flow'] = 'device'
+      data['client_id'] = self.get_argument('client_id')
       client = yield self.threadTask(gSessionManager.getClient, data['client_id'])
       if not client:
         raise WErr(401, 'Client ID is unregistred.')
@@ -185,9 +187,10 @@ class AuthHandler(WebHandler):
       if flow == 'code':
         session = self.get_argument('state', generate_token(10))
         sessionDict = {}
+        sessionDict['flow'] = flow
+        sessionDict['group'] = self.get_argument('group', None)
         codeChallenge = self.get_argument('code_challenge', None)
         if codeChallenge:
-          sessionDict['group'] = self.get_argument('group', None)
           sessionDict['code_challenge'] = codeChallenge
           sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
         gSessionManager.addSession(session, sessionDict)
@@ -312,7 +315,7 @@ class AuthHandler(WebHandler):
       return self.finish(t.generate())
 
     # Authorization code flow
-    elif sessionDict['grant'] == 'code':
+    elif sessionDict['flow'] == 'code':
       if 'code_challenge' in sessionDict:
         # code = Create JWS
         code = generate_token(10)
