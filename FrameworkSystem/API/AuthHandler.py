@@ -11,8 +11,10 @@ from pprint import pprint
 from tornado import web, gen, template
 from tornado.template import Template
 from tornado.escape import json_decode
+
 from authlib.common.security import generate_token
 from authlib.jose import jwt
+from authlib.oauth2 import OAuth2Request
 
 from DIRAC.Core.Utilities.JEncode import encode
 
@@ -229,7 +231,7 @@ class AuthHandler(WebHandler):
     else:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-      result = yield self.threadTask(gSessionManager.parseAuthResponse(self.request, session))
+      result = yield self.threadTask(gSessionManager.parseAuthResponse, self.request, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
@@ -397,3 +399,7 @@ class AuthHandler(WebHandler):
                  'token_type': 'Baerer',
                  'expires_at': 12 * 3600,
                  'state': session})
+  
+  def __createOAuth2Request(self):
+    return OAuth2Request(self.request.method, self.request.uri,
+                         json_decode(self.request.body), self.request.headers)
