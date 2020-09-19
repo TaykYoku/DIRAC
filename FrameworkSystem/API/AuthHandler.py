@@ -361,7 +361,8 @@ class AuthHandler(WebHandler):
     elif grantType == 'authorization_code':
       session, data = gSessionManager.getSessionByOption('code', self.get_argument('code'))
       if not session:
-        raise
+        self.finish('%s session expired.' % session)
+        return
 
       # Check client params
       if (self.get_argument('redirect_uri') or None) != client['redirect_uri']:
