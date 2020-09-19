@@ -218,7 +218,7 @@ class AuthHandler(WebHandler):
                                                                   description))
 
     # Try to parse IdP session id
-    session = self.get_argument('state', self.get_argument('session', None))
+    session = self.get_argument('session', self.get_argument('state', None))
 
     choosedGroup = self.get_argument('chooseGroup', None)
     if choosedGroup:
