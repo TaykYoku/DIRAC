@@ -222,7 +222,7 @@ class AuthHandler(WebHandler):
 
     choosedGroup = self.get_argument('chooseGroup', None)
     if choosedGroup:
-      reqGroup = choosedGroup
+      gSessionManager.updateSession(session, group=choosedGroup)
     else:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
@@ -239,7 +239,7 @@ class AuthHandler(WebHandler):
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username)
     if not result['OK']:
-      self.updateSession(session, Status='failed', Comment=result['Message'])
+      gSessionManager.updateSession(session, Status='failed', Comment=result['Message'])
       return result
     groupStatuses = result['Value']
 
