@@ -235,6 +235,7 @@ class AuthHandler(WebHandler):
     sessionDict = gSessionManager.getSession(session)
     username = sessionDict['username']
     profile = sessionDict['profile']
+    userID = sessionDict['userID']
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username)
