@@ -101,7 +101,7 @@ class AuthDB2(SQLAlchemyDB):
       print('================== getClientByID ======= 0')
       if not redirect_uri:
         redirect_uri = client.get_default_redirect_uri()
-      if not client.check_redirect_uri(redirect_uri):
+      elif not client.check_redirect_uri(redirect_uri):
         self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
       print('================== getClientByID ======= 1')
       resDict = client.client_info()
