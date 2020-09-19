@@ -244,8 +244,8 @@ class AuthHandler(WebHandler):
               <li> <a href="{{url}}?{{query}}&chooseGroup={{group}}">{{group}}</a>
                 : {{data['Status']}} </br>
                 {{data['Comment']}} </br>
-                {% if data.get('Action') %}
-                  {{data['Action'][0]}} : {{data['Action'][1]}}
+                {% if data.get('Action', '') %}
+                  {{data['Action'][0]}} : {{data['Action'][1][0]}}
                 {% end %}
               </li>
             {% end %}
