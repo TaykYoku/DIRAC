@@ -163,13 +163,7 @@ class AuthManagerClient(Client):
     if username and profile:
       gAuthManagerData.updateProfiles(profile['ID'], profile)
       self.updateSession(mainSession, username=username, profile=profile)
-    
-    # Check groups
-    result = gProxyManager.getGroupsStatusByUsername(username)
-    if not result['OK']:
-      self.updateSession(mainSession, Status='failed', Comment=result['Message'])
-      return result
 
-    return S_OK((username, profile['ID'], result['Value'], mainSession))
+    return S_OK((username, profile['ID'], mainSession))
 
 gSessionManager = AuthManagerClient()

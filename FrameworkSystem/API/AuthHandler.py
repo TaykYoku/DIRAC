@@ -230,9 +230,15 @@ class AuthHandler(WebHandler):
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
-      username, userID, groupStatuses, session = result['Value']
+      username, userID, session = result['Value']
 
     # Researche Group
+    result = gProxyManager.getGroupsStatusByUsername(username)
+    if not result['OK']:
+      self.updateSession(session, Status='failed', Comment=result['Message'])
+      return result
+    groupStatuses = result['Value']
+
     sessionDict = gSessionManager.getSession(session)
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
@@ -264,7 +270,7 @@ class AuthHandler(WebHandler):
     pprint(groupStatuses)
     thisGroup = groupStatuses.get(reqGroup)
     if not thisGroup:
-      return self.finish('%s - wrone group' % reqGroup)
+      return self.finish('%s - wrone group for %s user.' % (reqGroup, username))
     
     elif thisGroup['Status'] == 'needToAuth':
       
