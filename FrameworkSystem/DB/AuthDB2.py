@@ -118,7 +118,7 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR("%s client not registred." % clientID))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK(client.client_info().update({'redirect_uri': redirect_uri})))
+    return self.__result(session, S_OK(client.client_info.update({'redirect_uri': redirect_uri})))
 
   def storeToken(self, client_id=None, token_type=None, **metadata):
     attrts = {}
