@@ -229,7 +229,7 @@ class AuthHandler(WebHandler):
     else:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-      result = gSessionManager.parseAuthResponse(self.request, session)
+      result = yield self.threadTask(gSessionManager.parseAuthResponse(self.request, session))
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
@@ -357,7 +357,7 @@ class AuthHandler(WebHandler):
         raise
 
       # Check client params
-      if self.get_argument('redirect_uri') != client['redirect_uri']:
+      if (self.get_argument('redirect_uri') or None) != client['redirect_uri']:
         raise
       if data['code_challenge_method']:
         codeVerifier = self.get_argument('code_verifier')
