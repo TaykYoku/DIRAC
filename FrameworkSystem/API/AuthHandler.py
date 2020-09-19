@@ -217,18 +217,23 @@ class AuthHandler(WebHandler):
       raise WErr(500, '%s session crashed with error:\n%s\n%s' % (session, error,
                                                                   description))
 
-    # Try to parse session id
-    session = self.get_argument('state', None)
+    # Try to parse IdP session id
+    session = self.get_argument('state', self.get_argument('session', None))
 
-    # Parse result of the second authentication flow
-    self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-    result = gSessionManager.parseAuthResponse(self.request, session)
-    if not result['OK']:
-      raise WErr(503, result['Message'])
-    username, userID, groupStatuses, mainSession = result['Value']
+    choosedGroup = self.get_argument('chooseGroup', None)
+    if choosedGroup:
+      reqGroup = choosedGroup
+    else:
+      # Parse result of the second authentication flow
+      self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
+      result = gSessionManager.parseAuthResponse(self.request, session)
+      if not result['OK']:
+        raise WErr(503, result['Message'])
+      # Return main session flow
+      username, userID, groupStatuses, session = result['Value']
 
-    # researche Group
-    sessionDict = gSessionManager.getSession(mainSession)
+    # Researche Group
+    sessionDict = gSessionManager.getSession(session)
     reqGroup = self.get_argument('group', sessionDict.get('group'))
     if not reqGroup:
       t = template.Template('''<!DOCTYPE html>
@@ -253,33 +258,32 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
-      query = '%s&session=%s' % (self.request.query, mainSession)
+      query = '%s&session=%s' % (self.request.query, session)
       return self.finish(t.generate(url=url, query=query, groups=groupStatuses))
-      
-      # self.__chooseGroup(session, groupStatuses)
+
     pprint(groupStatuses)
     thisGroup = groupStatuses.get(reqGroup)
     if not thisGroup:
-      return self.finish('Wrone group')
+      return self.finish('%s - wrone group' % reqGroup)
     
     elif thisGroup['Status'] == 'needToAuth':
       
       # Submit second auth flow through IdP
-      result = gSessionManager.submitAuthorizeFlow(thisGroup['Action'][1][0], mainSession)
+      result = gSessionManager.submitAuthorizeFlow(thisGroup['Action'][1][0], session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
       return self.redirect(result['Value'])
     
     elif thisGroup['Status'] not in ['ready', 'unknown']:
-      return self.finish('Bad group status')
+      return self.finish('%s - bad group status' % thisGroup['Status'])
 
     # Create DIRAC access token for username/group
-    result = self.__getAccessToken(userID, reqGroup, mainSession)
+    result = self.__getAccessToken(userID, reqGroup, session)
     print(result)
     if not result['OK']:
       raise WErr(503, result['Message'])
-    gSessionManager.updateSession(mainSession, Status='authed', Token=result['Value'])
+    gSessionManager.updateSession(session, Status='authed', Token=result['Value'])
     print('---- Token ---')
     print(result['Value'])
 
@@ -301,7 +305,7 @@ class AuthHandler(WebHandler):
     elif sessionDict['grant'] == 'code':
       if 'code_challenge' in sessionDict:
         # code = Create JWS
-        pass
+        code = generate_token(10)
       else:
         code = generate_token(10)
         requests.get(sessionDict['redirect_uri'], {'code': code, 'state': session})
