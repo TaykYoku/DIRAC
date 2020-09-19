@@ -240,7 +240,7 @@ class AuthHandler(WebHandler):
         <body>
           Please choose group:
           <ul>
-            {% for group in groups %}
+            {% for group, data in groups.items() %}
               <li> <a href="{{url}}?{{query}}&chooseGroup={{group}}">{{group}}</a>
                 : {{data['Status']}} </br>
                 {{data['Comment']}} </br>
@@ -254,7 +254,7 @@ class AuthHandler(WebHandler):
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
       query = '%s&session=%s' % (self.request.query, mainSession)
-      self.write(t.generate(url=url, query=query, groups=groupStatuses.keys(), data=groupStatuses))
+      self.write(t.generate(url=url, query=query, groups=groupStatuses))
       return self.redirect(result['Value'])
       
       # self.__chooseGroup(session, groupStatuses)
