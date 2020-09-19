@@ -244,7 +244,8 @@ class AuthHandler(WebHandler):
     result = gProxyManager.getGroupsStatusByUsername(username)
     if not result['OK']:
       gSessionManager.updateSession(session, Status='failed', Comment=result['Message'])
-      return self.finish(result['Message'])
+      self.finish(result['Message'])
+      return
     groupStatuses = result['Value']
 
     reqGroup = self.get_argument('group', sessionDict.get('group'))
