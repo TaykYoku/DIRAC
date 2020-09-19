@@ -98,12 +98,16 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).one()
+      print('================== getClientByID ======= 0')
       if not redirect_uri:
         redirect_uri = client.get_default_redirect_uri()
       if not client.check_redirect_uri(redirect_uri):
         self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
+      print('================== getClientByID ======= 1')
       resDict = client.client_info()
+      print('================== getClientByID ======= 2')
       resDict['redirect_uri'] = redirect_uri
+      print('================== getClientByID ======= 3')
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
