@@ -77,21 +77,25 @@ class AuthDB2(SQLAlchemyDB):
     return S_OK()
 
   def addClient(self, data):
-      meta = {"client_name": data.get("client_name"),
-              "client_uri": data.get("client_uri"),
-              "grant_types": split_by_crlf(data.get("grant_type", '')),
-              "redirect_uris": split_by_crlf(data.get("redirect_uri", '')),
-              "response_types": split_by_crlf(data.get("response_type", '')),
-              "scope": data.get("scope"),
-              "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
-      client_secret = ''
-      if meta['token_endpoint_auth_method'] != 'none':
-        client_secret = gen_salt(48)
-
     session = self.session()
+    client = Client(client_id=gen_salt(24), client_secret=client_secret,
+                    client_id_issued_at=int(time()))
+    meta = {"client_name": data.get("client_name"),
+            "client_uri": data.get("client_uri"),
+            "grant_types": split_by_crlf(data.get("grant_type", '')),
+            "redirect_uris": split_by_crlf(data.get("redirect_uri", '')),
+            "response_types": split_by_crlf(data.get("response_type", '')),
+            "scope": data.get("scope"),
+            "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
+    client.set_client_metadata(meta)
+
+    if meta['token_endpoint_auth_method'] == 'none':
+      client.client_secret = ''
+    else
+      client.client_secret = gen_salt(48)
+
     try:
-      client = session.add(Client(client_id=gen_salt(24), client_secret=client_secret,
-                                  client_id_issued_at=int(time()), _client_metadata=str(meta)))
+      client = session.add(client)
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Client: %s' % e))
     return self.__result(session, S_OK(client.client_info))
