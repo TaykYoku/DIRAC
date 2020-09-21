@@ -96,6 +96,7 @@ class AuthDB2(SQLAlchemyDB):
       client.client_secret = gen_salt(48)
 
     try:
+      print(client.client_info)
       client = session.add(client)
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Client: %s' % e))
