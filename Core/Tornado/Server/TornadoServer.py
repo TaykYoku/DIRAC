@@ -64,6 +64,7 @@ class Application(_Application):
     # # Initiated handlers list
     # self._initedHandlers = []
     super(Application, self).__init__(*args, **kwargs)
+    self.authorizationServer = AuthorizationServer()
 
 class TornadoServer(object):
   """
@@ -164,11 +165,9 @@ class TornadoServer(object):
     sLog.debug("Starting Tornado")
     self._initMonitoring()
 
-    self.settings = {'authorizationServer': AuthorizationServer()}
-
     router = Application(self.urls,
                          debug=False,
-                         compress_response=True, **self.settings)
+                         compress_response=True)
 
     certs = Locations.getHostCertificateAndKeyLocation()
     if certs is False:

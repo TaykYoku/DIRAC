@@ -48,7 +48,8 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    cls.server = cls.settings.authorizationServer
+    print(str(self.authorizationServer))
+    # cls.server = cls.settings.authorizationServer
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
