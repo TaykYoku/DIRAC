@@ -34,7 +34,7 @@ class Client(OAuth2ClientMixin):
     self.client_secret = params['client_secret']
     self.client_id_issued_at = params['client_id_issued_at']
     self.client_secret_expires_at = params['client_secret_expires_at']
-    self._client_metadata = params['_client_metadata']
+    self._client_metadata = params['client_metadata']
 
 class OAuth2Code(dict):
   def __init__(self, params):
