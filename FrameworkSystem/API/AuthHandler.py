@@ -153,7 +153,7 @@ class AuthHandler(WebHandler):
     if self.request.method == 'GET':
       try:
         # HERE WE CHECK CLIENTS
-        grant = self.server.validate_consent_request(end_user=None)
+        grant = self.server.validate_consent_request(self.request, end_user=None)
             ##### 1
             # def validate_consent_request(self, request, end_user=None):
             #   """Validate current HTTP request for authorization page. This page is designed for resource owner to grant or deny the authorization::
