@@ -151,7 +151,7 @@ class AuthorizationServer(_AuthorizationServer):
 
   @gCacheClient
   def addClient(self, data):
-    result = self.__db.createClient(data)
+    result = self.__db.addClient(data)
     if result['OK']:
       data = result['Value']
       self.cacheClient.add(data['client_id'], 24 * 3600, data)
