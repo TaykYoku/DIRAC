@@ -48,9 +48,9 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    pprint(cls.__dict__)
+    # pprint(cls.__dict__)
 
-    cls.server = cls.application.authorizationServer
+    # cls.server = cls.application.authorizationServer
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
@@ -60,6 +60,7 @@ class AuthHandler(WebHandler):
 
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
+    self.server = self.application.authorizationServer
     print(str(self.application.authorizationServer))
     if self.request.method == 'POST':
       result = yield self.threadTask(self.server.addClient, self.request.arguments)
