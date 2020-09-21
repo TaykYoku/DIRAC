@@ -79,7 +79,7 @@ class AuthDB2(SQLAlchemyDB):
 
   def addClient(self, data):
     session = self.session()
-    client = Client(client_id=gen_salt(24), client_secret=client_secret,
+    client = Client(client_id=gen_salt(24),
                     client_id_issued_at=int(time()))
     meta = {"client_name": data.get("client_name"),
             "client_uri": data.get("client_uri"),
