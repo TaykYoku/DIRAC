@@ -91,7 +91,7 @@ class AuthDB2(SQLAlchemyDB):
 
     if meta['token_endpoint_auth_method'] == 'none':
       client.client_secret = ''
-    else
+    else:
       client.client_secret = gen_salt(48)
 
     try:
