@@ -13,6 +13,7 @@ from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
 
 __RCSID__ = "$Id$"
 
+from werkzeug.security import gen_salt
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
 from sqlalchemy.orm import relationship, scoped_session
