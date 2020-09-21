@@ -76,12 +76,22 @@ class AuthDB2(SQLAlchemyDB):
 
     return S_OK()
 
-  def addClient(self, client_id=None, client_secret=None, **metadata):
+  def addClient(self, data):
+      meta = {"client_name": data.get("client_name"),
+              "client_uri": data.get("client_uri"),
+              "grant_types": split_by_crlf(data.get("grant_type", '')),
+              "redirect_uris": split_by_crlf(data.get("redirect_uri", '')),
+              "response_types": split_by_crlf(data.get("response_type", '')),
+              "scope": data.get("scope"),
+              "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
+      client_secret = ''
+      if meta['token_endpoint_auth_method'] != 'none':
+        client_secret = gen_salt(48)
+
     session = self.session()
     try:
-      client = session.add(Client(client_id=client_id or generate_token(30),
-                                  client_secret=client_secret or generate_token(30),
-                                  _client_metadata=str(metadata)))
+      client = session.add(Client(client_id=gen_salt(24), client_secret=client_secret,
+                                  client_id_issued_at=int(time()), _client_metadata=str(meta)))
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Client: %s' % e))
     return self.__result(session, S_OK(client.client_info))
@@ -98,20 +108,12 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).one()
-      print('================== getClientByID ======= 0')
-      print(redirect_uri)
       if not redirect_uri:
         redirect_uri = client.get_default_redirect_uri()
       elif not client.check_redirect_uri(redirect_uri):
         self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
-      print('================== getClientByID ======= 1')
-      print(redirect_uri)
       resDict = client.client_info
-      print('================== getClientByID ======= 2')
-      print(resDict)
       resDict['redirect_uri'] = redirect_uri
-      print('================== getClientByID ======= 3')
-      print(resDict)
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:

@@ -31,6 +31,7 @@ from DIRAC.Core.Security import Locations
 from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
+from DIRAC.FrameworkSystem.API.AuthServer import AuthorizationServer
 
 import redis
 
@@ -163,9 +164,11 @@ class TornadoServer(object):
     sLog.debug("Starting Tornado")
     self._initMonitoring()
 
+    self.settings = {'authorizationServer': AuthorizationServer()}
+
     router = Application(self.urls,
                          debug=False,
-                         compress_response=True)
+                         compress_response=True, **self.settings)
 
     certs = Locations.getHostCertificateAndKeyLocation()
     if certs is False:
