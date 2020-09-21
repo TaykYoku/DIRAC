@@ -227,6 +227,7 @@ class AuthHandler(WebHandler):
                 #   return redirect_uri
       except OAuth2Error as error:
         print(error.error)
+        print(error.description)
         self.finish(error.error)
         return
       # HERE WE CHOSSE IDP (POST) AND AUTH
