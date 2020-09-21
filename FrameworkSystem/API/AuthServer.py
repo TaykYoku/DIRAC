@@ -3,7 +3,7 @@ from time import time
 from tornado.escape import json_decode
 from tornado.httpclient import HTTPResponse
 from authlib.deprecate import deprecate
-from authlib.jose import jwt, jws
+from authlib.jose import jwt, JsonWebSignature
 from authlib.oauth2 import (
     OAuth2Request,
     HttpRequest,
@@ -72,6 +72,7 @@ class AuthorizationCodeGrant(CodeGrantMixin, grants.AuthorizationCodeGrant):
 
         :return: OAuth2Code or None
     """
+    jws = JsonWebSignature(algorithms=['RS256'])
     with open('private.pem', 'rb') as f:
       key = f.read()
     data = jws.deserialize_compact(code, key)
