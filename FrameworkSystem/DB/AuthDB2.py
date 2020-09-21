@@ -77,7 +77,7 @@ class AuthDB2(SQLAlchemyDB):
 
     return S_OK()
 
-  def split_by_crlf(v):
+  def split_by_crlf(s):
     return [v for v in s.splitlines() if v]
 
   def addClient(self, data):
