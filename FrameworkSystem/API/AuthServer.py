@@ -245,14 +245,12 @@ class AuthorizationServer(_AuthorizationServer):
     if error_uris:
       return dict(error_uris)
 
-  def create_oauth2_request(request, method_cls=None, use_json=False):
-    method_cls = method_cls or OAuth2Request
+  def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
     print('===========')
-    print(method_cls)
-    print(OAuth2Request)
     print(request)
+    print(method_cls)
     pprint(request.__dict__)
-    if isinstance(request, type(method_cls)):
+    if isinstance(request, method_cls):
       return request
     body = None
     if request.method == 'POST':
