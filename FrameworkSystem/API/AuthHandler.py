@@ -12,6 +12,7 @@ from tornado import web, gen, template
 from tornado.template import Template
 from tornado.escape import json_decode
 
+from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
 from authlib.jose import jwt
 from authlib.oauth2 import OAuth2Request
@@ -48,9 +49,6 @@ class AuthHandler(WebHandler):
     """ This method is called only one time, at the first request.
     """
     print('---->> initializeHandler')
-    # pprint(cls.__dict__)
-
-    # cls.server = cls.application.authorizationServer
 
   #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
   #method_oauth = ['post', 'get']
@@ -61,7 +59,6 @@ class AuthHandler(WebHandler):
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
     self.server = self.application.authorizationServer
-    print(str(self.application.authorizationServer))
     if self.request.method == 'POST':
       result = yield self.threadTask(self.server.addClient, self.request.arguments)
       # result = yield self.threadTask(gSessionManager.addClient, self.request.arguments)
@@ -80,6 +77,7 @@ class AuthHandler(WebHandler):
         
         GET: /device/<user code>
     """
+    self.server = self.application.authorizationServer
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
       data = {}
@@ -151,85 +149,88 @@ class AuthHandler(WebHandler):
 
 
     """
-    # if request.method == 'GET':
-    #     try:
-    #         # HERE WE CHECK CLIENTS
-    #         grant = authorization.validate_consent_request(end_user=user)
-    #         ##### 1
-    #         # def validate_consent_request(self, request, end_user=None):
-    #         #   """Validate current HTTP request for authorization page. This page is designed for resource owner to grant or deny the authorization::
-    #         #       class AuthorizationHandler(RequestHandler)
-    #         #         def get():
-    #         #           try:
-    #         #             grant = server.validate_consent_request(self.request, end_user=current_user)
-    #         #             self.render('authorize.html', grant=grant, user=current_user)
-    #         #           except OAuth2Error as error:
-    #         #             self.render('error.html', error=error)
-    #         #   """
-    #         #   req = self.create_oauth2_request(request)
-    #         #   req.user = end_user
-    #         #   grant = self.get_authorization_grant(req)
-    #         #   grant.validate_consent_request()
-    #         #   if not hasattr(grant, 'prompt'):
-    #         #       grant.prompt = None
-    #         #   return grant
-    #         ###########################################################
-    #             ##### 1.1
-    #             # def get_authorization_grant(self, request):
-    #             #   """Find the authorization grant for current request.
-    #             #   :param request: OAuth2Request instance.
-    #             #   :return: grant instance
-    #             #   """
-    #             #   for (grant_cls, extensions) in self._authorization_grants:
-    #             #       if grant_cls.check_authorization_endpoint(request):
-    #             #           return _create_grant(grant_cls, extensions, request, self)
-    #             #   raise InvalidGrantError(
-    #             #       'Response type {!r} is not supported'.format(request.response_type))
-    #             #####################
-    #               ##### 1.1.1
-    #               # def check_authorization_endpoint(cls, request):
-    #               #   return request.response_type in cls.RESPONSE_TYPES
-    #               ##### 1.1.2
-    #               # def _create_grant(grant_cls, extensions, request, server):
-    #               #   grant = grant_cls(request, server)
-    #               #   if extensions:
-    #               #       for ext in extensions:
-    #               #           ext(grant)
-    #               #   return grant
-    #             ##### 1.2
-    #             # def validate_code_authorization_request(grant):
-    #             #   client_id = grant.request.client_id
-    #             #   log.debug('Validate authorization request of %r', client_id)
+    self.server = self.application.authorizationServer
+    if self.request.method == 'GET':
+      try:
+        # HERE WE CHECK CLIENTS
+        grant = self.server.validate_consent_request(end_user=None)
+            ##### 1
+            # def validate_consent_request(self, request, end_user=None):
+            #   """Validate current HTTP request for authorization page. This page is designed for resource owner to grant or deny the authorization::
+            #       class AuthorizationHandler(RequestHandler)
+            #         def get():
+            #           try:
+            #             grant = server.validate_consent_request(self.request, end_user=current_user)
+            #             self.render('authorize.html', grant=grant, user=current_user)
+            #           except OAuth2Error as error:
+            #             self.render('error.html', error=error)
+            #   """
+            #   req = self.create_oauth2_request(request)
+            #   req.user = end_user
+            #   grant = self.get_authorization_grant(req)
+            #   grant.validate_consent_request()
+            #   if not hasattr(grant, 'prompt'):
+            #       grant.prompt = None
+            #   return grant
+            ###########################################################
+                ##### 1.1
+                # def get_authorization_grant(self, request):
+                #   """Find the authorization grant for current request.
+                #   :param request: OAuth2Request instance.
+                #   :return: grant instance
+                #   """
+                #   for (grant_cls, extensions) in self._authorization_grants:
+                #       if grant_cls.check_authorization_endpoint(request):
+                #           return _create_grant(grant_cls, extensions, request, self)
+                #   raise InvalidGrantError(
+                #       'Response type {!r} is not supported'.format(request.response_type))
+                #####################
+                  ##### 1.1.1
+                  # def check_authorization_endpoint(cls, request):
+                  #   return request.response_type in cls.RESPONSE_TYPES
+                  ##### 1.1.2
+                  # def _create_grant(grant_cls, extensions, request, server):
+                  #   grant = grant_cls(request, server)
+                  #   if extensions:
+                  #       for ext in extensions:
+                  #           ext(grant)
+                  #   return grant
+                ##### 1.2
+                # def validate_code_authorization_request(grant):
+                #   client_id = grant.request.client_id
+                #   log.debug('Validate authorization request of %r', client_id)
 
-    #             #   if client_id is None:
-    #             #       raise InvalidClientError(state=grant.request.state)
+                #   if client_id is None:
+                #       raise InvalidClientError(state=grant.request.state)
 
-    #             #   client = grant.server.query_client(client_id)
-    #             #   if not client:
-    #             #       raise InvalidClientError(state=grant.request.state)
+                #   client = grant.server.query_client(client_id)
+                #   if not client:
+                #       raise InvalidClientError(state=grant.request.state)
 
-    #             #   redirect_uri = grant.validate_authorization_redirect_uri(grant.request, client)
-    #             #   response_type = grant.request.response_type
-    #             #   if not client.check_response_type(response_type):
-    #             #       raise UnauthorizedClientError(
-    #             #           'The client is not authorized to use '
-    #             #           '"response_type={}"'.format(response_type),
-    #             #           state=grant.request.state,
-    #             #           redirect_uri=redirect_uri,
-    #             #       )
+                #   redirect_uri = grant.validate_authorization_redirect_uri(grant.request, client)
+                #   response_type = grant.request.response_type
+                #   if not client.check_response_type(response_type):
+                #       raise UnauthorizedClientError(
+                #           'The client is not authorized to use '
+                #           '"response_type={}"'.format(response_type),
+                #           state=grant.request.state,
+                #           redirect_uri=redirect_uri,
+                #       )
 
-    #             #   try:
-    #             #       grant.request.client = client
-    #             #       grant.validate_requested_scope()
-    #             #       grant.execute_hook('after_validate_authorization_request')
-    #             #   except OAuth2Error as error:
-    #             #       error.redirect_uri = redirect_uri
-    #             #       raise error
-    #             #   return redirect_uri
-    #     except OAuth2Error as error:
-    #         return error.error
-    #     # HERE WE CHOSSE IDP (POST) AND AUTH
-    #     return render_template('authorize.html', user=user, grant=grant)
+                #   try:
+                #       grant.request.client = client
+                #       grant.validate_requested_scope()
+                #       grant.execute_hook('after_validate_authorization_request')
+                #   except OAuth2Error as error:
+                #       error.redirect_uri = redirect_uri
+                #       raise error
+                #   return redirect_uri
+      except OAuth2Error as error:
+        return error.error
+      # HERE WE CHOSSE IDP (POST) AND AUTH
+    #   return render_template('authorize.html', user=user, grant=grant)
+
+
     # if not user and 'username' in request.form:
     #     username = request.form.get('username')
     #     user = User.query.filter_by(username=username).first()
@@ -239,20 +240,21 @@ class AuthHandler(WebHandler):
     #     grant_user = None
     
 
-    #return authorization.create_authorization_response(grant_user=grant_user)
+    # ORIGINAL
+    #################
+    # # Only GET method supported
+    # if self.request.method != 'GET':
+    #   raise WErr(404, '%s request method not supported.' % self.request.method)
+    # self.log.info('web_authorization: %s' % self.request)
+    
+    # # Check client
+    # client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'),
+    #                                {'redirect_uri': self.get_argument('redirect_uri', None)})
+    # if not client:
+    #   raise WErr(404, 'Client ID is unregistred.')
     #################
 
-    # Only GET method supported
-    if self.request.method != 'GET':
-      raise WErr(404, '%s request method not supported.' % self.request.method)
-    self.log.info('web_authorization: %s' % self.request)
-    
-    # Check client
-    client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'),
-                                   {'redirect_uri': self.get_argument('redirect_uri', None)})
-    if not client:
-      raise WErr(404, 'Client ID is unregistred.')
-    
+
     # Research supported IdPs
     result = getProvidersForInstance('Id')
     if not result['OK']:
@@ -313,6 +315,7 @@ class AuthHandler(WebHandler):
 
   @asyncGen
   def web_redirect(self):
+    self.server = self.application.authorizationServer
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
 
@@ -441,6 +444,7 @@ class AuthHandler(WebHandler):
 
   @asyncGen
   def web_token(self):
+    self.server = self.application.authorizationServer
     # Support only POST method
     if self.request.method != 'POST':
       raise
