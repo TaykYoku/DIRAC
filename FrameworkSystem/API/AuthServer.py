@@ -246,6 +246,7 @@ class AuthorizationServer(_AuthorizationServer):
       return dict(error_uris)
 
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
+    print('==== create_oauth2_request ===')
     if isinstance(request, method_cls):
       return request
     body = None
@@ -284,6 +285,7 @@ class AuthorizationServer(_AuthorizationServer):
 
         :return: grant instance
     """
+    print('==== validate_consent_request ===')
     req = self.create_oauth2_request(request)
     req.user = end_user
     grant = self.get_authorization_grant(req)
