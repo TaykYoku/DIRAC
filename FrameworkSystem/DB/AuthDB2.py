@@ -77,18 +77,15 @@ class AuthDB2(SQLAlchemyDB):
 
     return S_OK()
 
-  def split_by_crlf(s):
-    return [v for v in s.splitlines() if v]
-
   def addClient(self, data):
     session = self.session()
     client = Client(client_id=gen_salt(24),
                     client_id_issued_at=int(time()))
     meta = {"client_name": data.get("client_name"),
             "client_uri": data.get("client_uri"),
-            "grant_types": split_by_crlf(data.get("grant_type", '')),
-            "redirect_uris": split_by_crlf(data.get("redirect_uri", '')),
-            "response_types": split_by_crlf(data.get("response_type", '')),
+            "grant_types": [v for v in data.get("grant_type", '').splitlines() if v],
+            "redirect_uris": [v for v in data.get("redirect_uri", '').splitlines() if v],
+            "response_types": [v for v in data.get("response_type", '').splitlines() if v],
             "scope": data.get("scope"),
             "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
     client.set_client_metadata(meta)
