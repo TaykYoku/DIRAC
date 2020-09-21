@@ -6,7 +6,7 @@ from __future__ import print_function
 
 from authlib.common.security import generate_token
 
-from datetime import datetime, timedelta
+from time import time
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
