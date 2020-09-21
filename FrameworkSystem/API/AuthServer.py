@@ -129,7 +129,8 @@ class AuthorizationServer(_AuthorizationServer):
     metadata = {}
     if metadata.get('OAUTH2_METADATA_FILE'):
       with open(metadata['OAUTH2_METADATA_FILE']) as f:
-        metadata = self.metadata_class(json.load(f))
+        metadata = json.load(f)
+    metadata = self.metadata_class(metadata)
     metadata.validate()
     self.metadata = metadata
 
