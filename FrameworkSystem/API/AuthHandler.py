@@ -226,7 +226,9 @@ class AuthHandler(WebHandler):
                 #       raise error
                 #   return redirect_uri
       except OAuth2Error as error:
-        return error.error
+        print(error.error)
+        self.finish(error.error)
+        return
       # HERE WE CHOSSE IDP (POST) AND AUTH
     #   return render_template('authorize.html', user=user, grant=grant)
 
