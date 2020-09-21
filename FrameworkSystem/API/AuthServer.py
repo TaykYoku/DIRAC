@@ -29,7 +29,7 @@ gCacheSession = ThreadSafe.Synchronizer()
 
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
-    super(OAuth2Code, self).__init__(params)
+    super(OAuth2ClientMixin, self).__init__(params)
     self.client_id = params['client_id']
     self.client_secret = params['client_secret']
     self.client_id_issued_at = params['client_id_issued_at']
