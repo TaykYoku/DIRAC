@@ -1,5 +1,6 @@
 import json
 from time import time
+from pprint import pprint
 from tornado.escape import json_decode
 from tornado.httpclient import HTTPResponse
 from authlib.deprecate import deprecate
@@ -244,7 +245,12 @@ class AuthorizationServer(_AuthorizationServer):
     if error_uris:
       return dict(error_uris)
 
-  def create_oauth2_request(request, method_cls=OAuth2Request, use_json=False):
+  def create_oauth2_request(request, method_cls=None, use_json=False):
+    method_cls = method_cls or OAuth2Request
+    print(method_cls)
+    print(OAuth2Request)
+    print(request)
+    pprint(request.__dict__)
     if isinstance(request, type(method_cls)):
       return request
     body = None
