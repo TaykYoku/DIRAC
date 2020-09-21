@@ -79,8 +79,7 @@ class AuthDB2(SQLAlchemyDB):
 
   def addClient(self, data):
     session = self.session()
-    client = Client(client_id=gen_salt(24),
-                    client_id_issued_at=int(time()))
+    client = Client(client_id=gen_salt(24), client_id_issued_at=int(time()))
     meta = {"client_name": data.get("client_name"),
             "client_uri": data.get("client_uri"),
             "grant_types": [v for v in data.get("grant_type", '').splitlines() if v],
@@ -96,11 +95,10 @@ class AuthDB2(SQLAlchemyDB):
       client.client_secret = gen_salt(48)
 
     try:
-      data = client.client_info
-      client = session.add(client)
+      session.add(client)
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Client: %s' % e))
-    return self.__result(session, S_OK(data))
+    return self.__result(session, S_OK(self.__rowToDict(client)))
   
   def removeClient(self, clientID):
     session = self.session()
@@ -114,14 +112,13 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).first()
-      resDict = client
     except MultipleResultsFound:
       return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
     except NoResultFound:
       return self.__result(session, S_ERROR("%s client not registred." % clientID))
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK(resDict))#client.client_info.update({'redirect_uri': redirect_uri})))
+    return self.__result(session, S_OK(self.__rowToDict(client)))  # client.client_info.update({'redirect_uri': redirect_uri})))
 
   def getClientByID(self, clientID, redirect_uri=None, **kwargs):
     session = self.session()

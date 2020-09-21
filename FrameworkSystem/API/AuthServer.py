@@ -26,6 +26,14 @@ from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
 
+class Client(OAuth2ClientMixin):
+  def __init__(self, params):
+    super(OAuth2Code, self).__init__(params)
+    self.client_id = params['client_id']
+    self.client_secret = params['client_secret']
+    self.client_id_issued_at = params['client_id_issued_at']
+    self.client_secret_expires_at = params['client_secret_expires_at']
+    self._client_metadata = params['_client_metadata']
 
 class OAuth2Code(dict):
   def __init__(self, params):
@@ -149,13 +157,12 @@ class AuthorizationServer(_AuthorizationServer):
     
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
 
-
   @gCacheClient
   def addClient(self, data):
     result = self.__db.addClient(data)
     if result['OK']:
       data = result['Value']
-      self.cacheClient.add(data['client_id'], 24 * 3600, data)
+      self.cacheClient.add(data['client_id'], 24 * 3600, Client(data))
     return result
 
   @gCacheClient
@@ -164,7 +171,7 @@ class AuthorizationServer(_AuthorizationServer):
     if not client:
       result = self.__db.getClient(clientID)
       if result['OK']:
-        client = result['Value']
+        client = Client(result['Value'])
         self.cacheClient.add(clientID, 24 * 3600, client)
     return client
   
