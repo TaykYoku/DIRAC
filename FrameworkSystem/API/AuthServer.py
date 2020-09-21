@@ -55,7 +55,7 @@ class OAuth2Code(dict):
     return self.get('auth_time')
 
 
-class AuthorizationCodeGrant(CodeGrantMixin, grants.AuthorizationCodeGrant):
+class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
   def save_authorization_code(self, code, request):
