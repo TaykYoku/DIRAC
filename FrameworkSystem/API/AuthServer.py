@@ -246,10 +246,6 @@ class AuthorizationServer(_AuthorizationServer):
       return dict(error_uris)
 
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
-    print('===========')
-    print(request)
-    print(method_cls)
-    pprint(request.__dict__)
     if isinstance(request, method_cls):
       return request
     body = None
@@ -291,6 +287,8 @@ class AuthorizationServer(_AuthorizationServer):
     req = self.create_oauth2_request(request)
     req.user = end_user
     grant = self.get_authorization_grant(req)
+    print('==== GRANT ===')
+    print(grant)
     grant.validate_consent_request()
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
