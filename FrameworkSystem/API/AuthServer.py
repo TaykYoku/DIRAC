@@ -14,6 +14,7 @@ from authlib.oauth2.rfc6749 import grants, errors
 from authlib.oauth2.rfc6750 import BearerToken
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
+from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from authlib.common.security import generate_token
 from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urlsafe_b64decode, json_loads
 # from .signals import client_authenticated, token_revoked
