@@ -405,7 +405,7 @@ class AuthHandler(WebHandler):
     print(result['Value'])
 
     ###### RESPONSE
-    return authorization.create_authorization_response(grant_user=grant_user)
+    # return authorization.create_authorization_response(grant_user=grant_user)
     ###### RESPONSE
 
     # Device flow
