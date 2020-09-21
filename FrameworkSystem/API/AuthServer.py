@@ -126,7 +126,13 @@ class AuthorizationServer(_AuthorizationServer):
     # if not result['OK']:
     #   raise result['Message']
     # metadata = result['Value']
-    metadata = {}
+    metadata = {'issuer': 'https://marosvn32.in2p3.fr/DIRAC/auth',
+                'authorization_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
+                'token_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/token',
+                'registration_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/register',
+                'response_types_supported': ['code'],
+                'grant_types_supported': ['authorization_code'],
+                'code_challenge_methods_supported': ['pain', 'S256']}
     if metadata.get('OAUTH2_METADATA_FILE'):
       with open(metadata['OAUTH2_METADATA_FILE']) as f:
         metadata = json.load(f)
