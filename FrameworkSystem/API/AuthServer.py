@@ -19,6 +19,7 @@ from authlib.common.security import generate_token
 from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urlsafe_b64decode, json_loads
 # from .signals import client_authenticated, token_revoked
 
+from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
