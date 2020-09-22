@@ -80,7 +80,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
     data['group'] = request.args.get('group')
     data['Provider'] = request.args.get('provider')
-    self.updateSession(data['device_code'], data)
+    self.server.updateSession(data['device_code'], data)
     return c, data, h
 
   def get_verification_uri(self):
@@ -89,8 +89,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def save_device_credential(self, client_id, scope, data):
     data['client_id'] = client_id
     data['scope'] = scope
-    pprint(self.__dict__)
-    self.addSession(data['device_code'], data)
+    self.server.addSession(data['device_code'], data)
 
 class DeviceCodeGrant(_DeviceCodeGrant):
   def query_device_credential(self, device_code):
