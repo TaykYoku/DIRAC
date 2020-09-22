@@ -91,7 +91,27 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     data['scope'] = scope
     self.server.addSession(data['device_code'], data)
 
-class DeviceCodeGrant(_DeviceCodeGrant):
+class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
+  def validate_authorization_request(self):
+    client_id = self.request.client_id
+    log.debug('Validate authorization request of %r', client_id)
+    if client_id is None:
+      raise InvalidClientError(state=self.request.state)
+    client = self.server.query_client(client_id)
+    if not client:
+      raise InvalidClientError(state=self.request.state)
+    response_type = grant.request.response_type
+    if not client.check_response_type(response_type):
+      raise UnauthorizedClientError('The client is not authorized to use '
+                                    '"response_type={}"'.format(response_type))
+    grant.request.client = client
+    grant.validate_requested_scope()
+    grant.execute_hook('after_validate_authorization_request')
+    return None
+  
+  def create_authorization_response(self, redirect_uri, grant_user):
+    return 200, 'Authorization complite.', set()
+
   def query_device_credential(self, device_code):
     _, data = self.getSessionByOption('device_code', device_code)
     if not data:
@@ -209,7 +229,8 @@ class AuthorizationServer(_AuthorizationServer):
     if metadata.get('OAUTH2_JWT_ENABLED'):
       deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
       self.init_jwt_config(metadata)
-    
+
+    self.register_grant(DeviceCodeGrant)    
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
     self.register_endpoint(DeviceAuthorizationEndpoint)
 
