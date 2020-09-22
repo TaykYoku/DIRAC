@@ -518,7 +518,7 @@ class AuthHandler(WebHandler):
                'iss': getSetup(),
                'exp': 12 * 3600}
     # Read private key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     # Need to use enum==0.3.1 for python 2.7
     return S_OK({'access_token': jwt.encode(header, payload, key),

@@ -88,7 +88,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
         :return: OAuth2Code or None
     """
     jws = JsonWebSignature(algorithms=['RS256'])
-    with open('private.pem', 'rb') as f:
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     data = jws.deserialize_compact(code, key)
     try:
@@ -112,7 +112,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     payload = json_b64encode(code)
-    with open('private.pem', 'rb') as f:
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     return jws.serialize_compact(protected, payload, key)
 
