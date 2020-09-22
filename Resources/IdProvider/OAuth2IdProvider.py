@@ -133,21 +133,27 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    print('====>> IDP parseAuthResponse')
+    print(response.uri)
     self.fetch_access_token(authorization_response=response.uri)
-    
+    print('---->> IDP __getUserInfo')
     # Get user info
     result = self.__getUserInfo()
     if result['OK']:
+      print('---->> IDP __parseUserProfile')
       result = self.__parseUserProfile(result['Value'])
     if not result['OK']:
       return result
     username, userProfile = result['Value']
     
     # Store token
+    print('---->> IDP Store token')
     pprint.pprint(self.token)
     self.token['client_id'] = self.client_id
     self.token['provider'] = self.name
     self.token['user_id'] = userProfile['ID']
+    print(dict(self.token))
+    print(dict(self.token)['access_token'])
     result = self.sessionManager.storeToken(dict(self.token))
     if not result['OK']:
       return result
