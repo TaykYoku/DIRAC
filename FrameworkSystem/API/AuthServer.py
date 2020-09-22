@@ -435,6 +435,7 @@ class AuthorizationServer(_AuthorizationServer):
 
   def handle_response(self, status_code, payload, headers):
     print(status_code)
+    print(type(payload))
     print(payload)
     if isinstance(payload, dict):
       payload = json.dumps(payload)
