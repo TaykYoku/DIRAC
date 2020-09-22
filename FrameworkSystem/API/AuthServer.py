@@ -82,7 +82,7 @@ class OAuth2Code(dict):
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
   def authenticate_user(self, request):
-    return None
+    return True
 
   def save_client(self, client_info, client_metadata, request):
     data = client_info
