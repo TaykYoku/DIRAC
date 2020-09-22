@@ -146,11 +146,9 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK(resDict))#client.client_info.update({'redirect_uri': redirect_uri})))
 
-  def storeToken(self, client_id=None, token_type=None, **metadata):
+  def storeToken(self, metadata):
     attrts = {}
     print('========= STORE TOKEN')
-    print('client_id: %s' % client_id)
-    print('token_type: %s' % token_type)
     pprint(metadata)
     print('---------------------')
     for k, v in metadata.items():
@@ -158,11 +156,7 @@ class AuthDB2(SQLAlchemyDB):
         self.log.warn('%s is not expected as token attribute.' % k)
       else:
         attrts[k] = v
-    pprint(attrts)
-    print(Token.__dict__.keys())
     attrts['id'] = hash(attrts['access_token'])
-    attrts['client_id'] = client_id
-    attrts['token_type'] = token_type or "Baerer"
 
     session = self.session()
     try:

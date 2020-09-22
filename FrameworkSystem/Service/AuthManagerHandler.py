@@ -259,12 +259,13 @@ class AuthManagerHandler(RequestHandler):
         comment += ' Please, contact the DIRAC administrators.'
       return S_ERROR(comment)
     self.__addProfiles({userProfile['ID']: userProfile})
+    
     print('================== export_parseAuthResponse ==================')
     print('userID: %s' % userProfile['ID'])
     print('profile: %s' % userProfile)
-
-    p = self.__getProfiles()
-    pprint.pprint(p)
+    pprint.pprint(self.__getProfiles())
+    print('==================  ==================')
+    
     return S_OK((result['Value'], userProfile))
 
   def __registerNewUser(self, provider, parseDict):
@@ -333,7 +334,7 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(str)/S_ERROR()
     """
-    return self.__db.storeToken(**kwargs)
+    return self.__db.storeToken(kwargs)
   
   types_updateToken = []
   auth_updateToken = ["authenticated"]
