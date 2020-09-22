@@ -254,15 +254,18 @@ class AuthorizationServer(_AuthorizationServer):
     providerName = sessionDict['Provider']
 
     # Parse response
+    print('------> self.idps.getIdProvider')
     result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
+      print('------> idp.parseAuthResponse')
       result = result['Value'].parseAuthResponse(response, sessionDict)
       if result['OK']:
         self.removeSession(session)
         # FINISHING with IdP auth result
         username, userProfile = result['Value']
+        print('------> gSessionManager.parseAuthResponse')
         result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
-    
+        print('-- finishing --')
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
