@@ -36,7 +36,8 @@ from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
-log = gLogger.getLogger(__name__)
+log = gLogger.getSubLogger(__name__)
+
 
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
@@ -46,6 +47,7 @@ class Client(OAuth2ClientMixin):
     self.client_id_issued_at = params['client_id_issued_at']
     self.client_secret_expires_at = params['client_secret_expires_at']
     self.client_metadata = params['client_metadata']
+
 
 class OAuth2Code(dict):
   def __init__(self, params):
@@ -76,6 +78,7 @@ class OAuth2Code(dict):
   def get_auth_time(self):
     return self.get('auth_time')
 
+
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
@@ -91,6 +94,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     data['client_id'] = client_id[0]
     data['scope'] = scope
     self.server.addSession(data['device_code'], data)
+
 
 class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
   RESPONSE_TYPES = {'device'}
@@ -131,6 +135,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
 
   def should_slow_down(self, credential, now):
     return False
+
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
