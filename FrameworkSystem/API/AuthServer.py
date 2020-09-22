@@ -106,13 +106,13 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     client = self.server.query_client(client_id)
     if not client:
       raise InvalidClientError(state=self.request.state)
-    response_type = grant.request.response_type
+    response_type = self.request.response_type
     if not client.check_response_type(response_type):
       raise UnauthorizedClientError('The client is not authorized to use '
                                     '"response_type={}"'.format(response_type))
-    grant.request.client = client
-    grant.validate_requested_scope()
-    grant.execute_hook('after_validate_authorization_request')
+    self.request.client = client
+    self.validate_requested_scope()
+    self.execute_hook('after_validate_authorization_request')
     return None
   
   def create_authorization_response(self, redirect_uri, grant_user):
