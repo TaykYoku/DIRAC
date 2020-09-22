@@ -292,6 +292,7 @@ class AuthHandler(WebHandler):
     if flow == 'code':
       session = self.get_argument('state', generate_token(10))
       sessionDict = {}
+      sessionDict['request'] = self.request
       sessionDict['flow'] = flow
       sessionDict['client_id'] = self.get_argument('client_id')
       sessionDict['group'] = self.get_argument('group', None)
@@ -300,7 +301,7 @@ class AuthHandler(WebHandler):
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
       self.server.addSession(session, sessionDict)
-    
+
     # Device flow
     elif flow == 'device':
       session, _ = self.server.getSessionByOption('user_code', self.get_argument('user_code'))
@@ -346,8 +347,9 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
+    request = sessionDict['request']
     username = sessionDict['username']
-    profile = sessionDict['profile']
+    # profile = sessionDict['profile']
     userID = sessionDict['userID']
 
     # Researche Group
@@ -422,7 +424,7 @@ class AuthHandler(WebHandler):
     # return authorization.create_authorization_response(grant_user=grant_user)
     ###### RESPONSE
 
-    r = self.server.create_authorization_response(grant_user=True)
+    r = self.server.create_authorization_response(request, grant_user=username)
     print(r)
     self.finish(r)
     return
