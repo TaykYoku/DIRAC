@@ -80,42 +80,23 @@ class AuthHandler(WebHandler):
     """
     self.server = self.application.authorizationServer
 
-    userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
       endpointName = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       payload, code, headers = self.server.create_endpoint_response(endpointName, self.request)
-      print('====self.finish(payload)=====')
-      print('code: %s' % code)
-      print('headers: %s' % headers)
-      print('payload: %s' % payload)
       self.set_status(code)
       for header in headers:
         self.set_header(*header)
       self.finish(payload)
       return
-      # data = {}
-      # data['flow'] = 'device'
-      # data['client_id'] = self.get_argument('client_id')
-      # client = yield self.threadTask(gSessionManager.getClient, data['client_id'])
-      # if not client:
-      #   raise WErr(401, 'Client ID is unregistred.')
-      # data['device_code'] = generate_token(20)
-      # data['user_code'] = generate_token(10)
-      # data['scope'] = self.get_argument('scope', '')
-      # data['group'] = self.get_argument('group', None)
-      # data['Provider'] = self.get_argument('provider', None)
-      # data['interval'] = 5
-      # data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
-      # data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
-      # # return DeviceCredentialDict(data)
-      # gSessionManager.addSession(data['device_code'], data)
-      # self.finish(data)
+
     elif self.request.method == 'GET':
+      userCode = self.get_argument('user_code', userCode)
       if userCode:
-        session, data = gSessionManager.getSessionByOption('user_code', userCode)
+        session, data = self.server.getSessionByOption('user_code', userCode)
         if not session:
-          raise WErr(404, 'Session expired.')
-        authURL = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization'
+          self.finish('Session expired.')
+          return
+        authURL = self.metadata['authorization_endpoint']
         if data.get('Provider'):
           authURL += '/%s' % data['Provider']
         authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
