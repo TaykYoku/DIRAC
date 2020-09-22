@@ -430,10 +430,10 @@ class AuthHandler(WebHandler):
     print('====self.finish(payload)=====')
     # print(r)
     # payload, self.code, self.headers = r
-    print('code: %s' % self.code)
-    print('headers: %s' % self.headers)
+    print('code: %s' % code)
+    print('headers: %s' % headers)
     print('payload: %s' % payload)
-    
+
     self.set_status(code)
     for header in headers:
       self.set_header(header)
