@@ -96,7 +96,7 @@ class AuthHandler(WebHandler):
         if not session:
           self.finish('Session expired.')
           return
-        authURL = self.metadata['authorization_endpoint']
+        authURL = self.server.metadata['authorization_endpoint']
         if data.get('Provider'):
           authURL += '/%s' % data['Provider']
         authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
