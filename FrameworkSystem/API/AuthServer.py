@@ -18,6 +18,7 @@ from authlib.oauth2.rfc8628 import (
 )
 from authlib.oauth2.rfc6749 import grants, errors
 from authlib.oauth2.rfc6750 import BearerToken
+from authlib.oauth2.rfc7591 import ClientRegistrationEndpoint as _ClientRegistrationEndpoint
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
@@ -77,6 +78,19 @@ class OAuth2Code(dict):
 
   def get_auth_time(self):
     return self.get('auth_time')
+
+
+class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
+  def authenticate_token(self, request):
+    return request.headers.get('Authorization')
+
+  def save_client(self, client_info, client_metadata, request):
+    data = client_info
+    data['client_metadata'] = client_metadata
+    result = self.server.addClient(data)
+    if result['OK']:
+      return Client(result['Value'])
+    return None
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
@@ -237,16 +251,17 @@ class AuthorizationServer(_AuthorizationServer):
       deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
       self.init_jwt_config(metadata)
 
-    self.register_grant(DeviceCodeGrant)    
+    self.register_grant(DeviceCodeGrant)
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
+    self.register_endpoint(ClientRegistrationEndpoint)
     self.register_endpoint(DeviceAuthorizationEndpoint)
 
   @gCacheClient
   def addClient(self, data):
     result = self.__db.addClient(data)
     if result['OK']:
-      data = result['Value']
-      self.cacheClient.add(data['client_id'], 24 * 3600, Client(data))
+      data = Client(result['Value'])
+      self.cacheClient.add(data['client_id'], 24 * 3600, data)
     return result
 
   @gCacheClient

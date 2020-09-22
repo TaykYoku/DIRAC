@@ -26,33 +26,16 @@ from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-from DIRAC.FrameworkSystem.API.AuthServer import DeviceAuthorizationEndpoint
+from DIRAC.FrameworkSystem.API.AuthServer import DeviceAuthorizationEndpoint, ClientRegistrationEndpoint
 
 
 __RCSID__ = "$Id$"
-
-from authlib.oauth2.rfc8628 import (
-    DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
-    DeviceCodeGrant as _DeviceCodeGrant,
-    DeviceCredentialDict,
-)
-from authlib.oauth2.rfc7636 import (
-    create_s256_code_challenge,
-)
 
 
 class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
-  @classmethod
-  def initializeHandler(cls):
-    """ This method is called only one time, at the first request.
-    """
-    print('---->> initializeHandler')
-
-  #path_oauth = ['([A-z]+)', '([0-9]*)']  # mapped to fn(a, b=None):
-  #method_oauth = ['post', 'get']
   @asyncGen
   def web_register(self):
     """ Client registry
@@ -60,12 +43,19 @@ class AuthHandler(WebHandler):
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
     self.server = self.application.authorizationServer
-    if self.request.method == 'POST':
-      result = yield self.threadTask(self.server.addClient, self.request.arguments)
-      # result = yield self.threadTask(gSessionManager.addClient, self.request.arguments)
-      if not result['OK']:
-        raise WErr(503, result['Message'])
-      self.finish(result['Value'])
+
+    endpointName = ClientRegistrationEndpoint.ENDPOINT_NAME
+    payload, code, headers = self.server.create_endpoint_response(endpointName, self.request)
+    self.set_status(code)
+    for header in headers:
+      self.set_header(*header)
+    self.finish(payload)
+    return
+    # if self.request.method == 'POST':
+    #   result = yield self.threadTask(self.server.addClient, self.request.arguments)
+    #   if not result['OK']:
+    #     raise WErr(503, result['Message'])
+    #   self.finish(result['Value'])
 
   path_device = ['([A-z0-9]*)']
   @asyncGen
