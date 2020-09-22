@@ -226,9 +226,7 @@ class AuthHandler(WebHandler):
                 #       raise error
                 #   return redirect_uri
       except OAuth2Error as error:
-        print(error.error)
-        print(error.description)
-        self.finish(error.error)
+        self.finish("%s</br>%s" % (error.error, error.description))
         return
       # HERE WE CHOSSE IDP (POST) AND AUTH
     #   return render_template('authorize.html', user=user, grant=grant)
@@ -264,7 +262,6 @@ class AuthHandler(WebHandler):
       raise WErr(503, result['Message'])
     idPs = result['Value']
     if not idP:
-
       # Choose IdP
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -282,39 +279,41 @@ class AuthHandler(WebHandler):
       </html>''')
       self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
                              query='?' + self.request.query, idPs=idPs))
-    else:
+      return
 
-      # Check IdP
-      if idP not in idPs:
-        raise WErr(503, 'Provider not exist.')
+    # Check IdP
+    if idP not in idPs:
+      self.finish('%s is not registered in DIRAC.' % idP)
+      return
 
-      flow = self.get_argument('response_type')
+    flow = self.get_argument('response_type')
 
-      # Authorization code flow
-      if flow == 'code':
-        session = self.get_argument('state', generate_token(10))
-        sessionDict = {}
-        sessionDict['flow'] = flow
-        sessionDict['redirect_uri'] = client['redirect_uri']
-        sessionDict['group'] = self.get_argument('group', None)
-        codeChallenge = self.get_argument('code_challenge', None)
-        if codeChallenge:
-          sessionDict['code_challenge'] = codeChallenge
-          sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
-        gSessionManager.addSession(session, sessionDict)
-      
-      # Device flow
-      elif flow == 'device':
-        session, _ = gSessionManager.getSessionByOption('user_code', self.get_argument('user_code'))
-        if not session:
-          raise WErr(404, 'Session expired.')
+    # Authorization code flow
+    if flow == 'code':
+      session = self.get_argument('state', generate_token(10))
+      sessionDict = {}
+      sessionDict['flow'] = flow
+      sessionDict['client_id'] = self.get_argument('client_id')
+      sessionDict['group'] = self.get_argument('group', None)
+      codeChallenge = self.get_argument('code_challenge', None)
+      if codeChallenge:
+        sessionDict['code_challenge'] = codeChallenge
+        sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
+      self.server.addSession(session, sessionDict)
+    
+    # Device flow
+    elif flow == 'device':
+      session, _ = self.server.getSessionByOption('user_code', self.get_argument('user_code'))
+      if not session:
+        raise WErr(404, 'Session expired.')
 
-      # Submit second auth flow through IdP
-      result = gSessionManager.submitAuthorizeFlow(idP, session)
-      if not result['OK']:
-        raise WErr(503, result['Message'])
-      self.log.notice('Redirect to', result['Value'])
-      self.redirect(result['Value'])
+    # Submit second auth flow through IdP
+    result = self.server.getIdPAuthorization(idP, session)
+    # result = gSessionManager.submitAuthorizeFlow(idP, session)
+    if not result['OK']:
+      raise WErr(503, result['Message'])
+    self.log.notice('Redirect to', result['Value'])
+    self.redirect(result['Value'])
 
   @asyncGen
   def web_redirect(self):
@@ -326,25 +325,27 @@ class AuthHandler(WebHandler):
     error = self.get_argument('error', None)
     if error:
       description = self.get_argument('error_description', '')
-      raise WErr(500, '%s session crashed with error:\n%s\n%s' % (session, error,
-                                                                  description))
+      self.finish('%s session crashed with error:\n%s\n%s' % (session, error,
+                                                              description))
+      return
 
     # Try to parse IdP session id
     session = self.get_argument('session', self.get_argument('state', None))
 
     choosedGroup = self.get_argument('chooseGroup', None)
     if choosedGroup:
-      gSessionManager.updateSession(session, group=choosedGroup)
+      self.server.updateSession(session, group=choosedGroup)
     else:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-      result = yield self.threadTask(gSessionManager.parseAuthResponse, self.request, session)
+      result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
+      # result = yield self.threadTask(gSessionManager.parseAuthResponse, self.request, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
       session = result['Value']
 
-    sessionDict = gSessionManager.getSession(session)
+    sessionDict = self.server.getSession(session)
     username = sessionDict['username']
     profile = sessionDict['profile']
     userID = sessionDict['userID']
@@ -352,7 +353,7 @@ class AuthHandler(WebHandler):
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username)
     if not result['OK']:
-      gSessionManager.updateSession(session, Status='failed', Comment=result['Message'])
+      self.server.updateSession(session, Status='failed', Comment=result['Message'])
       self.finish(result['Message'])
       return
     groupStatuses = result['Value']
@@ -394,7 +395,10 @@ class AuthHandler(WebHandler):
     elif thisGroup['Status'] == 'needToAuth':
       
       # Submit second auth flow through IdP
-      result = gSessionManager.submitAuthorizeFlow(thisGroup['Action'][1][0], session)
+      idP = thisGroup['Action'][1][0]
+      result = self.server.getIdPAuthorization(idP, session)
+
+      # result = gSessionManager.submitAuthorizeFlow(idP, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
@@ -410,7 +414,7 @@ class AuthHandler(WebHandler):
     print(result)
     if not result['OK']:
       raise WErr(503, result['Message'])
-    gSessionManager.updateSession(session, Status='authed', Token=result['Value'])
+    self.server.updateSession(session, Status='authed', Token=result['Value'])
     print('---- Token ---')
     print(result['Value'])
 
@@ -418,32 +422,37 @@ class AuthHandler(WebHandler):
     # return authorization.create_authorization_response(grant_user=grant_user)
     ###### RESPONSE
 
-    # Device flow
-    if 'device_code' in sessionDict:
-      t = template.Template('''<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Authetication</title>
-          <meta charset="utf-8" />
-        </head>
-        <body>
-          <script type="text/javascript"> window.close() </script>
-        </body>
-      </html>''')
-      self.finish(t.generate())
-      return
+    r = self.server.create_authorization_response(grant_user=True)
+    print(r)
+    self.finish(r)
+    return
 
-    # Authorization code flow
-    elif sessionDict['flow'] == 'code':
-      if 'code_challenge' in sessionDict:
-        # code = Create JWS ?
-        code = generate_token(10)
-      else:
-        code = generate_token(10)
-        self.redirect('%s?code=%s&state=%s' % (sessionDict['redirect_uri'], code, state))
-        return
-      gSessionManager.updateSession(session, code=code)
-      self.finish({'code': code, 'state': session})
+    # # Device flow
+    # if 'device_code' in sessionDict:
+    #   t = template.Template('''<!DOCTYPE html>
+    #   <html>
+    #     <head>
+    #       <title>Authetication</title>
+    #       <meta charset="utf-8" />
+    #     </head>
+    #     <body>
+    #       Authorization is done.
+    #       <script type="text/javascript"> window.close() </script>
+    #     </body>
+    #   </html>''')
+    #   self.finish(t.generate())
+    #   return
+
+    # # Authorization code flow
+    # elif sessionDict['flow'] == 'code':
+    #   if 'code_challenge' not in sessionDict:
+    #     code = generate_token(10)
+    #     self.redirect('%s?code=%s&state=%s' % (sessionDict['redirect_uri'], code, state))
+    #     return
+    #   # code = Create JWS ?
+    #   code = generate_token(10)
+    #   gSessionManager.updateSession(session, code=code)
+    #   self.finish({'code': code, 'state': session})
 
   @asyncGen
   def web_token(self):

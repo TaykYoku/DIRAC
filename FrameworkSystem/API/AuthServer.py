@@ -23,6 +23,8 @@ from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
@@ -99,6 +101,8 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   
   def generate_authorization_code(self):
     """ return code """
+    print('========= generate_authorization_code =========')
+    pprint(self.__dict__)
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
     code = OAuth2Code({'user_id': None, 'scope': None,  # how to get it
@@ -125,6 +129,7 @@ class AuthorizationServer(_AuthorizationServer):
 
   def __init__(self):
     self.__db = AuthDB2()
+    self.idps = IdProviderFactory()
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthorizationServer, self).__init__(query_client=self.getClient,
@@ -204,6 +209,69 @@ class AuthorizationServer(_AuthorizationServer):
         if data.get(key) == value:
           return session, data
     return None, {}
+
+  def getIdPAuthorization(providerName, mainSession):
+    """ Submit subsession and return dict with authorization url and session number
+
+        :param str providerName: provider name
+        :param str session: session identificator
+
+        :return: S_OK(dict)/S_ERROR() -- dictionary contain next keys:
+                 Status -- session status
+                 UserName -- user name, returned if status is 'ready'
+                 Session -- session id, returned if status is 'needToAuth'
+    """
+    # Start subsession
+    session = generate_token(10)
+    self.addSession(session, mainSession=mainSession, Provider=providerName)
+
+    result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
+    if result['OK']:
+      result = result['Value'].submitNewSession(session)
+      if result['OK']:
+        authURL, sessionParams = result['Value']
+        self.updateSession(session, sessionParams)
+    return S_OK(authURL) if result['OK'] else result
+
+def parseIdPAuthorizationResponse(self, response, session):
+    """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
+        Prepare dict with user parameters, if DN is absent there try to get it.
+        Create new or modify existend DIRAC user and store the session
+
+        :param str providerName: identity provider name
+        :param dict response: authorization response
+        :param dict session: session data dictionary
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    # Check session
+    sessionDict = self.getSession(session)
+    if not sessionDict:
+      return S_ERROR("Session expired.")
+    
+    mainSession = sessionDict['mainSession']
+    providerName = sessionDict['Provider']
+
+    # Parse response
+    result = self.idps.getIdProvider(providerName, sessionManager=self._getRPC())
+    if result['OK']:
+      result = result['Value'].parseAuthResponse(response, sessionDict)
+      if result['OK']:
+        self.removeSession(session)
+        # FINISHING with IdP auth result
+        username, userProfile = result['Value']
+        result = self._getRPC().parseAuthResponse(providerName, username, userProfile)
+    
+    if not result['OK']:
+      self.updateSession(mainSession, Status='failed', Comment=result['Message'])
+      return result
+    
+    username, profile = result['Value']
+    if username and profile:
+      gAuthManagerData.updateProfiles(profile['ID'], profile)
+      self.updateSession(mainSession, username=username, profile=profile, userID=profile['ID'])
+
+    return S_OK(mainSession)
 
   def access_token_generator(self, client, grant_type, user, scope):
     print('GENERATE ACCESS TOKEN')
