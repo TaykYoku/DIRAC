@@ -25,7 +25,7 @@ from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
+# from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
@@ -254,14 +254,14 @@ class AuthorizationServer(_AuthorizationServer):
     providerName = sessionDict['Provider']
 
     # Parse response
-    result = self.idps.getIdProvider(providerName, sessionManager=self._getRPC())
+    result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
       result = result['Value'].parseAuthResponse(response, sessionDict)
       if result['OK']:
         self.removeSession(session)
         # FINISHING with IdP auth result
         username, userProfile = result['Value']
-        result = self._getRPC().parseAuthResponse(providerName, username, userProfile)
+        result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
     
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
@@ -269,7 +269,6 @@ class AuthorizationServer(_AuthorizationServer):
     
     username, profile = result['Value']
     if username and profile:
-      gAuthManagerData.updateProfiles(profile['ID'], profile)
       self.updateSession(mainSession, username=username, profile=profile, userID=profile['ID'])
 
     return S_OK(mainSession)
