@@ -11,6 +11,11 @@ from authlib.oauth2 import (
     HttpRequest,
     AuthorizationServer as _AuthorizationServer,
 )
+from authlib.oauth2.rfc8628 import (
+    DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
+    DeviceCodeGrant as _DeviceCodeGrant,
+    DeviceCredentialDict,
+)
 from authlib.oauth2.rfc6749 import grants, errors
 from authlib.oauth2.rfc6750 import BearerToken
 from authlib.oauth2.rfc7636 import CodeChallenge
@@ -70,14 +75,52 @@ class OAuth2Code(dict):
   def get_auth_time(self):
     return self.get('auth_time')
 
+class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
+  def get_verification_uri(self):
+    return 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+
+  def save_device_credential(self, client_id, scope, data):
+    data = {}
+    data['flow'] = 'device'
+    data['client_id'] = client_id
+    data['scope'] = self.get_argument('scope', '')
+    data['group'] = self.get_argument('group', None)
+    data['Provider'] = self.get_argument('provider', None)
+    self.addSession(generate_token(20), data)
+
+class DeviceCodeGrant(_DeviceCodeGrant):
+  def query_device_credential(self, device_code):
+    _, data = self.getSessionByOption('device_code', device_code)
+    if not data:
+      return None
+    data['expires_at'] = data['expires_in'] + int(time())
+    data['device_code'] = device_code
+    data['scope'] = ''
+    data['interval'] = 5
+    data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+    return DeviceCredentialDict(data)
+
+  def query_user_grant(self, user_code):
+    _, data = self.getSessionByOption('user_code', user_code)
+    return (data['user_id'], data['group']) if data else None
+
+  def should_slow_down(self, credential, now):
+    return False
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
   def save_authorization_code(self, code, request):
+    # print('========= save_authorization_code =============')
+    # pprint(request.args)
+    # session, _ = self.getSessionByOption('client_id', request.args['client_id'])
+    # self.updateSession(session, code=code)
     pass
   
   def delete_authorization_code(self, authorization_code):
+    # session, _ = self.getSessionByOption('code', authorization_code)
+    # if session:
+    #   self.updateSession(session, code=None)
     pass
 
   def query_authorization_code(self, code, client):
@@ -165,6 +208,7 @@ class AuthorizationServer(_AuthorizationServer):
       self.init_jwt_config(metadata)
     
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
+    self.register_endpoint(DeviceAuthorizationEndpoint)
 
   @gCacheClient
   def addClient(self, data):

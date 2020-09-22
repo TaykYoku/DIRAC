@@ -78,25 +78,37 @@ class AuthHandler(WebHandler):
         GET: /device/<user code>
     """
     self.server = self.application.authorizationServer
+
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      data = {}
-      data['flow'] = 'device'
-      data['client_id'] = self.get_argument('client_id')
-      client = yield self.threadTask(gSessionManager.getClient, data['client_id'])
-      if not client:
-        raise WErr(401, 'Client ID is unregistred.')
-      data['device_code'] = generate_token(20)
-      data['user_code'] = generate_token(10)
-      data['scope'] = self.get_argument('scope', '')
-      data['group'] = self.get_argument('group', None)
-      data['Provider'] = self.get_argument('provider', None)
-      data['interval'] = 5
-      data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
-      data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
-      # return DeviceCredentialDict(data)
-      gSessionManager.addSession(data['device_code'], data)
-      self.finish(data)
+      self.server.create_endpoint_response(DeviceAuthorizationEndpoint.ENDPOINT_NAME)
+      payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
+      print('====self.finish(payload)=====')
+      print('code: %s' % code)
+      print('headers: %s' % headers)
+      print('payload: %s' % payload)
+      self.set_status(code)
+      for header in headers:
+        self.set_header(*header)
+      self.finish(payload)
+      return
+      # data = {}
+      # data['flow'] = 'device'
+      # data['client_id'] = self.get_argument('client_id')
+      # client = yield self.threadTask(gSessionManager.getClient, data['client_id'])
+      # if not client:
+      #   raise WErr(401, 'Client ID is unregistred.')
+      # data['device_code'] = generate_token(20)
+      # data['user_code'] = generate_token(10)
+      # data['scope'] = self.get_argument('scope', '')
+      # data['group'] = self.get_argument('group', None)
+      # data['Provider'] = self.get_argument('provider', None)
+      # data['interval'] = 5
+      # data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+      # data['verification_uri_complete'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device/%s' % data['user_code']
+      # # return DeviceCredentialDict(data)
+      # gSessionManager.addSession(data['device_code'], data)
+      # self.finish(data)
     elif self.request.method == 'GET':
       if userCode:
         session, data = gSessionManager.getSessionByOption('user_code', userCode)
@@ -146,115 +158,14 @@ class AuthHandler(WebHandler):
           &state=..                             (main session id, optional)
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
-
-
     """
     self.server = self.application.authorizationServer
     if self.request.method == 'GET':
       try:
-        # HERE WE CHECK CLIENTS
         grant = self.server.validate_consent_request(self.request, end_user=None)
-            ##### 1
-            # def validate_consent_request(self, request, end_user=None):
-            #   """Validate current HTTP request for authorization page. This page is designed for resource owner to grant or deny the authorization::
-            #       class AuthorizationHandler(RequestHandler)
-            #         def get():
-            #           try:
-            #             grant = server.validate_consent_request(self.request, end_user=current_user)
-            #             self.render('authorize.html', grant=grant, user=current_user)
-            #           except OAuth2Error as error:
-            #             self.render('error.html', error=error)
-            #   """
-            #   req = self.create_oauth2_request(request)
-            #   req.user = end_user
-            #   grant = self.get_authorization_grant(req)
-            #   grant.validate_consent_request()
-            #   if not hasattr(grant, 'prompt'):
-            #       grant.prompt = None
-            #   return grant
-            ###########################################################
-                ##### 1.1
-                # def get_authorization_grant(self, request):
-                #   """Find the authorization grant for current request.
-                #   :param request: OAuth2Request instance.
-                #   :return: grant instance
-                #   """
-                #   for (grant_cls, extensions) in self._authorization_grants:
-                #       if grant_cls.check_authorization_endpoint(request):
-                #           return _create_grant(grant_cls, extensions, request, self)
-                #   raise InvalidGrantError(
-                #       'Response type {!r} is not supported'.format(request.response_type))
-                #####################
-                  ##### 1.1.1
-                  # def check_authorization_endpoint(cls, request):
-                  #   return request.response_type in cls.RESPONSE_TYPES
-                  ##### 1.1.2
-                  # def _create_grant(grant_cls, extensions, request, server):
-                  #   grant = grant_cls(request, server)
-                  #   if extensions:
-                  #       for ext in extensions:
-                  #           ext(grant)
-                  #   return grant
-                ##### 1.2
-                # def validate_code_authorization_request(grant):
-                #   client_id = grant.request.client_id
-                #   log.debug('Validate authorization request of %r', client_id)
-
-                #   if client_id is None:
-                #       raise InvalidClientError(state=grant.request.state)
-
-                #   client = grant.server.query_client(client_id)
-                #   if not client:
-                #       raise InvalidClientError(state=grant.request.state)
-
-                #   redirect_uri = grant.validate_authorization_redirect_uri(grant.request, client)
-                #   response_type = grant.request.response_type
-                #   if not client.check_response_type(response_type):
-                #       raise UnauthorizedClientError(
-                #           'The client is not authorized to use '
-                #           '"response_type={}"'.format(response_type),
-                #           state=grant.request.state,
-                #           redirect_uri=redirect_uri,
-                #       )
-
-                #   try:
-                #       grant.request.client = client
-                #       grant.validate_requested_scope()
-                #       grant.execute_hook('after_validate_authorization_request')
-                #   except OAuth2Error as error:
-                #       error.redirect_uri = redirect_uri
-                #       raise error
-                #   return redirect_uri
       except OAuth2Error as error:
         self.finish("%s</br>%s" % (error.error, error.description))
         return
-      # HERE WE CHOSSE IDP (POST) AND AUTH
-    #   return render_template('authorize.html', user=user, grant=grant)
-
-
-    # if not user and 'username' in request.form:
-    #     username = request.form.get('username')
-    #     user = User.query.filter_by(username=username).first()
-    # if request.form['confirm']:
-    #     grant_user = user
-    # else:
-    #     grant_user = None
-    
-
-    # ORIGINAL
-    #################
-    # # Only GET method supported
-    # if self.request.method != 'GET':
-    #   raise WErr(404, '%s request method not supported.' % self.request.method)
-    # self.log.info('web_authorization: %s' % self.request)
-    
-    # # Check client
-    # client = yield self.threadTask(gSessionManager.getClient, self.get_argument('client_id'),
-    #                                {'redirect_uri': self.get_argument('redirect_uri', None)})
-    # if not client:
-    #   raise WErr(404, 'Client ID is unregistred.')
-    #################
-
 
     # Research supported IdPs
     result = getProvidersForInstance('Id')
@@ -306,11 +217,11 @@ class AuthHandler(WebHandler):
     elif flow == 'device':
       session, _ = self.server.getSessionByOption('user_code', self.get_argument('user_code'))
       if not session:
-        raise WErr(404, 'Session expired.')
+        self.finish('Session expired.')
+        return
 
     # Submit second auth flow through IdP
     result = self.server.getIdPAuthorization(idP, session)
-    # result = gSessionManager.submitAuthorizeFlow(idP, session)
     if not result['OK']:
       raise WErr(503, result['Message'])
     self.log.notice('Redirect to', result['Value'])
@@ -326,8 +237,7 @@ class AuthHandler(WebHandler):
     error = self.get_argument('error', None)
     if error:
       description = self.get_argument('error_description', '')
-      self.finish('%s session crashed with error:\n%s\n%s' % (session, error,
-                                                              description))
+      self.finish('%s session crashed with error:\n%s\n%s' % (session, error, description))
       return
 
     # Try to parse IdP session id
@@ -340,15 +250,12 @@ class AuthHandler(WebHandler):
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
       result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
-      # result = yield self.threadTask(gSessionManager.parseAuthResponse, self.request, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       # Return main session flow
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
-    print('============  web_redirect session: %s' % session)
-    print(sessionDict)
     request = sessionDict['request']
     username = sessionDict['username']
     # profile = sessionDict['profile']
@@ -415,57 +322,20 @@ class AuthHandler(WebHandler):
 
     # Create DIRAC access token for username/group
     result = self.__getAccessToken(userID, reqGroup, session)
-    print(result)
     if not result['OK']:
-      raise WErr(503, result['Message'])
+      self.finish(result['Message'])
+      return
     self.server.updateSession(session, Status='authed', Token=result['Value'])
     print('---- Token ---')
     print(result['Value'])
 
     ###### RESPONSE
-    # return authorization.create_authorization_response(grant_user=grant_user)
-    ###### RESPONSE
-
     payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
-    print('====self.finish(payload)=====')
-    # print(r)
-    # payload, self.code, self.headers = r
-    print('code: %s' % code)
-    print('headers: %s' % headers)
-    print('payload: %s' % payload)
-
     self.set_status(code)
     for header in headers:
       self.set_header(*header)
     self.finish(payload)
     return
-
-    # # Device flow
-    # if 'device_code' in sessionDict:
-    #   t = template.Template('''<!DOCTYPE html>
-    #   <html>
-    #     <head>
-    #       <title>Authetication</title>
-    #       <meta charset="utf-8" />
-    #     </head>
-    #     <body>
-    #       Authorization is done.
-    #       <script type="text/javascript"> window.close() </script>
-    #     </body>
-    #   </html>''')
-    #   self.finish(t.generate())
-    #   return
-
-    # # Authorization code flow
-    # elif sessionDict['flow'] == 'code':
-    #   if 'code_challenge' not in sessionDict:
-    #     code = generate_token(10)
-    #     self.redirect('%s?code=%s&state=%s' % (sessionDict['redirect_uri'], code, state))
-    #     return
-    #   # code = Create JWS ?
-    #   code = generate_token(10)
-    #   gSessionManager.updateSession(session, code=code)
-    #   self.finish({'code': code, 'state': session})
 
   @asyncGen
   def web_token(self):
