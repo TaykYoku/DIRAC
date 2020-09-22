@@ -82,8 +82,8 @@ class AuthHandler(WebHandler):
 
     userCode = self.get_argument('user_code', userCode)
     if self.request.method == 'POST':
-      self.server.create_endpoint_response(DeviceAuthorizationEndpoint.ENDPOINT_NAME, self.request)
-      payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
+      endpointName = DeviceAuthorizationEndpoint.ENDPOINT_NAME
+      payload, code, headers = self.server.create_endpoint_response(endpointName, self.request)
       print('====self.finish(payload)=====')
       print('code: %s' % code)
       print('headers: %s' % headers)

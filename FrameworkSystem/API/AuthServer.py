@@ -76,19 +76,20 @@ class OAuth2Code(dict):
     return self.get('auth_time')
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
+  def create_endpoint_response(self, request):
+    c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
+    data['group'] = request.args.get('group')
+    data['Provider'] = request.args.get('provider')
+    self.updateSession(data['device_code'], data)
+    return c, data, h
+
   def get_verification_uri(self):
     return 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
 
   def save_device_credential(self, client_id, scope, data):
-    data = {}
-    data['flow'] = 'device'
     data['client_id'] = client_id
-    data['scope'] = self.request.args.get('scope', '')
-    data['group'] = self.request.args.get('group', None)
-    data['Provider'] = self.request.args.get('provider', None)
-    print('======')
-    pprint(data)
-    self.addSession(generate_token(20), data)
+    data['scope'] = scope
+    self.addSession(data['device_code'], data)
 
 class DeviceCodeGrant(_DeviceCodeGrant):
   def query_device_credential(self, device_code):
