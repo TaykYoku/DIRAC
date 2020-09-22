@@ -89,6 +89,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def save_device_credential(self, client_id, scope, data):
     data['client_id'] = client_id
     data['scope'] = scope
+    pprint(self.__dict__)
     self.addSession(data['device_code'], data)
 
 class DeviceCodeGrant(_DeviceCodeGrant):
