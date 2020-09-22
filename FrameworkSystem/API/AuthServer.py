@@ -376,6 +376,8 @@ class AuthorizationServer(_AuthorizationServer):
       return request
     body = None
     if request.method == 'POST':
+      pprint(request.body)
+      pprint(request)
       if use_json:
         ## ???
         body = json_decode(request.body)
