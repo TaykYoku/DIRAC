@@ -50,12 +50,6 @@ class AuthHandler(WebHandler):
     for header in headers:
       self.set_header(*header)
     self.finish(payload)
-    return
-    # if self.request.method == 'POST':
-    #   result = yield self.threadTask(self.server.addClient, self.request.arguments)
-    #   if not result['OK']:
-    #     raise WErr(503, result['Message'])
-    #   self.finish(result['Value'])
 
   path_device = ['([A-z0-9]*)']
   @asyncGen

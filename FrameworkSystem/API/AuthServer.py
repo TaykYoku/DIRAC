@@ -98,6 +98,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
     data['group'] = request.args.get('group')
     data['Provider'] = request.args.get('provider')
+    data['request'] = request
     self.server.updateSession(data['device_code'], data)
     return c, data, h
 
