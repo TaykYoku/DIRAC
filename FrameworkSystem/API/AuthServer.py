@@ -83,9 +83,11 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     data = {}
     data['flow'] = 'device'
     data['client_id'] = client_id
-    data['scope'] = self.get_argument('scope', '')
-    data['group'] = self.get_argument('group', None)
-    data['Provider'] = self.get_argument('provider', None)
+    data['scope'] = self.request.args.get('scope', '')
+    data['group'] = self.request.args.get('group', None)
+    data['Provider'] = self.request.args.get('provider', None)
+    print('======')
+    pprint(data)
     self.addSession(generate_token(20), data)
 
 class DeviceCodeGrant(_DeviceCodeGrant):
