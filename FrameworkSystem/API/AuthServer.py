@@ -92,6 +92,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     self.server.addSession(data['device_code'], data)
 
 class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
+  RESPONSE_TYPES = {'device'}
   def validate_authorization_request(self):
     client_id = self.request.client_id
     log.debug('Validate authorization request of %r', client_id)
