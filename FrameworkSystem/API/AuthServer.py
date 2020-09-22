@@ -109,7 +109,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
     code = OAuth2Code({'user_id': None, 'scope': None,  # how to get it
-                       'client_id': None, 'redirect_uri': None,  # how to get it
+                       'client_id': self.request.args['client_id'], 'redirect_uri': None,  # how to get it
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     payload = json_b64encode(code)
@@ -346,10 +346,10 @@ class AuthorizationServer(_AuthorizationServer):
   def handle_response(self, status_code, payload, headers):
     if isinstance(payload, dict):
       payload = json.dumps(payload)
-    headersObj = HTTPHeaders()
-    for k, v in headers:
-      headersObj.add(k, v)
-    return (payload, status_code, headersObj)
+    # headersObj = HTTPHeaders()
+    # for k, v in headers:
+    #   headersObj.add(k, v)
+    return (payload, status_code, headers)
     # return HTTPResponse(payload, code=status_code, headers=headersObj)
 
   # def send_signal(self, name, *args, **kwargs):

@@ -426,13 +426,17 @@ class AuthHandler(WebHandler):
     # return authorization.create_authorization_response(grant_user=grant_user)
     ###### RESPONSE
 
-    r = self.server.create_authorization_response(request, grant_user=username)
+    payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
     print('====self.finish(payload)=====')
-    print(r)
-    payload, self.code, self.headers = r
+    # print(r)
+    # payload, self.code, self.headers = r
     print('code: %s' % self.code)
     print('headers: %s' % self.headers)
     print('payload: %s' % payload)
+    
+    self.set_status(code)
+    for header in headers:
+      self.set_header(header)
     self.finish(payload)
     return
 
