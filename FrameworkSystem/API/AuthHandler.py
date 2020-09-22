@@ -26,6 +26,7 @@ from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
+from DIRAC.FrameworkSystem.API.AuthServer import DeviceAuthorizationEndpoint
 
 
 __RCSID__ = "$Id$"
