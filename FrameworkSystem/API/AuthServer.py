@@ -36,6 +36,7 @@ from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
+log = gLogger.getLogger(__name__)
 
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
