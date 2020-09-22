@@ -347,6 +347,8 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
+    print('============  web_redirect session: %s' % session)
+    print(sessionDict)
     request = sessionDict['request']
     username = sessionDict['username']
     # profile = sessionDict['profile']
