@@ -81,8 +81,8 @@ class OAuth2Code(dict):
 
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
-  def authenticate_token(self, request):
-    return request.headers.get('Authorization')
+  def authenticate_user(self, request):
+    return None
 
   def save_client(self, client_info, client_metadata, request):
     data = client_info
