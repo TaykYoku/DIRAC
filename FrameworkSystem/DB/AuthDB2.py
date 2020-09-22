@@ -85,9 +85,10 @@ class AuthDB2(SQLAlchemyDB):
     client = Client(client_id=gen_salt(24), client_id_issued_at=int(time()))
     meta = {"client_name": data.get("client_name"),
             "client_uri": data.get("client_uri"),
-            "grant_types": data.get("grant_type", []),
+            "grant_types": data.get("grant_type", ['authorization_code',
+                                                   'urn:ietf:params:oauth:grant-type:device_code']),
             "redirect_uris": data.get("redirect_uri", []),
-            "response_types": data.get("response_type", []),
+            "response_types": data.get("response_type", ['code', 'device']),
             "scope": data.get("scope"),
             "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
     client.set_client_metadata(meta)

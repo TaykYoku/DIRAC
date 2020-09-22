@@ -463,7 +463,7 @@ class AuthHandler(WebHandler):
       raise
 
     # Device flow
-    if grant == 'device_code':
+    if grant == 'urn:ietf:params:oauth:grant-type:device_code':
       #### it can be jws
       session, data = gSessionManager.getSessionByOption('device_code', self.get_argument('device_code'))
       if not session:
