@@ -210,7 +210,7 @@ class AuthorizationServer(_AuthorizationServer):
           return session, data
     return None, {}
 
-  def getIdPAuthorization(providerName, mainSession):
+  def getIdPAuthorization(self, providerName, mainSession):
     """ Submit subsession and return dict with authorization url and session number
 
         :param str providerName: provider name
