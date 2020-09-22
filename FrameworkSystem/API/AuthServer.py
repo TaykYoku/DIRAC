@@ -375,18 +375,11 @@ class AuthorizationServer(_AuthorizationServer):
     if isinstance(request, method_cls):
       return request
     body = None
-    print(request.body)
-    print(request.body_arguments)
-    print(request.query_arguments)
-    print(request.arguments)
     if request.method == 'POST':
-      pprint(request.body)
-      pprint(request)
       if use_json:
-        ## ???
-        body = json_decode(request.body)
+        body = json.dumps(request.arguments)
       else:
-        body = json_decode(request.body_arguments)
+        body = request.arguments
 
     return method_cls(request.method, request.uri, body, request.headers)
 
