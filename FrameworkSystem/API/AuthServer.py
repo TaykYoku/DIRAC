@@ -438,7 +438,7 @@ class AuthorizationServer(_AuthorizationServer):
     print(type(payload))
     print(payload)
     if isinstance(payload, dict):
-      payload = json.dumps(payload)
+      payload = json.dumps(dict(payload))
     # headersObj = HTTPHeaders()
     # for k, v in headers:
     #   headersObj.add(k, v)
