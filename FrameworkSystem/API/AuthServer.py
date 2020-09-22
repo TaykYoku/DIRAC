@@ -102,13 +102,13 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     client_id = self.request.client_id
     log.debug('Validate authorization request of %r', client_id)
     if client_id is None:
-      raise InvalidClientError(state=self.request.state)
+      raise errors.InvalidClientError(state=self.request.state)
     client = self.server.query_client(client_id)
     if not client:
-      raise InvalidClientError(state=self.request.state)
+      raise errors.InvalidClientError(state=self.request.state)
     response_type = self.request.response_type
     if not client.check_response_type(response_type):
-      raise UnauthorizedClientError('The client is not authorized to use '
+      raise errors.UnauthorizedClientError('The client is not authorized to use '
                                     '"response_type={}"'.format(response_type))
     self.request.client = client
     self.validate_requested_scope()
