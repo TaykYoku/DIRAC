@@ -430,7 +430,7 @@ class AuthorizationServer(_AuthorizationServer):
     return method_cls(request.method, request.uri, body, request.headers)
 
   def create_json_request(self, request):
-    return create_oauth2_request(request, HttpRequest, True)
+    return self.create_oauth2_request(request, HttpRequest, True)
 
   def handle_response(self, status_code, payload, headers):
     if isinstance(payload, dict):
