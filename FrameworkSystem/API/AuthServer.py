@@ -423,7 +423,7 @@ class AuthorizationServer(_AuthorizationServer):
     body = None
     if request.method == 'POST':
       if use_json:
-        body = json.dumps(request.arguments)
+        body = request.arguments
       else:
         body = request.arguments
 
