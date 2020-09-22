@@ -3,6 +3,7 @@ from time import time
 from pprint import pprint
 from tornado.escape import json_decode
 from tornado.httpclient import HTTPResponse
+from tornado.httputil import HTTPHeaders
 from authlib.deprecate import deprecate
 from authlib.jose import jwt, JsonWebSignature
 from authlib.oauth2 import (
@@ -348,7 +349,8 @@ class AuthorizationServer(_AuthorizationServer):
     headersObj = HTTPHeaders()
     for k, v in headers:
       headersObj.add(k, v)
-    return HTTPResponse(payload, code=status_code, headers=headersObj)
+    return (payload, status_code, headersObj)
+    # return HTTPResponse(payload, code=status_code, headers=headersObj)
 
   # def send_signal(self, name, *args, **kwargs):
   #     if name == 'after_authenticate_client':

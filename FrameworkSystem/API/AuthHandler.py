@@ -426,9 +426,9 @@ class AuthHandler(WebHandler):
     # return authorization.create_authorization_response(grant_user=grant_user)
     ###### RESPONSE
 
-    r = self.server.create_authorization_response(request, grant_user=username)
-    print(r)
-    self.finish(r)
+    payload, self.code, self.headers = self.server.create_authorization_response(request, grant_user=username)
+    print('====self.finish(payload)=====')
+    self.finish(payload)
     return
 
     # # Device flow
