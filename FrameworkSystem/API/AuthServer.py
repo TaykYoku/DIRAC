@@ -260,8 +260,8 @@ class AuthorizationServer(_AuthorizationServer):
   def addClient(self, data):
     result = self.__db.addClient(data)
     if result['OK']:
-      data = Client(result['Value'])
-      self.cacheClient.add(data['client_id'], 24 * 3600, data)
+      data = result['Value']
+      self.cacheClient.add(data['client_id'], 24 * 3600, Client(data))
     return result
 
   @gCacheClient
