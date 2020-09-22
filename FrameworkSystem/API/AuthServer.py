@@ -233,7 +233,7 @@ class AuthorizationServer(_AuthorizationServer):
         self.updateSession(session, sessionParams)
     return S_OK(authURL) if result['OK'] else result
 
-def parseIdPAuthorizationResponse(self, response, session):
+  def parseIdPAuthorizationResponse(self, response, session):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existend DIRAC user and store the session
