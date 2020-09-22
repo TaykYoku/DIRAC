@@ -436,7 +436,7 @@ class AuthHandler(WebHandler):
 
     self.set_status(code)
     for header in headers:
-      self.set_header(header)
+      self.set_header(*header)
     self.finish(payload)
     return
 
