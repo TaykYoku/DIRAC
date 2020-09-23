@@ -132,7 +132,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     return 200, 'Authorization complite.', set()
 
   def query_device_credential(self, device_code):
-    _, data = self.getSessionByOption('device_code', device_code)
+    _, data = self.server.getSessionByOption('device_code', device_code)
     if not data:
       return None
     data['expires_at'] = data['expires_in'] + int(time())
@@ -144,7 +144,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
-    _, data = self.getSessionByOption('user_code', user_code)
+    _, data = self.server.getSessionByOption('user_code', user_code)
     print('======= query_user_grant ==========')
     return (data['user_id'], data['group']) if data else None
 
