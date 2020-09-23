@@ -96,31 +96,15 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
     request.data['response_type'] = 'device'
-    print('====== create_endpoint_response =========')
-    print('Save: %s' % data['device_code'])
-    pprint(data)
-    print('group: %s' % request.args.get('group'))
-    print('Provider: %s' % request.args.get('provider'))
-    print('request: %s' % request)
-    print('=========================================')
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
                               Provider=request.args.get('provider'), request=request)
-    print('======= create_endpoint_response ==========')
-    pprint(self.server.getSession(data['device_code']))
-    print('-------------------------------------------')
     return c, data, h
 
   def get_verification_uri(self):
     return 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
 
   def save_device_credential(self, client_id, scope, data):
-    data['client_id'] = client_id
-    data['scope'] = scope
-    print('====== save_device_credential =========')
-    print('Save: %s' % data['device_code'])
-    pprint(data)
-    print('=======================================')
-    self.server.addSession(data['device_code'], data)
+    self.server.addSession(data['device_code'], client_id=client_id, scope=scope)
 
 
 class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
@@ -290,13 +274,13 @@ class AuthorizationServer(_AuthorizationServer):
         client = Client(result['Value'])
         self.cacheClient.add(clientID, 24 * 3600, client)
     return client
-  
+
   @gCacheSession
   def addSession(self, session, data={}, exp=300, **kwargs):
     data.update(kwargs)
     data['Status'] = data.get('Status', 'submited')
     self.cacheSession.add(session, exp, data)
-  
+
   @gCacheSession
   def getSession(self, session=None):
     return self.cacheSession.get(session) if session else self.cacheSession.getDict()
