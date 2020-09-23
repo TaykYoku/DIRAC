@@ -177,7 +177,7 @@ class AuthHandler(WebHandler):
       if codeChallenge:
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
-      self.server.addSession(session, sessionDict)
+      self.server.addSession(session, **sessionDict)
 
     # Device flow
     elif flow == 'device':

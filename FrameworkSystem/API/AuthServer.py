@@ -276,10 +276,9 @@ class AuthorizationServer(_AuthorizationServer):
     return client
 
   @gCacheSession
-  def addSession(self, session, data={}, exp=300, **kwargs):
-    data.update(kwargs)
-    data['Status'] = data.get('Status', 'submited')
-    self.cacheSession.add(session, exp, data)
+  def addSession(self, session, exp=300, **kwargs):
+    kwargs['Status'] = kwargs.get('Status', 'submited')
+    self.cacheSession.add(session, exp, kwargs)
 
   @gCacheSession
   def getSession(self, session=None):
@@ -289,12 +288,11 @@ class AuthorizationServer(_AuthorizationServer):
   def removeSession(self, session):
     self.cacheSession.delete(session)
 
-  def updateSession(self, session, data={}, exp=300, **kwargs):
-    data.update(kwargs)
+  def updateSession(self, session, exp=300, **kwargs):
     origData = self.getSession(session) or {}
-    for k, v in data.items():
+    for k, v in kwargs.items():
       origData[k] = v
-    self.addSession(session, origData, exp)
+    self.addSession(session, exp, **origData)
   
   def getSessionByOption(self, key, value):
     if key and value:
@@ -324,7 +322,7 @@ class AuthorizationServer(_AuthorizationServer):
       result = result['Value'].submitNewSession(session)
       if result['OK']:
         authURL, sessionParams = result['Value']
-        self.updateSession(session, sessionParams)
+        self.updateSession(session, **sessionParams)
     return S_OK(authURL) if result['OK'] else result
 
   def parseIdPAuthorizationResponse(self, response, session):
