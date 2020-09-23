@@ -224,7 +224,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthorizationServer, self).__init__(query_client=self.getClient,
-                                              save_token=lambda t, r: pprint(t))
+                                              save_token=lambda t, r: pprint('Token: %s' % t))
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
@@ -381,7 +381,7 @@ class AuthorizationServer(_AuthorizationServer):
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 
-  def init_jwt_config(self, config): #
+  def init_jwt_config(self, config):
     """ Initialize JWT related configuration. """
     jwt_iss = config.get('OAUTH2_JWT_ISS')
     if not jwt_iss:
@@ -441,11 +441,7 @@ class AuthorizationServer(_AuthorizationServer):
       # `OAuth2Request` is not JSON serializable
       payload.pop('request', None)
       payload = json_dumps(payload)
-    # headersObj = HTTPHeaders()
-    # for k, v in headers:
-    #   headersObj.add(k, v)
     return (payload, status_code, headers)
-    # return HTTPResponse(payload, code=status_code, headers=headersObj)
 
   # def send_signal(self, name, *args, **kwargs):
   #     if name == 'after_authenticate_client':
