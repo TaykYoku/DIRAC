@@ -95,7 +95,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    request.response_type = 'device'
+    request.data['response_type'] = 'device'
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
                               Provider=request.args.get('provider'), request=request)
     print('======= create_endpoint_response ==========')
@@ -427,12 +427,14 @@ class AuthorizationServer(_AuthorizationServer):
     print(request.uri)
     print(request.body_arguments)
     print('---------------')
-    body = None
+    body = {}
     if request.method == 'POST':
-      if use_json:
-        body = request.body_arguments
-      else:
-        body = request.body_arguments
+      for k, v in request.body_arguments.items()
+        body[k] = ' '.join(v)
+      # if use_json:
+      #   body = request.body_arguments
+      # else:
+      #   body = request.body_arguments
 
     return method_cls(request.method, request.uri, body, request.headers)
 
