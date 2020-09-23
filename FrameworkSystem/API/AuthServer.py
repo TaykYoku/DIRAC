@@ -277,8 +277,12 @@ class AuthorizationServer(_AuthorizationServer):
 
   @gCacheSession
   def addSession(self, session, exp=300, **kwargs):
+    print('====== addSession ========')
+    print(session)
     kwargs['Status'] = kwargs.get('Status', 'submited')
+    pprint(kwargs)
     self.cacheSession.add(session, exp, kwargs)
+    pprint(self.getSession(session))
 
   @gCacheSession
   def getSession(self, session=None):
@@ -289,6 +293,8 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession.delete(session)
 
   def updateSession(self, session, exp=300, **kwargs):
+    print('== updateSession ==')
+    pprint(kwargs)
     origData = self.getSession(session) or {}
     for k, v in kwargs.items():
       origData[k] = v
