@@ -163,9 +163,8 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     pass
   
   def delete_authorization_code(self, authorization_code):
-    # session, _ = self.getSessionByOption('code', authorization_code)
-    # if session:
-    #   self.updateSession(session, code=None)
+    # session, _ = self.server.getSessionByOption('code', authorization_code)
+    # self.server.removeSession(session)
     pass
 
   def query_authorization_code(self, code, client):
@@ -194,6 +193,8 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     """ return code """
     print('========= generate_authorization_code =========')
     pprint(self.__dict__)
+    pprint(self.request.data)
+    print('-----------------------------------------------')
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
     code = OAuth2Code({'user_id': None, 'scope': None,  # how to get it
@@ -256,6 +257,9 @@ class AuthorizationServer(_AuthorizationServer):
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
     self.register_endpoint(ClientRegistrationEndpoint)
     self.register_endpoint(DeviceAuthorizationEndpoint)
+  
+  def saveToken(self, token, request):
+    return None
 
   @gCacheClient
   def addClient(self, data):

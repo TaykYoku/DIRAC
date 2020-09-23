@@ -324,18 +324,105 @@ class ProxyInit(object):
     authAPI = None
     proxyAPI = None
     spinner = Halo()
-    s = requests.Session()
 
-    # Search and load sessions cache
+    # Prepare client
     try:
-      with open('/tmp/cache_u%d' % os.getuid(), 'rb') as f:
-        s.cookies.update(pickle.load(f))
-      if self.__piParams.provider:
-        s.cookies.set("TypeAuth", self.__piParams.provider, domain=s.cookies.list_domains()[0])
+      with open('/opt/dirac/pro/client.cfg', 'rb') as f:
+        clientMetadata = json.load(f)
     except Exception:
-      pass
+      clientMetadata = None
+    
+    if not clientMetadata:
+      print('Register client:')
+      r = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', {'redirect_uri': ''}, verify=False)
+      r.raise_for_status()
+      clientMetadata = r.json()
+      with open('/opt/dirac/pro/client.cfg', 'w') as f:
+        json.dump(clientMetadata, f)
+    
+    client_id = clientMetadata['client_id']
+    
+    # Get token
+    url = 'https://marosvn32.in2p3.fr/DIRAC/auth/device?client_id=%s' % client_id
+    if self.__piParams.diracGroup:
+      url += '&group=%s' % self.__piParams.diracGroup
+    if self.__piParams.provider:
+      url += '&provider=%s' % self.__piParams.provider
+    r = requests.post(url, verify=False)
+    r.raise_for_status()
+    data = r.json()
+    print(data['verification_uri_complete'])
+
+    # Loop: waiting status of request
+    __start = time.time()
+    url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % client_id
+    url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % data['device_code']
+    while True:
+      time.sleep(5)
+      if time.time() - __start > 300:
+        sys.exit('Time out.')
+      token = requests.post(url, verify=False)
+      if 'error' in token:
+        print(token['error'])
+        continue
+      break
+    
+    print(token)
+    sys.exit()
+    
+    # try:
+    #   with open('/opt/dirac/pro/token_u%d' % os.getuid(), 'rb') as f:
+    #     token = json.load(f)
+    # except Exception:
+    #   token = None
+
+    # from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+    # # Search and load old token
+    # try:
+    #   with open('/tmp/token_u%d' % os.getuid(), 'rb') as f:
+    #     token = json.load(f)
+    # except Exception:
+    #   token = None
+
+    # if token:
+    #   if not OAuth2Token(token).is_expired():
+        
+    #     token = None
+    #     # Read public key of DIRAC auth service
+    #     with open('/opt/dirac/etc/grid-security/certificates/public.key', 'rb') as f:
+    #       key = f.read()
+    #     # Get claims and verify signature
+    #     claims = jwt.decode(token, key)
+    #     # Verify token
+    #     claims.validate()
+    #     if self.__piParams.diracGroup == claims.get('group'):
+    #     # If no found 'group' claim, user group need to add as https argument
+    #     self.__credDict = {'ID': claims.sub, 'group': claims.get('group')}
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    # if token:
+    #   check token exp(group,setup,livetime)
+    #   if good:
+    #     return
+    # else:
+      # 1. client = Loock client metadata
+      #    if not client:
+      #      meta = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', {'redirect_uri': ''}, verify=False).text
+      #      store client to file
+      #    else:
+      #      check client
+      #
+      # 2. data = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/device?client_id=PFUkOKbRTEbGEHnTqWep0hRC&group=dirac_user&provider=CheckIn_dev', verify=False).text
+      # 3. print(data['verification_url_complete'])
+      # 4. loop get token
+      #      token = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % (client['client_id'], data['device_code']), verify=False).text
+      #      if error not in token:
+      #        break
+      #      print(token['error'])
+    #
+    # Get proxy
+
 
     def restRequest(url, endpoint='', metod='GET', **kwargs):
       """ Method to do http requests
@@ -348,17 +435,17 @@ class ProxyInit(object):
           :return: S_OK(Responce)/S_ERROR()
       """
       # Collect options
-      __opts = ''
+      opts = ''
       for key in kwargs:
         if kwargs[key]:
-          if not __opts:
-            __opts = '?%s=%s' % (key, kwargs[key])
+          if not opts:
+            opts = '?%s=%s' % (key, kwargs[key])
           else:
-            __opts += '&%s=%s' % (key, kwargs[key])
+            opts += '&%s=%s' % (key, kwargs[key])
 
       # Make request
       try:
-        r = s.get('%s/%s%s' % (url.strip('/'), endpoint.strip('/'), __opts), verify=False)
+        r = s.get('%s/%s%s' % (url.strip('/'), endpoint.strip('/'), opts), verify=False)
         r.raise_for_status()
         # Save cookies
         with open('/tmp/cache_u%d' % os.getuid(), 'wb+') as f:
