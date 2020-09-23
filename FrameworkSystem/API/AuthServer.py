@@ -95,7 +95,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    request.data['response_type'] = 'device'
+    request.response_type = 'device'
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
                               Provider=request.args.get('provider'), request=request)
     print('======= create_endpoint_response ==========')
@@ -294,14 +294,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession.delete(session)
 
   def updateSession(self, session, data={}, exp=300, **kwargs):
-    print('-- updateSession --')
-    pprint(data)
-    data.update(kwargs)
-    print('===')
-    pprint(data)
     origData = self.getSession(session) or {}
-    print('===')
-    pprint(origData)
     for k, v in data.items():
       origData[k] = v
     self.addSession(session, origData, exp)
@@ -432,15 +425,14 @@ class AuthorizationServer(_AuthorizationServer):
     if isinstance(request, method_cls):
       return request
     print(request.uri)
-    print(request.body)
-    print(request.arguments)
+    print(request.body_arguments)
     print('---------------')
     body = None
     if request.method == 'POST':
       if use_json:
-        body = request.arguments
+        body = request.body_arguments
       else:
-        body = request.arguments
+        body = request.body_arguments
 
     return method_cls(request.method, request.uri, body, request.headers)
 
