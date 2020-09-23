@@ -429,7 +429,7 @@ class AuthorizationServer(_AuthorizationServer):
     print('---------------')
     body = {}
     if request.method == 'POST':
-      for k, v in request.body_arguments.items()
+      for k, v in request.body_arguments.items():
         body[k] = ' '.join(v)
       # if use_json:
       #   body = request.body_arguments
