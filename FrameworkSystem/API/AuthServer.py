@@ -281,6 +281,8 @@ class AuthorizationServer(_AuthorizationServer):
       if result['OK']:
         client = Client(result['Value'])
         self.cacheClient.add(clientID, 24 * 3600, client)
+      else:
+        print(result['Message'])
       pprint(self.cacheClient.get(clientID))
     return client
 
