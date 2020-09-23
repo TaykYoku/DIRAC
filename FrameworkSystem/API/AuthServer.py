@@ -96,7 +96,8 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
-                              Provider=request.args.get('provider'))#, request=request)
+                              Provider=request.args.get('provider'), request=request)
+    print('======= create_endpoint_response ==========')
     return c, data, h
 
   def get_verification_uri(self):
@@ -139,10 +140,12 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     data['scope'] = ''
     data['interval'] = 5
     data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+    print('======= query_device_credential ==========')
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
     _, data = self.getSessionByOption('user_code', user_code)
+    print('======= query_user_grant ==========')
     return (data['user_id'], data['group']) if data else None
 
   def should_slow_down(self, credential, now):
