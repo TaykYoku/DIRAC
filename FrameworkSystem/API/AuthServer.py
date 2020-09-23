@@ -95,8 +95,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    print('-->')
-    pprint(data)
+    request.args['grant_type'] = DeviceCodeGrant.GRANT_TYPE
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
                               Provider=request.args.get('provider'), request=request)
     print('======= create_endpoint_response ==========')
@@ -114,6 +113,8 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
 class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
   RESPONSE_TYPES = {'device'}
+  GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
+
   def validate_authorization_request(self):
     client_id = self.request.client_id
     log.debug('Validate authorization request of %r', client_id)
