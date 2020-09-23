@@ -443,10 +443,9 @@ class AuthorizationServer(_AuthorizationServer):
     return self.create_oauth2_request(request, HttpRequest, True)
 
   def handle_response(self, status_code, payload, headers):
-    print(status_code)
-    print(type(payload))
-    print(payload)
     if isinstance(payload, dict):
+      # `OAuth2Request` is not JSON serializable
+      payload.pop('request', None)
       payload = json_dumps(payload)
     # headersObj = HTTPHeaders()
     # for k, v in headers:
