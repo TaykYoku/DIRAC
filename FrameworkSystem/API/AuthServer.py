@@ -109,7 +109,6 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
 class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
   RESPONSE_TYPES = {'device'}
-  GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 
   def validate_authorization_request(self):
     client_id = self.request.client_id
@@ -147,7 +146,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     _, data = self.server.getSessionByOption('user_code', user_code)
     print('======= query_user_grant ==========')
     pprint(data)
-    return (data['userID'], data['group']) if data.get('username') else None
+    return ((data['userID'], data['group']), True) if data.get('username') else None
 
   def should_slow_down(self, credential, now):
     return False
@@ -455,6 +454,10 @@ class AuthorizationServer(_AuthorizationServer):
     return self.create_oauth2_request(request, HttpRequest, True)
 
   def handle_response(self, status_code, payload, headers):
+    print('handle_response:')
+    print(status_code)
+    print(payload)
+    print(headers)
     if isinstance(payload, dict):
       # `OAuth2Request` is not JSON serializable
       payload.pop('request', None)
