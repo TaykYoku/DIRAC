@@ -146,6 +146,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
   def query_user_grant(self, user_code):
     _, data = self.server.getSessionByOption('user_code', user_code)
     print('======= query_user_grant ==========')
+    pprint(data)
     return (data['userID'], data['group']) if data.get('username') else None
 
   def should_slow_down(self, credential, now):
