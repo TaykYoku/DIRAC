@@ -224,7 +224,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthorizationServer, self).__init__(query_client=self.getClient,
-                                              save_token=lambda t, r: pass)
+                                              save_token=lambda t, r: None)
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
