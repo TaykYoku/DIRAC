@@ -313,6 +313,7 @@ class ProxyInit(object):
 
         :return: S_OK()/S_ERROR()
     """
+    import json
     import urllib3
     import requests
     import threading
