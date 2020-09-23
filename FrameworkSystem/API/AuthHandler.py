@@ -222,6 +222,7 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
+    pprint(sessionDict)
     request = sessionDict['request']
     username = sessionDict['username']
     # profile = sessionDict['profile']
