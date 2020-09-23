@@ -282,7 +282,7 @@ class AuthorizationServer(_AuthorizationServer):
     kwargs['Status'] = kwargs.get('Status', 'submited')
     pprint(kwargs)
     self.cacheSession.add(session, exp, kwargs)
-    pprint(self.getSession(session))
+    pprint(self.cacheSession.get(session))
 
   @gCacheSession
   def getSession(self, session=None):
