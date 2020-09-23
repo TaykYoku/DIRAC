@@ -299,6 +299,8 @@ class AuthorizationServer(_AuthorizationServer):
     print('===')
     pprint(data)
     origData = self.getSession(session) or {}
+    print('===')
+    pprint(origData)
     for k, v in data.items():
       origData[k] = v
     self.addSession(session, origData, exp)
