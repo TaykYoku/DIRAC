@@ -284,14 +284,14 @@ class AuthHandler(WebHandler):
       self.finish('%s - bad group status' % thisGroup['Status'])
       return
 
-    # Create DIRAC access token for username/group
-    result = self.__getAccessToken(userID, reqGroup, session)
-    if not result['OK']:
-      self.finish(result['Message'])
-      return
-    self.server.updateSession(session, Status='authed', Token=result['Value'])
-    print('---- Token ---')
-    print(result['Value'])
+    # # Create DIRAC access token for username/group
+    # result = self.__getAccessToken(userID, reqGroup, session)
+    # if not result['OK']:
+    #   self.finish(result['Message'])
+    #   return
+    # self.server.updateSession(session, Status='authed', Token=result['Value'])
+    # print('---- Token ---')
+    # print(result['Value'])
 
     ###### RESPONSE
     payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
