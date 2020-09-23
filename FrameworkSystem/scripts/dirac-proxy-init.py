@@ -362,7 +362,9 @@ class ProxyInit(object):
       time.sleep(5)
       if time.time() - __start > 300:
         sys.exit('Time out.')
-      token = requests.post(url, verify=False)
+      r = requests.post(url, verify=False)
+      r.raise_for_status()
+      token = r.json()
       if 'error' in token:
         print(token['error'])
         continue
