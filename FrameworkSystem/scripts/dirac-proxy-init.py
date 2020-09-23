@@ -328,7 +328,7 @@ class ProxyInit(object):
 
     # Prepare client
     try:
-      with open('/opt/dirac/pro/client.cfg', 'rb') as f:
+      with open('/opt/dirac/etc/client.cfg', 'rb') as f:
         clientMetadata = json.load(f)
     except Exception:
       clientMetadata = None
@@ -338,7 +338,7 @@ class ProxyInit(object):
       r = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', {'redirect_uri': ''}, verify=False)
       r.raise_for_status()
       clientMetadata = r.json()
-      with open('/opt/dirac/pro/client.cfg', 'w') as f:
+      with open('/opt/dirac/etc/client.cfg', 'w') as f:
         json.dump(clientMetadata, f)
     
     client_id = clientMetadata['client_id']

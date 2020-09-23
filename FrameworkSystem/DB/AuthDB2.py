@@ -118,6 +118,7 @@ class AuthDB2(SQLAlchemyDB):
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).first()
+      session.commit()
       data = client.client_info
       data['client_metadata'] = client.client_metadata
     except MultipleResultsFound:
