@@ -431,6 +431,10 @@ class AuthorizationServer(_AuthorizationServer):
     print('==== create_oauth2_request ===')
     if isinstance(request, method_cls):
       return request
+    print(request.uri)
+    print(request.body)
+    print(request.arguments)
+    print('---------------')
     body = None
     if request.method == 'POST':
       if use_json:
