@@ -293,7 +293,11 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession.delete(session)
 
   def updateSession(self, session, data={}, exp=300, **kwargs):
+    print('-- updateSession --')
+    pprint(data)
     data.update(kwargs)
+    print('===')
+    pprint(data)
     origData = self.getSession(session) or {}
     for k, v in data.items():
       origData[k] = v
