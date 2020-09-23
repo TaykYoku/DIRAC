@@ -222,10 +222,6 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
-    print('== web_redirect ==')
-    print('Get: %s' % session)
-    pprint(sessionDict)
-    print('==================')
     request = sessionDict['request']
     username = sessionDict['username']
     # profile = sessionDict['profile']
@@ -278,8 +274,6 @@ class AuthHandler(WebHandler):
       # Submit second auth flow through IdP
       idP = thisGroup['Action'][1][0]
       result = self.server.getIdPAuthorization(idP, session)
-
-      # result = gSessionManager.submitAuthorizeFlow(idP, session)
       if not result['OK']:
         raise WErr(503, result['Message'])
       self.log.notice('Redirect to', result['Value'])
@@ -305,11 +299,18 @@ class AuthHandler(WebHandler):
     for header in headers:
       self.set_header(*header)
     self.finish(payload)
-    return
 
   @asyncGen
   def web_token(self):
     self.server = self.application.authorizationServer
+
+    payload, code, headers = self.server.create_token_response(self.request)
+    self.set_status(code)
+    for header in headers:
+      self.set_header(*header)
+    self.finish(payload)
+    return
+    
     # Support only POST method
     if self.request.method != 'POST':
       raise

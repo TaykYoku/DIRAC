@@ -224,7 +224,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthorizationServer, self).__init__(query_client=self.getClient,
-                                              save_token=self.__db.storeToken)
+                                              save_token=lambda t, r: pass)
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
@@ -277,12 +277,8 @@ class AuthorizationServer(_AuthorizationServer):
 
   @gCacheSession
   def addSession(self, session, exp=300, **kwargs):
-    print('====== addSession ========')
-    print(session)
     kwargs['Status'] = kwargs.get('Status', 'submited')
-    pprint(kwargs)
     self.cacheSession.add(session, exp, kwargs)
-    pprint(self.cacheSession.get(session))
 
   @gCacheSession
   def getSession(self, session=None):
@@ -293,8 +289,6 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession.delete(session)
 
   def updateSession(self, session, exp=300, **kwargs):
-    print('== updateSession ==')
-    pprint(kwargs)
     origData = self.getSession(session) or {}
     for k, v in kwargs.items():
       origData[k] = v
