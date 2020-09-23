@@ -271,6 +271,9 @@ class AuthorizationServer(_AuthorizationServer):
 
   @gCacheClient
   def getClient(self, clientID):
+    print('========== getClient ===========')
+    print(clientID)
+    pprint(self.cacheClient.getDict())
     client = self.cacheClient.get(clientID)
     if not client:
       result = self.__db.getClient(clientID)
