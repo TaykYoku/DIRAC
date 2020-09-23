@@ -146,7 +146,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
   def query_user_grant(self, user_code):
     _, data = self.server.getSessionByOption('user_code', user_code)
     print('======= query_user_grant ==========')
-    return (data['user_id'], data['group']) if data else None
+    return (data['userID'], data['group']) if data else None
 
   def should_slow_down(self, credential, now):
     return False
@@ -224,7 +224,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthorizationServer, self).__init__(query_client=self.getClient,
-                                              save_token=lambda t, r: None)
+                                              save_token=lambda t, r: pprint(t))
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
@@ -371,8 +371,8 @@ class AuthorizationServer(_AuthorizationServer):
     print('GENERATE ACCESS TOKEN')
     # TODO: need to use self.config attributes
     header = {'alg': 'RS256'}
-    payload = {'sub': user,
-               'grp': scope,
+    payload = {'sub': user[0],
+               'grp': user[1],
                'iss': getSetup(),
                'exp': 12 * 3600}
     # Read private key of DIRAC auth service
