@@ -95,7 +95,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    request.data['grant_type'] = DeviceCodeGrant.GRANT_TYPE
+    request.data['grant_type'] = [DeviceCodeGrant.GRANT_TYPE]
     self.server.updateSession(data['device_code'], group=request.args.get('group'),
                               Provider=request.args.get('provider'), request=request)
     print('======= create_endpoint_response ==========')
