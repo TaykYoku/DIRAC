@@ -276,10 +276,12 @@ class AuthorizationServer(_AuthorizationServer):
     pprint(self.cacheClient.getDict())
     client = self.cacheClient.get(clientID)
     if not client:
+      print('----> DB')
       result = self.__db.getClient(clientID)
       if result['OK']:
         client = Client(result['Value'])
         self.cacheClient.add(clientID, 24 * 3600, client)
+      pprint(self.cacheClient.get(clientID))
     return client
 
   @gCacheSession
