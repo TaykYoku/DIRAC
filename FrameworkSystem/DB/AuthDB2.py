@@ -82,14 +82,11 @@ class AuthDB2(SQLAlchemyDB):
     print('============ addClient ============')
     pprint(data)
     session = self.session()
-    client = Client(client_id=gen_salt(24), client_id_issued_at=int(time()))
-    meta = {"client_name": data.get("client_name"),
-            "client_uri": data.get("client_uri"),
-            "grant_types": data.get("grant_type", ['authorization_code',
+    client = Client(**data)
+    meta = {"grant_types": data.get("grant_type", ['authorization_code',
                                                    'urn:ietf:params:oauth:grant-type:device_code']),
             "redirect_uris": data.get("redirect_uri", []),
             "response_types": data.get("response_type", ['code', 'device']),
-            "scope": data.get("scope"),
             "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
     client.set_client_metadata(meta)
 
@@ -99,15 +96,15 @@ class AuthDB2(SQLAlchemyDB):
       client.client_secret = gen_salt(48)
 
     try:
-      data = client.client_info
-      data['client_metadata'] = client.client_metadata
+      res = client.client_info
+      res['client_metadata'] = client.client_metadata
       pprint(data)
       session.add(client)
       print('======== session.add(client)')
       pprint(data)
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Client: %s' % e))
-    return self.__result(session, S_OK(data))
+    return self.__result(session, S_OK(res))
   
   def removeClient(self, clientID):
     session = self.session()
