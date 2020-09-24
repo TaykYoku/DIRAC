@@ -104,6 +104,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     return 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
 
   def save_device_credential(self, client_id, scope, data):
+    data['verification_uri_complete'] = '%s/%s' % (data['verification_uri'], data['user_code'])
     self.server.addSession(data['device_code'], client_id=client_id, scope=scope, **data)
 
 

@@ -53,7 +53,7 @@ class AuthHandler(WebHandler):
       self.set_header(*header)
     self.finish(data)
 
-  path_device = ['([A-z0-9]*)']
+  path_device = ['([A-z0-9-_]*)']
   @asyncGen
   def web_device(self, userCode=None):
     """ Device authorization flow
