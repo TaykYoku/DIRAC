@@ -381,10 +381,10 @@ class ProxyInit(object):
           spin.text = token['error'] + ' : ' + token.get('description', '')
           continue
         spin.color = 'green'
-        spin.text = token
+        spin.text = 'Token uploaded to %s' % ('/opt/dirac/pro/token_u%d' % os.getuid())
         break
 
-    # print(token)
+    pprint(token)
     sys.exit()
     
     # try:
