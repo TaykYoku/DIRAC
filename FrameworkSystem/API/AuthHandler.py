@@ -49,8 +49,8 @@ class AuthHandler(WebHandler):
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
-    res = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-    self.__finish(res)
+    d, c, h = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+    self.__finish(d, c, h)
     # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     # self.set_status(code)
     # for header in headers:
@@ -70,7 +70,8 @@ class AuthHandler(WebHandler):
     """
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      self.__finish(yield self.threadTask(self.server.create_endpoint_response, name, self.request))
+      d, c, h = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+      self.__finish(d, c, h)
       # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       # self.set_status(code)
       # for header in headers:
