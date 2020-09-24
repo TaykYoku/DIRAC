@@ -7,6 +7,7 @@ from tornado.httputil import HTTPHeaders
 from authlib.deprecate import deprecate
 from authlib.jose import jwt, JsonWebSignature
 from authlib.oauth2 import (
+    OAuth2Error,
     OAuth2Request,
     HttpRequest,
     AuthorizationServer as _AuthorizationServer,
