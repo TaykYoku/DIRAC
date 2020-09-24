@@ -221,6 +221,7 @@ class AuthHandler(WebHandler):
     username = sessionDict['username']
     request = sessionDict['request']    
     userID = sessionDict['userID']
+    group = sessionDict.get('group')
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username)
@@ -230,7 +231,7 @@ class AuthHandler(WebHandler):
       return
     groupStatuses = result['Value']
 
-    reqGroup = self.get_argument('group', sessionDict.get('group'))
+    reqGroup = self.get_argument('group', group)
     if not reqGroup:
       t = template.Template('''<!DOCTYPE html>
       <html>

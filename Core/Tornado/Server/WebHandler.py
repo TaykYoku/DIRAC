@@ -165,6 +165,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     # RequestHandler init
     # super(WebHandler, self).__init__(*args, **kwargs)
+    self.initializeRequest()
 
     # Fill credentials
     self.__credDict = {}
@@ -181,6 +182,8 @@ class WebHandler(tornado.web.RequestHandler):
     except IndexError:
       raise WErr(404, 'You need specify method name in request path.')
     
+  def initializeRequest(self):
+    pass
 
   def __processCredentials(self):
     """ Extract the user credentials based on the certificate or what comes from the balancer
@@ -289,8 +292,11 @@ class WebHandler(tornado.web.RequestHandler):
     try:
       self.__method = getattr(self, methodName)
     except AttributeError:
-      self.log.fatal("%s method is not implemented." % methodName)
-      raise tornado.web.HTTPError(404)
+      try:
+        self.__method = getattr(self, "%sindex" % self.METHOD_PREFIX)
+      except AttributeError:
+        self.log.fatal("%s method is not implemented." % methodName)
+        raise tornado.web.HTTPError(404)
 
     # Get credentionals
     result = self.__processCredentials()
