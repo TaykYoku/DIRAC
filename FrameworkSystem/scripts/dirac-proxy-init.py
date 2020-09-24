@@ -318,6 +318,7 @@ class ProxyInit(object):
     import requests
     import threading
     import webbrowser
+    from pprint import pprint
 
     from DIRAC.FrameworkSystem.Utilities.halo import Halo
     from DIRAC.Core.Utilities.JEncode import decode, encode
