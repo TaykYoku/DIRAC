@@ -321,6 +321,7 @@ class ProxyInit(object):
 
     from DIRAC.FrameworkSystem.Utilities.halo import Halo
     from DIRAC.Core.Utilities.JEncode import decode, encode
+    from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 
     authAPI = None
     proxyAPI = None
