@@ -30,6 +30,9 @@ class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
+  def initializeRequest(self):
+    self.server = self.application.authorizationServer
+
   path_index = ['/.well-known/oauth-authorization-server']
   def web_index(self):
     """ Well known endpoint
@@ -37,7 +40,7 @@ class AuthHandler(WebHandler):
         GET: /.well-known/oauth-authorization-server
     """
     if self.request.method == "GET":
-      self.finish(json.dumps(self.application.authorizationServer.metadata))
+      self.finish(json.dumps(self.server.metadata))
 
   @asyncGen
   def web_register(self):
@@ -45,14 +48,14 @@ class AuthHandler(WebHandler):
 
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
-    self.server = self.application.authorizationServer
-
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
-    data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-    self.set_status(code)
-    for header in headers:
-      self.set_header(*header)
-    self.finish(data)
+    res = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+    self.__finish(res)
+    # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+    # self.set_status(code)
+    # for header in headers:
+    #   self.set_header(*header)
+    # self.finish(data)
 
   path_device = ['([A-z0-9-_]*)']
   @asyncGen
@@ -65,15 +68,15 @@ class AuthHandler(WebHandler):
         
         GET: /device/<user code>
     """
-    self.server = self.application.authorizationServer
-
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-      self.set_status(code)
-      for header in headers:
-        self.set_header(*header)
-      self.finish(data)
+      res = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+      self.__finish(res)
+      # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+      # self.set_status(code)
+      # for header in headers:
+      #   self.set_header(*header)
+      # self.finish(data)
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
@@ -127,7 +130,6 @@ class AuthHandler(WebHandler):
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
     """
-    self.server = self.application.authorizationServer
     if self.request.method == 'GET':
       try:
         grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
@@ -192,7 +194,6 @@ class AuthHandler(WebHandler):
 
   @asyncGen
   def web_redirect(self):
-    self.server = self.application.authorizationServer
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
 
@@ -286,16 +287,23 @@ class AuthHandler(WebHandler):
     # self.server.updateSession(session, Status='authed')
 
     ###### RESPONSE
-    data, code, headers = self.server.create_authorization_response(request, username)
-    self.set_status(code)
-    for header in headers:
-      self.set_header(*header)
-    self.finish(data)
+    self.__finish(self.server.create_authorization_response(request, username))
+    # data, code, headers = self.server.create_authorization_response(request, username)
+    # self.set_status(code)
+    # for header in headers:
+    #   self.set_header(*header)
+    # self.finish(data)
 
   @asyncGen
   def web_token(self):
-    self.server = self.application.authorizationServer
-    data, code, headers = self.server.create_token_response(self.request)
+    self.__finish(self.server.create_token_response(self.request))
+    # data, code, headers = self.server.create_token_response(self.request)
+    # self.set_status(code)
+    # for header in headers:
+    #   self.set_header(*header)
+    # self.finish(data)
+  
+  def __finish(self, data, code, headers):
     self.set_status(code)
     for header in headers:
       self.set_header(*header)

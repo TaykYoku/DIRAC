@@ -88,9 +88,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     data = client_info
     data['client_metadata'] = client_metadata
     result = self.server.addClient(data)
-    if result['OK']:
-      return Client(result['Value'])
-    return None
+    return Client(result['Value']) if result['OK'] else None
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
@@ -98,8 +96,6 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(req)
     req.query += '&response_type=device&state=%s' % data['device_code']
     self.server.updateSession(data['device_code'], request=req, group=req.args.get('group'))
-                              # group=request.args.get('group'),
-                              # Provider=request.args.get('provider'),
     return c, data, h
 
   def get_verification_uri(self):
@@ -129,17 +125,12 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     self.validate_requested_scope()
     
     # Check user_code, when user go to authorization endpoint
-    print('========================')
-    pprint(self.request.args)
-    pprint(self.request.data)
-    print(self.request.uri)
     userCode = self.request.args.get('user_code')
     if not userCode:
       raise OAuth2Error('user_code is absent.')
     session, _ = self.server.getSessionByOption('user_code', userCode)
     if not session:
       raise OAuth2Error('Session is expired.')
-    
     self.execute_hook('after_validate_authorization_request')
     return None
   
@@ -155,13 +146,10 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     data['scope'] = ''
     data['interval'] = 5
     data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
-    print('======= query_device_credential ==========')
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
     _, data = self.server.getSessionByOption('user_code', user_code)
-    print('======= query_user_grant ==========')
-    pprint(data)
     return ((data['userID'], data['group']), True) if data.get('username') else None
 
   def should_slow_down(self, credential, now):
@@ -224,14 +212,10 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
 
 
 class AuthorizationServer(_AuthorizationServer):
-  """ Flask implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
-      Initialize it with ``query_client``, ``save_token`` methods and Flask
-      app instance::
+  """ Implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
+      Initialize it ::
 
           server = AuthorizationServer()
-          # or initialize lazily
-          server = AuthorizationServer()
-          server.init_app(app, query_client, save_token)
   """
   metadata_class = AuthorizationServerMetadata
 
@@ -279,33 +263,20 @@ class AuthorizationServer(_AuthorizationServer):
 
   @gCacheClient
   def addClient(self, data):
-    print('========== addClient ===========')
-    pprint(data)
     result = self.__db.addClient(data)
     if result['OK']:
       data = result['Value']
       self.cacheClient.add(data['client_id'], 24 * 3600, Client(data))
-    else:
-      print('ERROR')
-      print(result['Message'])
     return result
 
   @gCacheClient
   def getClient(self, clientID):
-    print('========== getClient ===========')
-    print(clientID)
-    pprint(self.cacheClient.getDict())
     client = self.cacheClient.get(clientID)
     if not client:
-      print('----> DB')
       result = self.__db.getClient(clientID)
       if result['OK']:
         client = Client(result['Value'])
         self.cacheClient.add(clientID, 24 * 3600, client)
-      else:
-        print('ERROR')
-        print(result['Message'])
-      pprint(self.cacheClient.get(clientID))
     return client
 
   @gCacheSession
@@ -339,7 +310,7 @@ class AuthorizationServer(_AuthorizationServer):
     """ Submit subsession and return dict with authorization url and session number
 
         :param str providerName: provider name
-        :param str session: session identificator
+        :param str mainSession: main session identificator
 
         :return: S_OK(dict)/S_ERROR() -- dictionary contain next keys:
                  Status -- session status
