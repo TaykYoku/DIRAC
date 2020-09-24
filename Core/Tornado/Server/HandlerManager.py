@@ -206,7 +206,7 @@ class HandlerManager(object):
             # args = '/'.join(['([A-z0-9_.-]+)'] * (len(argObj.args) - 1 - len(argObj.defaults or [])))
             # defs = '/'.join(['([A-z0-9_.-]*)'] * len(argObj.defaults or []))
             gLogger.debug(" - Route %s/%s ->  %s.%s" % (handler.LOCATION, methodName, module['loadName'], mName))
-            url = "%s/%s" % (handler.LOCATION, methodName)
+            url = "%s%s" % (handler.LOCATION, '' if methodName == 'index' else ('/%s' % methodName))
             if args:
               url += '[\/]?%s' % '/'.join(args)
             gLogger.debug("  * %s" % url)

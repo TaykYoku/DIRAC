@@ -326,51 +326,58 @@ class ProxyInit(object):
     proxyAPI = None
     spinner = Halo()
 
-    # Prepare client
-    try:
-      with open('/opt/dirac/etc/client.cfg', 'rb') as f:
-        clientMetadata = json.load(f)
-    except Exception:
-      clientMetadata = None
-    
-    if not clientMetadata:
-      print('Register client:')
-      r = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', {'redirect_uri': ''}, verify=False)
-      r.raise_for_status()
-      clientMetadata = r.json()
-      with open('/opt/dirac/etc/client.cfg', 'w') as f:
-        json.dump(clientMetadata, f)
-    
-    client_id = clientMetadata['client_id']
-    
-    # Get token
-    url = 'https://marosvn32.in2p3.fr/DIRAC/auth/device?client_id=%s' % client_id
-    if self.__piParams.diracGroup:
-      url += '&group=%s' % self.__piParams.diracGroup
-    if self.__piParams.provider:
-      url += '&provider=%s' % self.__piParams.provider
-    r = requests.post(url, verify=False)
-    r.raise_for_status()
-    data = r.json()
-    print(data['verification_uri_complete'])
+    with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
+      # Get token
+      result = gSessionManager.submitUserAuthorizationFlow(idP=self.__piParams.provider, group=self.__piParams.diracGroup, grant='device')
+      if not result['OK']:
+        sys.exit(result['Message'])
+      response = result['Value']
 
-    # Loop: waiting status of request
-    __start = time.time()
-    url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % client_id
-    url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % data['device_code']
-    while True:
-      time.sleep(5)
-      if time.time() - __start > 300:
-        sys.exit('Time out.')
-      r = requests.post(url, verify=False)
-      # r.raise_for_status()
-      token = r.json()
-      if 'error' in token:
-        print(token['error'])
-        continue
-      break
-    
-    print(token)
+      userCode = response.get('user_code')
+      verURL = response.get('verification_uri')
+      verURLComplete = response.get('verification_uri_complete')
+      if not verURL:
+        sys.exit('Cannot get verification_uri for authentication.')
+      if not userCode:
+        sys.exit('Cannot get user_code for authentication.')
+
+    # Show QR code
+    if self.__piParams.addQRcode and verURLComplete:
+      result = qrterminal(verURLComplete)
+      if not result['OK']:
+        spinner.info(verURL)
+        spinner.color = 'red'
+        spinner.text = 'QRCode is crash: %s Please use upper link.' % result['Message']
+      else:
+        spinner.info('Scan QR code to continue: %s' % result['Value'])
+    else:
+      spinner.info(verURL)
+      spinner.text = 'Use upper link to continue, your user code is "%s"' % userCode
+
+    # Try to open in default browser
+    if webbrowser.open_new_tab(verURL):
+      spinner.text = '%s opening in default browser..' % verURL
+
+    comment = ''
+    with Halo('Waiting authorization status..') as spin:
+      __start = time.time()
+      url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % client_id
+      url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % data['device_code']
+      while True:
+        time.sleep(response.get('interval', 5))
+        if time.time() - __start > 300:
+          sys.exit('Time out.')
+        r = requests.post(url, verify=False)
+        token = r.json()
+        if 'error' in token:
+          spin.color = 'yellow'
+          spin.text = token['error'] + ' : ' + token.get('description', '')
+          continue
+        spin.color = 'green'
+        spin.text = token
+        break
+
+    # print(token)
     sys.exit()
     
     # try:

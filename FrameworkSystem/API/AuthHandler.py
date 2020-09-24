@@ -5,28 +5,21 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-from time import time
 from pprint import pprint
 
 from tornado import web, gen, template
-from tornado.template import Template
 from tornado.escape import json_decode
+from tornado.template import Template
 
 from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
-from authlib.jose import jwt
-from authlib.oauth2 import OAuth2Request
-
-from DIRAC.Core.Utilities.JEncode import encode
+from authlib.oauth2.rfc8414 import get_well_known_url
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
-from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
-from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
-from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.FrameworkSystem.API.AuthServer import DeviceAuthorizationEndpoint, ClientRegistrationEndpoint
+from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 
 
 __RCSID__ = "$Id$"
@@ -36,6 +29,15 @@ class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
+  path_index = [get_well_known_url()]
+  def web_index(self):
+    """ Well known endpoint
+
+        GET: /.well-known/oauth-authorization-server
+    """
+    if self.request.method == "GET":
+      self.finish(json.dumps(self.application.authorizationServer.metadata))
+
   @asyncGen
   def web_register(self):
     """ Client registry
@@ -44,12 +46,12 @@ class AuthHandler(WebHandler):
     """
     self.server = self.application.authorizationServer
 
-    endpointName = ClientRegistrationEndpoint.ENDPOINT_NAME
-    payload, code, headers = self.server.create_endpoint_response(endpointName, self.request)
+    name = ClientRegistrationEndpoint.ENDPOINT_NAME
+    data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     self.set_status(code)
     for header in headers:
       self.set_header(*header)
-    self.finish(payload)
+    self.finish(data)
 
   path_device = ['([A-z0-9]*)']
   @asyncGen
@@ -65,13 +67,12 @@ class AuthHandler(WebHandler):
     self.server = self.application.authorizationServer
 
     if self.request.method == 'POST':
-      endpointName = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      payload, code, headers = self.server.create_endpoint_response(endpointName, self.request)
+      name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
+      data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       self.set_status(code)
       for header in headers:
         self.set_header(*header)
-      self.finish(payload)
-      return
+      self.finish(data)
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
@@ -85,28 +86,29 @@ class AuthHandler(WebHandler):
           authURL += '/%s' % data['Provider']
         authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
         self.redirect(authURL)
-      else:
-        t = template.Template('''<!DOCTYPE html>
-        <html>
-          <head>
-            <title>Authetication</title>
-            <meta charset="utf-8" />
-          </head>
-          <body>
-            <form id="user_code_form" onsubmit="verification_uri_complete()">
-              <input type="text" id="user_code" name="user_code">
-              <button type="submit" id="submit">Submit</button>
-            </form>
-            <script>
-              function verification_uri_complete(){
-                var form = document.getElementById('user_code_form');
-                form.action = "{{url}}/" + document.getElementById('user_code').value + "{{query}}";
-              }
-            </script>
-          </body>
-        </html>''')
-        self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
-                               query='?' + self.request.query))
+        return
+      
+      t = template.Template('''<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Authetication</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <form id="user_code_form" onsubmit="verification_uri_complete()">
+            <input type="text" id="user_code" name="user_code">
+            <button type="submit" id="submit">Submit</button>
+          </form>
+          <script>
+            function verification_uri_complete(){
+              var form = document.getElementById('user_code_form');
+              form.action = "{{url}}/" + document.getElementById('user_code').value + "{{query}}";
+            }
+          </script>
+        </body>
+      </html>''')
+      self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+                             query='?' + self.request.query))
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
@@ -128,7 +130,7 @@ class AuthHandler(WebHandler):
     self.server = self.application.authorizationServer
     if self.request.method == 'GET':
       try:
-        grant = self.server.validate_consent_request(self.request, end_user=None)
+        grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
       except OAuth2Error as error:
         self.finish("%s</br>%s" % (error.error, error.description))
         return
@@ -163,6 +165,7 @@ class AuthHandler(WebHandler):
       self.finish('%s is not registered in DIRAC.' % idP)
       return
 
+    # Use here grant
     flow = self.get_argument('response_type')
 
     # Authorization code flow
@@ -170,7 +173,7 @@ class AuthHandler(WebHandler):
       session = self.get_argument('state', generate_token(10))
       sessionDict = {}
       sessionDict['request'] = self.request
-      sessionDict['flow'] = flow
+      # sessionDict['flow'] = flow
       sessionDict['client_id'] = self.get_argument('client_id')
       sessionDict['group'] = self.get_argument('group', None)
       codeChallenge = self.get_argument('code_challenge', None)
@@ -178,13 +181,6 @@ class AuthHandler(WebHandler):
         sessionDict['code_challenge'] = codeChallenge
         sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
       self.server.addSession(session, **sessionDict)
-
-    # Device flow
-    elif flow == 'device':
-      session, _ = self.server.getSessionByOption('user_code', self.get_argument('user_code'))
-      if not session:
-        self.finish('Session expired.')
-        return
 
     # Submit second auth flow through IdP
     result = self.server.getIdPAuthorization(idP, session)
@@ -209,6 +205,7 @@ class AuthHandler(WebHandler):
     # Try to parse IdP session id
     session = self.get_argument('session', self.get_argument('state', None))
 
+    # Added group
     choosedGroup = self.get_argument('chooseGroup', None)
     if choosedGroup:
       self.server.updateSession(session, group=choosedGroup)
@@ -222,9 +219,8 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     sessionDict = self.server.getSession(session)
-    request = sessionDict['request']
     username = sessionDict['username']
-    # profile = sessionDict['profile']
+    request = sessionDict['request']    
     userID = sessionDict['userID']
 
     # Researche Group
@@ -284,28 +280,20 @@ class AuthHandler(WebHandler):
       self.finish('%s - bad group status' % thisGroup['Status'])
       return
 
-    # # Create DIRAC access token for username/group
-    # result = self.__getAccessToken(userID, reqGroup, session)
-    # if not result['OK']:
-    #   self.finish(result['Message'])
-    #   return
-    # self.server.updateSession(session, Status='authed', Token=result['Value'])
-    # print('---- Token ---')
-    # print(result['Value'])
+    # self.server.updateSession(session, Status='authed')
 
     ###### RESPONSE
-    payload, code, headers = self.server.create_authorization_response(request, grant_user=username)
+    data, code, headers = self.server.create_authorization_response(request, username)
     self.set_status(code)
     for header in headers:
       self.set_header(*header)
-    self.finish(payload)
+    self.finish(data)
 
   @asyncGen
   def web_token(self):
     self.server = self.application.authorizationServer
-
-    payload, code, headers = self.server.create_token_response(self.request)
+    data, code, headers = self.server.create_token_response(self.request)
     self.set_status(code)
     for header in headers:
       self.set_header(*header)
-    self.finish(payload)
+    self.finish(data)

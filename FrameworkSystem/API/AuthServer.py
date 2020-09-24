@@ -124,6 +124,15 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
                                     '"response_type={}"'.format(response_type))
     self.request.client = client
     self.validate_requested_scope()
+    
+    # Check user_code, when user go to authorization endpoint
+    userCode = self.request.args.get('user_code')
+    if not userCode:
+      raise OAuth2Error('user_code is absent.')
+    session, _ = self.server.getSessionByOption('user_code', userCode)
+    if not session:
+      raise OAuth2Error('Session is expired.')
+    
     self.execute_hook('after_validate_authorization_request')
     return None
   
@@ -156,8 +165,8 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
   def save_authorization_code(self, code, request):
-    # print('========= save_authorization_code =============')
-    # pprint(request.args)
+    print('========= save_authorization_code =============')
+    pprint(request.args)
     # session, _ = self.getSessionByOption('client_id', request.args['client_id'])
     # self.updateSession(session, code=code)
     pass
