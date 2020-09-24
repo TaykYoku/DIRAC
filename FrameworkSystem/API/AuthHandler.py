@@ -70,8 +70,7 @@ class AuthHandler(WebHandler):
     """
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      res = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-      self.__finish(res)
+      self.__finish(yield self.threadTask(self.server.create_endpoint_response, name, self.request))
       # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       # self.set_status(code)
       # for header in headers:
