@@ -29,7 +29,7 @@ class AuthHandler(WebHandler):
   LOCATION = "/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
-  path_index = [get_well_known_url()]
+  path_index = ['/.well-known/oauth-authorization-server']
   def web_index(self):
     """ Well known endpoint
 
