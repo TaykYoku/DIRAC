@@ -128,6 +128,10 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     self.validate_requested_scope()
     
     # Check user_code, when user go to authorization endpoint
+    print('========================')
+    pprint(self.request.args)
+    pprint(self.request.data)
+    print(self.request.uri)
     userCode = self.request.args.get('user_code')
     if not userCode:
       raise OAuth2Error('user_code is absent.')
