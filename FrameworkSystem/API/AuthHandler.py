@@ -85,7 +85,7 @@ class AuthHandler(WebHandler):
         if data.get('Provider'):
           authURL += '/%s' % data['Provider']
         authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
-        self.redirect(authURL)
+        self.redirect('%s&state=%s' % (authURL, session))
         return
       
       t = template.Template('''<!DOCTYPE html>
@@ -167,10 +167,9 @@ class AuthHandler(WebHandler):
 
     # Use here grant
     flow = self.get_argument('response_type')
-
+    session = self.get_argument('state', generate_token(10))
     # Authorization code flow
     if flow == 'code':
-      session = self.get_argument('state', generate_token(10))
       sessionDict = {}
       sessionDict['request'] = self.request
       # sessionDict['flow'] = flow
