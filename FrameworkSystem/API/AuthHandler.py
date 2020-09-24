@@ -49,8 +49,8 @@ class AuthHandler(WebHandler):
         POST: /registry?client_id=.. &scope=.. &redirect_uri=..
     """
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
-    d, c, h = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-    self.__finish(d, c, h)
+    r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+    self.__finish(*r)
     # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     # self.set_status(code)
     # for header in headers:
@@ -70,8 +70,8 @@ class AuthHandler(WebHandler):
     """
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      d, c, h = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-      self.__finish(d, c, h)
+      r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+      self.__finish(*r)
       # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       # self.set_status(code)
       # for header in headers:
@@ -287,7 +287,7 @@ class AuthHandler(WebHandler):
     # self.server.updateSession(session, Status='authed')
 
     ###### RESPONSE
-    self.__finish(self.server.create_authorization_response(request, username))
+    self.__finish(*self.server.create_authorization_response(request, username))
     # data, code, headers = self.server.create_authorization_response(request, username)
     # self.set_status(code)
     # for header in headers:
@@ -296,7 +296,7 @@ class AuthHandler(WebHandler):
 
   @asyncGen
   def web_token(self):
-    self.__finish(self.server.create_token_response(self.request))
+    self.__finish(*self.server.create_token_response(self.request))
     # data, code, headers = self.server.create_token_response(self.request)
     # self.set_status(code)
     # for header in headers:
