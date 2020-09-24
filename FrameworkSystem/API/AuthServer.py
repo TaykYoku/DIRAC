@@ -96,9 +96,10 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, request):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    request.data['response_type'] = 'device'
-    self.server.updateSession(data['device_code'], group=request.args.get('group'),
-                              Provider=request.args.get('provider'), request=request)
+    request.query += '&response_type=device&state=%s' % data['device_code']
+    self.server.updateSession(data['device_code'], request=request)
+                              # group=request.args.get('group'),
+                              # Provider=request.args.get('provider'),
     return c, data, h
 
   def get_verification_uri(self):
@@ -503,4 +504,6 @@ class AuthorizationServer(_AuthorizationServer):
     grant.validate_consent_request()
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
+    self.updateSession(req.state, request=req)
+    sessionDict['request'] = req
     return grant

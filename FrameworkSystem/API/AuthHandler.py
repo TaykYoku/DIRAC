@@ -83,10 +83,9 @@ class AuthHandler(WebHandler):
           self.finish('Session expired.')
           return
         authURL = self.server.metadata['authorization_endpoint']
-        if data.get('Provider'):
-          authURL += '/%s' % data['Provider']
-        authURL += '?response_type=device&user_code=%s&client_id=%s' % (userCode, data['client_id'])
-        self.redirect('%s&state=%s' % (authURL, session))
+        authURL += '?%s&client_id=%s&user_code=%s' % (data['request'].query,
+                                                      data['client_id'], userCode)
+        self.redirect(authURL)
         return
       
       t = template.Template('''<!DOCTYPE html>
@@ -113,7 +112,7 @@ class AuthHandler(WebHandler):
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
-  def web_authorization(self, idP=None):
+  def web_authorization(self, provider=None):
     """ Authorization endpoint
 
         GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)&group=..
@@ -141,6 +140,8 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       raise WErr(503, result['Message'])
     idPs = result['Value']
+
+    idP = self.get_argument('provider', provider)
     if not idP:
       # Choose IdP
       t = template.Template('''<!DOCTYPE html>
@@ -218,6 +219,7 @@ class AuthHandler(WebHandler):
       # Return main session flow
       session = result['Value']
 
+    # Main session metadata
     sessionDict = self.server.getSession(session)
     username = sessionDict['username']
     request = sessionDict['request']    
