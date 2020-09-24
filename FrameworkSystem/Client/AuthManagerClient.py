@@ -69,7 +69,7 @@ class AuthManagerClient(Client):
 
     return S_OK(clientMetadata)
 
-  def submitUserAuthorizationFlow(client=None, idP=None, group=None, grant='device'):
+  def submitUserAuthorizationFlow(self, client=None, idP=None, group=None, grant='device'):
     """ Submit authorization flow
     """
     if not client:
