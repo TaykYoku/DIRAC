@@ -334,13 +334,14 @@ class ProxyInit(object):
         sys.exit(result['Message'])
       response = result['Value']
 
-      userCode = response.get('user_code')
-      verURL = response.get('verification_uri')
-      verURLComplete = response.get('verification_uri_complete')
-      if not verURL:
-        sys.exit('Cannot get verification_uri for authentication.')
-      if not userCode:
-        sys.exit('Cannot get user_code for authentication.')
+      for k in ['user_code', 'device_code', 'verification_uri']:
+        if not response.get(k):
+          sys.exit('Cannot get %s for authentication.' % k)
+      
+      userCode = response['user_code']
+      deviceCode = response['device_code']
+      verURL = response['verification_uri']
+      verURLComplete = response['verification_uri_complete']
 
     # Show QR code
     if self.__piParams.addQRcode and verURLComplete:
@@ -365,9 +366,10 @@ class ProxyInit(object):
       if not result['OK']:
         sys.exit(result['Message'])
       clientID = result['Value']['client_id']
+
       __start = time.time()
       url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % clientID
-      url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % data['device_code']
+      url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % deviceCode
       while True:
         time.sleep(response.get('interval', 5))
         if time.time() - __start > 300:
