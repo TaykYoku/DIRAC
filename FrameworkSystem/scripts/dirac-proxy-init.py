@@ -353,7 +353,7 @@ class ProxyInit(object):
       else:
         spinner.info('Scan QR code to continue: %s' % result['Value'])
     else:
-      spinner.info('Use next link to continue, your user code is "%s"' % userCodeverURL)
+      spinner.info('Use next link to continue, your user code is "%s"' % userCode)
       spinner.info(verURL)
 
     # Try to open in default browser
