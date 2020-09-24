@@ -361,8 +361,12 @@ class ProxyInit(object):
 
     comment = ''
     with Halo('Waiting authorization status..') as spin:
+      result = gSessionManager.prepareClientCredentials()
+      if not result['OK']:
+        sys.exit(result['Message'])
+      clientID = result'Value']['client_id']
       __start = time.time()
-      url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % client_id
+      url = 'https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s' % clientID
       url += '&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % data['device_code']
       while True:
         time.sleep(response.get('interval', 5))
