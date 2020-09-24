@@ -387,7 +387,7 @@ class ProxyInit(object):
       else:
         result = qrterminal(verURLComplete)
         if not result['OK']:
-          spinner.error(result['Message'])
+          spinner.fail(result['Message'])
           spinner.info(showURL)
         else:
           # Show QR code
