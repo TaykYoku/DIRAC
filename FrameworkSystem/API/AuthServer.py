@@ -505,5 +505,4 @@ class AuthorizationServer(_AuthorizationServer):
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
     self.updateSession(req.state, request=req)
-    sessionDict['request'] = req
     return grant
