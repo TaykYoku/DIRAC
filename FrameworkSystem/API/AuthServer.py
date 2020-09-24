@@ -94,10 +94,10 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
-  def create_endpoint_response(self, request):
-    c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(request)
-    request.query += '&response_type=device&state=%s' % data['device_code']
-    self.server.updateSession(data['device_code'], request=request)
+  def create_endpoint_response(self, req):
+    c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(req)
+    req.query += '&response_type=device&state=%s' % data['device_code']
+    self.server.updateSession(data['device_code'], request=req, group=req.args.get('group')
                               # group=request.args.get('group'),
                               # Provider=request.args.get('provider'),
     return c, data, h
