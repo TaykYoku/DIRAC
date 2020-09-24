@@ -361,7 +361,7 @@ class ProxyInit(object):
             __qr += ' '
         __qr += ' \033[0m\n'
       return S_OK(__qr)
-      
+
     with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
       # Get token
       result = gSessionManager.submitUserAuthorizationFlow(idP=self.__piParams.provider, group=self.__piParams.diracGroup, grant='device')
@@ -373,23 +373,27 @@ class ProxyInit(object):
         if not response.get(k):
           sys.exit('Cannot get %s for authentication.' % k)
       
-      userCode = response['user_code']
-      deviceCode = response['device_code']
-      verURL = response['verification_uri']
-      verURLComplete = response['verification_uri_complete']
+    userCode = response['user_code']
+    deviceCode = response['device_code']
+    verURL = response['verification_uri']
+    verURLComplete = response.get('verification_uri_complete')
 
-    # Show QR code
-    if self.__piParams.addQRcode and verURLComplete:
-      result = qrterminal(verURLComplete)
-      if not result['OK']:
-        spinner.info(verURL)
-        spinner.color = 'red'
-        spinner.text = 'QRCode is crash: %s Please use upper link.' % result['Message']
+    # Notify user to go to authorization endpoint
+    showURL = 'Use next link to continue, your user code is "%s"\n%s' % (userCode, verURL)
+    if self.__piParams.addQRcode:
+      if not verURLComplete:
+        spinner.warn('Cannot get verification_uri_complete for authentication.')
+        spinner.info(showURL)
       else:
-        spinner.info('Scan QR code to continue: %s' % result['Value'])
+        result = qrterminal(verURLComplete)
+        if not result['OK']:
+          spinner.error(result['Message'])
+          spinner.info(showURL)
+        else:
+          # Show QR code
+          spinner.info('Scan QR code to continue: %s' % result['Value'])
     else:
-      spinner.info('Use next link to continue, your user code is "%s"' % userCode)
-      spinner.info(verURL)
+      spinner.info(showURL)
 
     # Try to open in default browser
     if webbrowser.open_new_tab(verURL):
