@@ -83,6 +83,8 @@ class WebHandler(tornado.web.RequestHandler):
   PATH_RE = None
   # If need to use request path for declare some value/option
   OVERPATH = False
+  # Prefix of methods names
+  METHOD_PREFIX = "web_"
 
   def threadTask(self, method, *args, **kwargs):
     def threadJob(*targs, **tkwargs):
