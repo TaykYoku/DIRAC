@@ -169,7 +169,8 @@ class WebHandler(tornado.web.RequestHandler):
     if not self.__session:
       return S_ERROR('No found session in cookies.')
 
-    result = gAuthManagerData.getIDForSession(self.__session)
+    # result = gAuthManagerData.getIDForSession(self.__session)
+    result = S_ERROR()
     if not result['OK']:
       self.set_cookie(self.__idp, '')
     else:
