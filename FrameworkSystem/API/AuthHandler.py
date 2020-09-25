@@ -28,7 +28,7 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(WebHandler):
   AUTH_PROPS = 'all'
-  LOCATION = "/DIRAC/auth"
+  LOCATION = "/auth" #"/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
   def initializeRequest(self):
