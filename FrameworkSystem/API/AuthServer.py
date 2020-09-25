@@ -157,15 +157,15 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     return False
 #########################################################################
 
-class OpenIDImplicitGrant(_OpenIDImplicitGrant):
-    def get_jwt_config(self):
-        return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
+# class OpenIDImplicitGrant(_OpenIDImplicitGrant):
+#     def get_jwt_config(self):
+#         return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
 
-    def generate_user_info(self, user, scopes):
-        return user.generate_user_info(scopes)
+#     def generate_user_info(self, user, scopes):
+#         return user.generate_user_info(scopes)
 
-    def exists_nonce(self, nonce, request):
-        return request.data.get('nonce')
+#     def exists_nonce(self, nonce, request):
+#         return request.data.get('nonce')
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
