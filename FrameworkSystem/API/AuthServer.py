@@ -17,6 +17,7 @@ from authlib.oauth2.rfc8628 import (
     DeviceCodeGrant as _DeviceCodeGrant,
     DeviceCredentialDict,
 )
+from authlib.oidc.core import UserInfo
 from authlib.oauth2.rfc6749 import grants, errors
 from authlib.oauth2.rfc6750 import BearerToken
 from authlib.oauth2.rfc7591 import ClientRegistrationEndpoint as _ClientRegistrationEndpoint
@@ -90,7 +91,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     result = self.server.addClient(data)
     return Client(result['Value']) if result['OK'] else None
 
-
+#########################################################################
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, req):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(req)
@@ -154,6 +155,17 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
 
   def should_slow_down(self, credential, now):
     return False
+#########################################################################
+
+class OpenIDImplicitGrant(_OpenIDImplicitGrant):
+    def get_jwt_config(self):
+        return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
+
+    def generate_user_info(self, user, scopes):
+        return user.generate_user_info(scopes)
+
+    def exists_nonce(self, nonce, request):
+        return request.data.get('nonce')
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
@@ -254,6 +266,7 @@ class AuthorizationServer(_AuthorizationServer):
       self.init_jwt_config(metadata)
 
     self.register_grant(DeviceCodeGrant)
+    # self.register_grant(OpenIDImplicitGrant)
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
     self.register_endpoint(ClientRegistrationEndpoint)
     self.register_endpoint(DeviceAuthorizationEndpoint)

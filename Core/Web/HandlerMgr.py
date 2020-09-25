@@ -129,8 +129,10 @@ class HandlerMgr(object):
         continue
       # Look for methods that are exported
       for mName, mObj in inspect.getmembers(handler):
-        if inspect.ismethod(mObj) and mName.find("web_") == 0:
-          if mName == "web_index":
+        if inspect.ismethod(mObj) and mName.find(handler.METHOD_PREFIX) == 0:
+          methodName = mName[len(handler.METHOD_PREFIX):]
+          args = getattr(handler, 'path_%s' % methodName, [])
+          if mName == "web_index" and handler.__name__ == 'RootHandler':
             # Index methods have the bare url
             self.log.verbose(" - Route %s -> %s.web_index" % (handlerRoute, hn))
             route = "%s(%s/)" % (baseRoute, handlerRoute)
@@ -139,10 +141,10 @@ class HandlerMgr(object):
           else:
             # Normal methods get the method appended without web_
             self.log.verbose(" - Route %s/%s ->  %s.%s" % (handlerRoute, mName[4:], hn, mName))
-            route = "%s(%s/%s)" % (baseRoute, handlerRoute, mName[4:])
+            route = "%s(%s%s)" % (baseRoute, handlerRoute, '' if methodName == 'index' else ('/%s' % methodName))
             # Use request path as options/values, for ex. ../method/<option>/<file path>?<option>=..
-            if handler.OVERPATH:
-              route += '(/[A-z0-9=-_/|]+)?'
+            if args:
+              route += '[\/]?%s' % '/'.join(args)
             self.__routes.append((route, handler))
           self.log.debug("  * %s" % route)
     # Send to root

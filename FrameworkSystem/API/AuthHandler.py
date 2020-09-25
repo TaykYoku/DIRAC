@@ -14,7 +14,6 @@ from tornado.template import Template
 
 from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
-from authlib.oauth2.rfc8414 import get_well_known_url
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
@@ -51,11 +50,6 @@ class AuthHandler(WebHandler):
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     self.__finish(*r)
-    # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-    # self.set_status(code)
-    # for header in headers:
-    #   self.set_header(*header)
-    # self.finish(data)
 
   path_device = ['([A-z0-9-_]*)']
   @asyncGen
@@ -72,18 +66,13 @@ class AuthHandler(WebHandler):
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       self.__finish(*r)
-      # data, code, headers = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-      # self.set_status(code)
-      # for header in headers:
-      #   self.set_header(*header)
-      # self.finish(data)
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
       if userCode:
         session, data = self.server.getSessionByOption('user_code', userCode)
         if not session:
-          self.finish('Session expired.')
+          self.finish('%s authorization session expired.' % session)
           return
         authURL = self.server.metadata['authorization_endpoint']
         authURL += '?%s&client_id=%s&user_code=%s' % (data['request'].query,
@@ -175,7 +164,6 @@ class AuthHandler(WebHandler):
     # Authorization code flow
     if flow == 'code':
       sessionDict = {}
-      sessionDict['request'] = self.request
       # sessionDict['flow'] = flow
       sessionDict['client_id'] = self.get_argument('client_id')
       sessionDict['group'] = self.get_argument('group', None)
@@ -288,20 +276,10 @@ class AuthHandler(WebHandler):
 
     ###### RESPONSE
     self.__finish(*self.server.create_authorization_response(request, username))
-    # data, code, headers = self.server.create_authorization_response(request, username)
-    # self.set_status(code)
-    # for header in headers:
-    #   self.set_header(*header)
-    # self.finish(data)
 
   @asyncGen
   def web_token(self):
     self.__finish(*self.server.create_token_response(self.request))
-    # data, code, headers = self.server.create_token_response(self.request)
-    # self.set_status(code)
-    # for header in headers:
-    #   self.set_header(*header)
-    # self.finish(data)
   
   def __finish(self, data, code, headers):
     self.set_status(code)

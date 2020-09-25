@@ -129,7 +129,7 @@ class WebHandler(tornado.web.RequestHandler):
     match = self.PATH_RE.match(self.request.path)
     pathItems = match.groups()
     self._pathResult = self.__checkPath(*pathItems[:3])
-    self.overpath = pathItems[3:] and pathItems[3] or ''
+    self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
 
@@ -386,7 +386,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     return WOK(methodName)
 
-  def get(self, setup, group, route, overpath=None):
+  def get(self, setup, group, route, *overpath):
     if not self._pathResult.ok:
       raise self._pathResult
     methodName = "web_%s" % self._pathResult.data
@@ -395,7 +395,7 @@ class WebHandler(tornado.web.RequestHandler):
     except AttributeError as e:
       self.log.fatal("This should not happen!! %s" % e)
       raise tornado.web.HTTPError(404)
-    return mObj()
+    return mObj(*overpath)
 
   def post(self, *args, **kwargs):
     return self.get(*args, **kwargs)
