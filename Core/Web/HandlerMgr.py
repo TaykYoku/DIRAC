@@ -18,6 +18,7 @@ from DIRAC.Core.Web.StaticHandler import StaticHandler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.Core.Utilities.DIRACSingleton import DIRACSingleton
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
+from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
 
 __RCSID__ = "$Id$"
 
@@ -40,6 +41,7 @@ class HandlerMgr(object):
     self.__setupGroupRE = r"(?:/s:([\w-]*)/g:([\w.-]*))?"
     self.__shySetupGroupRE = r"(?:/s:(?:[\w-]*)/g:(?:[\w.-]*))?"
     self.log = gLogger.getSubLogger("Routing")
+    self.__appSettings = {}
 
   def getPaths(self, dirName):
     """ Get lists of paths for all installed and enabled extensions
@@ -102,6 +104,8 @@ class HandlerMgr(object):
     for hn in self.__handlers:
       self.log.info("Found handler %s" % hn)
       handler = self.__handlers[hn]
+      if handler.__name__ == 'AuthHandler':
+        self.__appSettings['authorizationServer'] = AuthServer()
       # CHeck it has AUTH_PROPS
       if isinstance(handler.AUTH_PROPS, type(None)):
         return S_ERROR("Handler %s does not have AUTH_PROPS defined. Fix it!" % hn)
@@ -175,3 +179,6 @@ class HandlerMgr(object):
       if not result['OK']:
         return result
     return S_OK(self.__routes)
+
+  def getSettings(self):
+    return self.__appSettings

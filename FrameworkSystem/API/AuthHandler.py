@@ -31,7 +31,11 @@ class AuthHandler(WebHandler):
   LOCATION = "/auth" #"/DIRAC/auth"
   METHOD_PREFIX = "web_"
 
-  def initializeRequest(self):
+  # def initializeRequest(self):
+  #   self.server = self.application.authorizationServer
+  
+  def initialize(self):
+    super(AuthHandler, self).initialize()
     self.server = self.application.authorizationServer
 
   path_index = ['/.well-known/oauth-authorization-server']

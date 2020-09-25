@@ -177,6 +177,7 @@ class App(object):
     # Debug mode?
     if kw['debug']:
       self.log.info("Configuring in developer mode...")
+    kw.update(self.__handlerMgr.getSettings())
     # Configure tornado app
     self.__app = tornado.web.Application(routes, **kw)
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
