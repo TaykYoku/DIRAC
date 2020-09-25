@@ -223,11 +223,11 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     return jws.serialize_compact(protected, payload, key)
 
 
-class AuthorizationServer(_AuthorizationServer):
+class AuthServer(_AuthorizationServer):
   """ Implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
       Initialize it ::
 
-          server = AuthorizationServer()
+          server = AuthServer()
   """
   metadata_class = AuthorizationServerMetadata
 
@@ -236,7 +236,7 @@ class AuthorizationServer(_AuthorizationServer):
     self.idps = IdProviderFactory()
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
-    super(AuthorizationServer, self).__init__(query_client=self.getClient,
+    super(AuthServer, self).__init__(query_client=self.getClient,
                                               save_token=lambda t, r: pprint('Token: %s' % t))
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}

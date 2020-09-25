@@ -31,7 +31,7 @@ from DIRAC.Core.Security import Locations
 from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
-from DIRAC.FrameworkSystem.API.AuthServer import AuthorizationServer
+from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
 
 import redis
 
@@ -64,7 +64,7 @@ class Application(_Application):
     # # Initiated handlers list
     # self._initedHandlers = []
     super(Application, self).__init__(*args, **kwargs)
-    self.authorizationServer = AuthorizationServer()
+    self.authorizationServer = AuthServer()
 
 class TornadoServer(object):
   """
