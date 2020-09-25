@@ -36,6 +36,7 @@ class AuthHandler(WebHandler):
   
   def initialize(self):
     super(AuthHandler, self).initialize()
+    pprint(self.application.settings)
     self.server = self.application.settings.authorizationServer
 
   path_index = ['/.well-known/oauth-authorization-server']
