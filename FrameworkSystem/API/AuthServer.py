@@ -448,6 +448,7 @@ class AuthServer(_AuthorizationServer):
     print(request.body_arguments)
     print(request.arguments)
     print(request.body)
+    print(request.headers)
     print('---------------')
     body = {}
     if request.method == 'POST':
