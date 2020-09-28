@@ -97,7 +97,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     if client_metadata['token_endpoint_auth_method'] == 'none':
       client_info['client_secret'] = ''
     else:
-      client_info['client_secret'] = gen_salt(48)
+      client_info['client_secret'] = generate_token(48)
 
     client_info['client_metadata'] = client_metadata
 
