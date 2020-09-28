@@ -83,6 +83,11 @@ class AuthDB2(SQLAlchemyDB):
     pprint(data)
     session = self.session()
     client = Client(**data)
+    print('------ client')
+    pprint(client.client_metadata)
+    client.set_client_metadata(data['client_metadata'])
+    pprint(client.client_metadata)
+    print('-------------')
     # if not data.get("grant_type"):
     #   data['grant_types'] = ['authorization_code',
     #                          'urn:ietf:params:oauth:grant-type:device_code']
