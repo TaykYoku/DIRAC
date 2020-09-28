@@ -452,12 +452,19 @@ class AuthServer(_AuthorizationServer):
     print(json_decode(request.body))
     print(request.headers)
     print('---------------')
-    body = {}
-    if request.method == 'POST':
-      for k, v in request.body_arguments.items():
-        body[k] = ' '.join(v)
-    m = method_cls(request.method, request.uri, body, request.headers)
-    print(m.data)
+
+    if use_json:
+      body = request.body
+    else:
+      try:
+        body = json_decode(request.body)
+      except ValueError:
+        body = request.body_arguments
+    # if request.method == 'POST':
+    #   for k, v in request.body_arguments.items():
+    #     body[k] = ' '.join(v)
+    # m = method_cls(request.method, request.uri, body, request.headers)
+    # print(m.data)
     return method_cls(request.method, request.uri, body, request.headers)
 
   def create_json_request(self, request):
