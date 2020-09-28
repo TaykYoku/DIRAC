@@ -82,18 +82,15 @@ class OAuth2Code(dict):
 
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
-  DEFAULT_CLAIMS = [
-    ('grant_types', ['authorization_code', 'urn:ietf:params:oauth:grant-type:device_code']),
-    ('response_types', ['code', 'device']),
-    ('token_endpoint_auth_method', 'none')
-  ]
-  
   def authenticate_user(self, request):
     return True
 
   def save_client(self, client_info, client_metadata, request):
     data = client_info
-    for k, v in DEFAULT_CLAIMS:
+    for k, v in [('grant_types',
+                  ['authorization_code', 'urn:ietf:params:oauth:grant-type:device_code']),
+                ('response_types', ['code', 'device']),
+                ('token_endpoint_auth_method', 'none')]:
       if k not in client_metadata:
         client_metadata[k] = v
 
