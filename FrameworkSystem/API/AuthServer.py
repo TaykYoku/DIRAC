@@ -449,7 +449,7 @@ class AuthServer(_AuthorizationServer):
     print(request.arguments)
     print(request.body)
     print(type(request.body))
-    print(json_decode(request.body))
+    # print(json_decode(request.body))
     print(request.headers)
     print('---------------')
 
