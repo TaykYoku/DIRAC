@@ -454,12 +454,9 @@ class AuthServer(_AuthorizationServer):
     print('---------------')
 
     if use_json:
-      body = request.body
+      body = json_decode(request.body)
     else:
-      try:
-        body = json_decode(request.body)
-      except ValueError:
-        body = request.body_arguments
+      body = request.body_arguments
     # if request.method == 'POST':
     #   for k, v in request.body_arguments.items():
     #     body[k] = ' '.join(v)
