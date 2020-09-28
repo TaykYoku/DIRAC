@@ -83,20 +83,20 @@ class AuthDB2(SQLAlchemyDB):
     pprint(data)
     session = self.session()
     client = Client(**data)
-    if not data.get("grant_type"):
-      data['grant_types'] = ['authorization_code',
-                             'urn:ietf:params:oauth:grant-type:device_code']
-    if not data.get('response_types'):
-      data['response_types'] = ['code', 'device']
-    if not data.get("token_endpoint_auth_method"):
-      data['token_endpoint_auth_method'] = 'none'
+    # if not data.get("grant_type"):
+    #   data['grant_types'] = ['authorization_code',
+    #                          'urn:ietf:params:oauth:grant-type:device_code']
+    # if not data.get('response_types'):
+    #   data['response_types'] = ['code', 'device']
+    # if not data.get("token_endpoint_auth_method"):
+    #   data['token_endpoint_auth_method'] = 'none'
 
-    client.set_client_metadata(data)
+    # client.set_client_metadata(data)
 
-    if data['token_endpoint_auth_method'] == 'none':
-      client.client_secret = ''
-    else:
-      client.client_secret = gen_salt(48)
+    # if data['token_endpoint_auth_method'] == 'none':
+    #   client.client_secret = ''
+    # else:
+    #   client.client_secret = gen_salt(48)
 
     try:
       res = client.client_info
