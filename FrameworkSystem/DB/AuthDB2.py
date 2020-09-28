@@ -85,7 +85,7 @@ class AuthDB2(SQLAlchemyDB):
     client = Client(**data)
     if not data.get("grant_type"):
       data['grant_types'] = ['authorization_code',
-                             'urn:ietf:params:oauth:grant-type:device_code'])
+                             'urn:ietf:params:oauth:grant-type:device_code']
     if not data.get('response_types'):
       data['response_types'] = ['code', 'device']
     if not data.get("token_endpoint_auth_method"):
