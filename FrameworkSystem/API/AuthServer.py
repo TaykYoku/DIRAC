@@ -441,7 +441,7 @@ class AuthServer(_AuthorizationServer):
       return dict(error_uris)
 
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
-    print('==== create_oauth2_request ===')
+    print('==== create_oauth2_request === USE JSON: %s' % use_json)
     if isinstance(request, method_cls):
       return request
     print(request.uri)
