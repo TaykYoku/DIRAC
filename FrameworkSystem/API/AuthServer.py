@@ -187,7 +187,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   def validate_authorization_request(self):
     redirect_uri = super(AuthorizationCodeGrant, self).validate_authorization_request()
     session = self.request.state or generate_token(10)
-    self.updateSession(session, request=self.request, group=request.args.get('group'))
+    self.server.updateSession(session, request=self.request, group=request.args.get('group'))
     return redirect_uri
 
   def save_authorization_code(self, code, request):
