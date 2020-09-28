@@ -85,7 +85,7 @@ class AuthDB2(SQLAlchemyDB):
     client = Client(**data)
     meta = {"grant_types": data.get("grant_type", ['authorization_code',
                                                    'urn:ietf:params:oauth:grant-type:device_code']),
-            "redirect_uris": data.get("redirect_uri", []),
+            "redirect_uris": data.get("redirect_uri", ['/']),
             "response_types": data.get("response_type", ['code', 'device']),
             "token_endpoint_auth_method": data.get("token_endpoint_auth_method", 'none')}
     client.set_client_metadata(meta)

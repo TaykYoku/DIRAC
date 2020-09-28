@@ -121,7 +121,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
     response_type = self.request.response_type
     if not client.check_response_type(response_type):
       raise errors.UnauthorizedClientError('The client is not authorized to use '
-                                    '"response_type={}"'.format(response_type))
+                                           '"response_type={}"'.format(response_type))
     self.request.client = client
     self.validate_requested_scope()
     
@@ -171,11 +171,19 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
+  def validate_authorization_request(self):
+    redirect_uri = super(AuthorizationCodeGrant, self).validate_authorization_request()
+    session = self.request.state or generate_token(10)
+    self.updateSession(session, request=self.request, group=request.args.get('group'))
+    return redirect_uri
+
   def save_authorization_code(self, code, request):
     print('========= save_authorization_code =============')
     pprint(request.args)
     # session, _ = self.getSessionByOption('client_id', request.args['client_id'])
     # self.updateSession(session, code=code)
+    # session = request.state or generate_token(10)
+    # self.addSession(session, request=request, group=request.args.get('group'))
     pass
   
   def delete_authorization_code(self, authorization_code):
@@ -203,7 +211,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
       return item
 
   def authenticate_user(self, authorization_code):
-      return authorization_code.user
+    return authorization_code.user
   
   def generate_authorization_code(self):
     """ return code """
@@ -237,7 +245,7 @@ class AuthServer(_AuthorizationServer):
     self.cacheSession = DictCache()
     self.cacheClient = DictCache()
     super(AuthServer, self).__init__(query_client=self.getClient,
-                                              save_token=lambda t, r: pprint('Token: %s' % t))
+                                     save_token=lambda t, r: pprint('Token: %s' % t))
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
@@ -438,16 +446,15 @@ class AuthServer(_AuthorizationServer):
       return request
     print(request.uri)
     print(request.body_arguments)
+    print(request.arguments)
+    print(request.body)
     print('---------------')
     body = {}
     if request.method == 'POST':
       for k, v in request.body_arguments.items():
         body[k] = ' '.join(v)
-      # if use_json:
-      #   body = request.body_arguments
-      # else:
-      #   body = request.body_arguments
-
+    m = method_cls(request.method, request.uri, body, request.headers)
+    print(m.data)
     return method_cls(request.method, request.uri, body, request.headers)
 
   def create_json_request(self, request):

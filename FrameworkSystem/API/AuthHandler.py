@@ -129,6 +129,10 @@ class AuthHandler(WebHandler):
     if self.request.method == 'GET':
       try:
         grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
+        # grant.validate_authorization_request()
+        # validate_code_authorization_request(grant)
+        # validate_authorization_redirect_uri(request, client)
+        # 
       except OAuth2Error as error:
         self.finish("%s</br>%s" % (error.error, error.description))
         return
@@ -166,19 +170,20 @@ class AuthHandler(WebHandler):
       return
 
     # Use here grant
-    flow = self.get_argument('response_type')
+    # flow = self.get_argument('response_type')
     session = self.get_argument('state', generate_token(10))
-    # Authorization code flow
-    if flow == 'code':
-      sessionDict = {}
-      # sessionDict['flow'] = flow
-      sessionDict['client_id'] = self.get_argument('client_id')
-      sessionDict['group'] = self.get_argument('group', None)
-      codeChallenge = self.get_argument('code_challenge', None)
-      if codeChallenge:
-        sessionDict['code_challenge'] = codeChallenge
-        sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
-      self.server.addSession(session, **sessionDict)
+
+    # # Authorization code flow
+    # if flow == 'code':
+    #   sessionDict = {}
+    #   # sessionDict['flow'] = flow
+    #   sessionDict['client_id'] = self.get_argument('client_id')
+    #   sessionDict['group'] = self.get_argument('group', None)
+    #   codeChallenge = self.get_argument('code_challenge', None)
+    #   if codeChallenge:
+    #     sessionDict['code_challenge'] = codeChallenge
+    #     sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
+    #   self.server.addSession(session, **sessionDict)
 
     # Submit second auth flow through IdP
     result = self.server.getIdPAuthorization(idP, session)
