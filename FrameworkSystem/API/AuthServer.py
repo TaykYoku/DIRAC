@@ -178,6 +178,9 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
         return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
 
     def generate_user_info(self, user, scopes):
+        print('=== generate_user_info ===')
+        print(user)
+        print(scopes)
         return user.generate_user_info(scopes)
 
     def exists_nonce(self, nonce, request):
