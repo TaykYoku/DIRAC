@@ -93,8 +93,8 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     data = client_info
     for k, v in [('grant_types',
                   ['authorization_code', 'urn:ietf:params:oauth:grant-type:device_code']),
-                ('response_types', ['code', 'device']),
-                ('token_endpoint_auth_method', 'none')]:
+                 ('response_types', ['code', 'device']),
+                 ('token_endpoint_auth_method', 'none')]:
       if k not in client_metadata:
         client_metadata[k] = v
 
@@ -275,8 +275,9 @@ class AuthServer(_AuthorizationServer):
                 'authorization_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization',
                 'token_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/token',
                 'registration_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/register',
-                'response_types_supported': ['code'],
-                'grant_types_supported': ['authorization_code'],
+                'response_types_supported': ['code', 'device', 'id_token token', 'id_token'],
+                'grant_types_supported': ['authorization_code', 'implicit',
+                                          'urn:ietf:params:oauth:grant-type:device_code'],
                 'code_challenge_methods_supported': ['pain', 'S256']}
     if metadata.get('OAUTH2_METADATA_FILE'):
       with open(metadata['OAUTH2_METADATA_FILE']) as f:
