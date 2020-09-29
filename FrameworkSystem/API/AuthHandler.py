@@ -47,7 +47,10 @@ class AuthHandler(WebHandler):
     """
     if self.request.method == "GET":
       # self.finish(json.dumps(self.server.metadata))
-      self.finish(self.server.metadata)
+      pprint(self.server.metadata)
+      print(type(self.server.metadata))
+      # self.write(dict(self.server.metadata))
+      self.finish(dict(self.server.metadata))
 
   @asyncGen
   def web_register(self):
