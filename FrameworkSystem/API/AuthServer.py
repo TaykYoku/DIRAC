@@ -90,7 +90,6 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     return True
 
   def save_client(self, client_info, client_metadata, request):
-    data = client_info
     for k, v in [('grant_types',
                   ['authorization_code', 'urn:ietf:params:oauth:grant-type:device_code']),
                  ('response_types', ['code', 'device']),
@@ -182,7 +181,8 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
         return user.generate_user_info(scopes)
 
     def exists_nonce(self, nonce, request):
-        return request.data.get('nonce')
+        # TODO: need to implement
+        return False
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
