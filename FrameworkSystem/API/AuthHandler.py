@@ -39,8 +39,8 @@ class AuthHandler(WebHandler):
     pprint(self.application.settings)
     self.server = self.application.settings['authorizationServer']
 
-  path_index = ['/.well-known/(oauth-authorization-server|openid-configuration)']
-  def web_index(self):
+  path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
+  def web_index(self, instance):
     """ Well known endpoint
 
         GET: /.well-known/oauth-authorization-server
