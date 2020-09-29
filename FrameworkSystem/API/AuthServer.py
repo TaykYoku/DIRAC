@@ -187,7 +187,7 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
     print('=== generate_user_info ===')
     print(user)
     print(scopes)
-    _, data = self.server.getSession(self.request.state)
+    data = self.server.getSession(self.request.state)
     return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])
 
   def exists_nonce(self, nonce, request):
