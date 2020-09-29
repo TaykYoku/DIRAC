@@ -174,18 +174,25 @@ class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
 #########################################################################
 
 class OpenIDImplicitGrant(_OpenIDImplicitGrant):
-    def get_jwt_config(self):
-        return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
+  def validate_authorization_request(self):
+    redirect_uri = super(OpenIDImplicitGrant, self).validate_authorization_request()
+    session = self.request.state or generate_token(10)
+    self.server.updateSession(session, request=self.request, group=self.request.args.get('group'))
+    return redirect_uri
+  
+  def get_jwt_config(self):
+    return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
 
-    def generate_user_info(self, user, scopes):
-        print('=== generate_user_info ===')
-        print(user)
-        print(scopes)
-        return user.generate_user_info(scopes)
+  def generate_user_info(self, user, scopes):
+    print('=== generate_user_info ===')
+    print(user)
+    print(scopes)
+    _, data = self.server.getSession(self.request.state)
+    return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])
 
-    def exists_nonce(self, nonce, request):
-        # TODO: need to implement
-        return False
+  def exists_nonce(self, nonce, request):
+    # TODO: need to implement
+    return False
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
@@ -391,16 +398,13 @@ class AuthServer(_AuthorizationServer):
     providerName = sessionDict['Provider']
 
     # Parse response
-    print('------> self.idps.getIdProvider')
     result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
-      print('------> idp.parseAuthResponse')
       result = result['Value'].parseAuthResponse(response, sessionDict)
       if result['OK']:
         self.removeSession(session)
         # FINISHING with IdP auth result
         username, userProfile = result['Value']
-        print('------> gSessionManager.parseAuthResponse')
         result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
         print('-- finishing --')
     if not result['OK']:
@@ -524,6 +528,8 @@ class AuthServer(_AuthorizationServer):
     print('==== GRANT ===')
     print(grant)
     grant.validate_consent_request()
+    # session = req.state or generate_token(10)
+    # self.server.updateSession(session, request=req, group=req.args.get('group'))
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
     self.updateSession(req.state, request=req)
