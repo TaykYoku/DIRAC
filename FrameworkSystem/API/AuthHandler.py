@@ -46,7 +46,8 @@ class AuthHandler(WebHandler):
         GET: /.well-known/oauth-authorization-server
     """
     if self.request.method == "GET":
-      self.finish(json.dumps(self.server.metadata))
+      # self.finish(json.dumps(self.server.metadata))
+      self.finish(self.server.metadata)
 
   @asyncGen
   def web_register(self):
