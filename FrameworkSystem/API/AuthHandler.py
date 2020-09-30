@@ -12,7 +12,8 @@ from tornado import web, gen, template
 from tornado.escape import json_decode
 from tornado.template import Template
 
-from authlib.jose import JsonWebKey
+from authlib.jose import jwk
+# from authlib.jose import JsonWebKey
 from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
 
@@ -56,10 +57,9 @@ class AuthHandler(WebHandler):
     if self.request.method == "GET":
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
-      key = JsonWebKey.import_key(key, {'kty': 'RSA'})
-      # key.as_dict()
-      # key.as_json()
-      self.finish(key.as_dict())
+      # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
+      self.finish(jwk.dumps(key, kty='RSA'))
+      # self.finish(key.as_dict())
 
   @asyncGen
   def web_register(self):
