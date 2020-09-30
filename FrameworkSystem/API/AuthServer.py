@@ -84,6 +84,9 @@ class OAuth2Code(dict):
 
   def get_auth_time(self):
     return self.get('auth_time')
+  
+  def get_nonce(self):
+    return self.get('nonce')
 
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
