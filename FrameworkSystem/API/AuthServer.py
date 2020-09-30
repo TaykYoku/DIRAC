@@ -328,7 +328,7 @@ class AuthServer(_AuthorizationServer):
     self.register_grant(DeviceCodeGrant)
     # self.register_grant(OpenIDImplicitGrant)
     self.register_grant(AuthorizationCodeGrant,
-                        [CodeChallenge(required=True), OpenIDCode(require_nonce=True)])
+                        [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])
     self.register_endpoint(ClientRegistrationEndpoint)
     self.register_endpoint(DeviceAuthorizationEndpoint)
   
