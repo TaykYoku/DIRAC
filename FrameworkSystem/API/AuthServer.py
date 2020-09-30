@@ -63,7 +63,7 @@ class OAuth2Code(dict):
 
   @property
   def user(self):
-    return self.get('user_id')
+    return (self.get('user_id'), self.get('group'))
   
   @property
   def code_challenge(self):
@@ -274,10 +274,14 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     print('Session:')
     pprint(self.server.getSession(self.request.state))
     print('-----------------------------------------------')
+    sessionDict = self.server.getSession(self.request.state)
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
-    code = OAuth2Code({'user_id': None, 'scope': None,  # how to get it
-                       'client_id': self.request.args['client_id'], 'redirect_uri': None,  # how to get it
+    code = OAuth2Code({'user_id': sessionDict['userID'],
+                       'group': sessionDict['group'],
+                       'scope': self.request.args['scope'],
+                       'redirect_uri': self.request.args['redirect_uri'],
+                       'client_id': self.request.args['client_id'],
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     print('--= Payload =--')
