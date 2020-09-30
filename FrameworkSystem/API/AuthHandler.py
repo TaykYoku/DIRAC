@@ -58,7 +58,7 @@ class AuthHandler(WebHandler):
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
       # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
-      self.finish(jwk.dumps(key, kty='RSA'))
+      self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
       # self.finish(key.as_dict())
 
   @asyncGen
