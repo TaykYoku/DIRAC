@@ -17,10 +17,11 @@ from authlib.oauth2.rfc8628 import (
     DeviceCodeGrant as _DeviceCodeGrant,
     DeviceCredentialDict,
 )
-from authlib.oidc.core import grants, UserInfo
+from authlib.oidc.core import UserInfo
 from authlib.oidc.core import ImplicitIDToken
 from authlib.oidc.core.grants import (
-    OpenIDImplicitGrant as _OpenIDImplicitGrant
+    OpenIDImplicitGrant as _OpenIDImplicitGrant,
+    OpenIDCode as _OpenIDCode
 )
 from authlib.oauth2.rfc6749 import grants, errors
 from authlib.oauth2.rfc6750 import BearerToken
@@ -197,7 +198,7 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
     # TODO: need to implement
     return False
 
-class OpenIDCode(grants.OpenIDCode):
+class OpenIDCode(_OpenIDCode):
   def exists_nonce(self, nonce, request):
     return False
     # try:
