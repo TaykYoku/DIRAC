@@ -217,6 +217,8 @@ class OpenIDCode(_OpenIDCode):
     return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
 
   def generate_user_info(self, user, scope):
+    print('== generate_user_info ==')
+    pprint(self.__dict__)
     data = self.server.getSession(self.request.state)
     return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])
 
