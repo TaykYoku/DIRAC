@@ -506,10 +506,11 @@ class AuthServer(_AuthorizationServer):
     if use_json:
       body = json_decode(request.body)
     else:
-      body = request.body_arguments
-    # if request.method == 'POST':
-    #   for k, v in request.body_arguments.items():
-    #     body[k] = ' '.join(v)
+      body = {}
+      # body = request.body_arguments
+      # if request.method == 'POST':
+      for k, v in request.body_arguments.items():
+        body[k] = ' '.join(v)
     print(body)
     m = method_cls(request.method, request.uri, body, request.headers)
     print(m.data)
