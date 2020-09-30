@@ -220,11 +220,11 @@ class OpenIDCode(_OpenIDCode):
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
-  def validate_authorization_request(self):
-    redirect_uri = super(AuthorizationCodeGrant, self).validate_authorization_request()
-    session = self.request.state or generate_token(10)
-    self.server.updateSession(session, request=self.request, group=self.request.args.get('group'))
-    return redirect_uri
+  # def validate_authorization_request(self):
+  #   redirect_uri = super(AuthorizationCodeGrant, self).validate_authorization_request()
+  #   session = self.request.state or generate_token(10)
+  #   self.server.updateSession(session, request=self.request, group=self.request.args.get('group'))
+  #   return redirect_uri
 
   def save_authorization_code(self, code, request):
     print('========= save_authorization_code =============')
@@ -248,6 +248,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
 
         :return: OAuth2Code or None
     """
+    print('== query_authorization_code ==')
     pprint(code)
     jws = JsonWebSignature(algorithms=['RS256'])
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
@@ -266,7 +267,9 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   def generate_authorization_code(self):
     """ return code """
     print('========= generate_authorization_code =========')
+    print('DICT:')
     pprint(self.__dict__)
+    print('Reuest:')
     pprint(self.request.data)
     print('-----------------------------------------------')
     jws = JsonWebSignature(algorithms=['RS256'])
@@ -275,12 +278,12 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'client_id': self.request.args['client_id'], 'redirect_uri': None,  # how to get it
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
-    print('--==--')
+    print('--= Payload =--')
     pprint(dict(code))
     # payload = json_dumps(dict(code)) #
     payload = json_b64encode(dict(code))
     pprint(payload)
-    print('--==--')
+    print('--=         =--')
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     return jws.serialize_compact(protected, payload, key)
@@ -437,7 +440,7 @@ class AuthServer(_AuthorizationServer):
         # FINISHING with IdP auth result
         username, userProfile = result['Value']
         result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
-        print('-- finishing --')
+        print('-- IdP finishing --')
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
@@ -500,12 +503,12 @@ class AuthServer(_AuthorizationServer):
     print('==== create_oauth2_request === USE JSON: %s' % use_json)
     if isinstance(request, method_cls):
       return request
-    print(request.uri)
-    print(request.body_arguments)
-    print(request.arguments)
-    print(request.body)
-    print(type(request.body))
+    print('URL: %s' % request.uri)
+    print('BODY args: %s' % request.body_arguments)
+    print('ARGS: %s' % request.arguments)
+    print('BODY %s: %s' % (type(request.body), request.body))
     # print(json_decode(request.body))
+    print('Headers:')
     print(request.headers)
     print('---------------')
 
@@ -517,6 +520,7 @@ class AuthServer(_AuthorizationServer):
       # if request.method == 'POST':
       for k, v in request.body_arguments.items():
         body[k] = ' '.join(v)
+    print('After render:')
     print(body)
     m = method_cls(request.method, request.uri, body, request.headers)
     print(m.data)
@@ -557,12 +561,15 @@ class AuthServer(_AuthorizationServer):
     req = self.create_oauth2_request(request)
     req.user = end_user
     grant = self.get_authorization_grant(req)
-    print('==== GRANT ===')
-    print(grant)
+    print('==== GRANT: %s ===' % grant)
     grant.validate_consent_request()
     # session = req.state or generate_token(10)
     # self.server.updateSession(session, request=req, group=req.args.get('group'))
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
+    print('==== Session: %s' % req.state)
+    print('==== Request:')
+    pprint(req.data)
+    print('============')
     self.updateSession(req.state, request=req)
     return grant
