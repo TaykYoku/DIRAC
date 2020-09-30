@@ -210,9 +210,7 @@ class OpenIDCode(_OpenIDCode):
   def get_jwt_config(self, grant):
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
-    print('-- get_jwt_config --')
-    pprint(self.__dict__)
-    issuer = self.server.metadata['issuer']
+    issuer = grant.server.metadata['issuer']
     return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
 
   def generate_user_info(self, user, scope):
