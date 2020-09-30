@@ -311,7 +311,8 @@ class AuthServer(_AuthorizationServer):
                 'grant_types_supported': ['authorization_code', 'implicit', 'code',
                                           'urn:ietf:params:oauth:grant-type:device_code'],
                 'code_challenge_methods_supported': ['pain', 'S256'],
-                'jwks_uri': 'https://marosvn32.in2p3.fr/DIRAC/auth/jwk'}
+                'jwks_uri': 'https://marosvn32.in2p3.fr/DIRAC/auth/jwk',
+                'userinfo_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/userinfo'}
     if metadata.get('OAUTH2_METADATA_FILE'):
       with open(metadata['OAUTH2_METADATA_FILE']) as f:
         metadata = json.load(f)

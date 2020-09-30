@@ -60,6 +60,9 @@ class AuthHandler(WebHandler):
       # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
       self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
       # self.finish(key.as_dict())
+  
+  def web_userinfo(self):
+    self.finish({})
 
   @asyncGen
   def web_register(self):
