@@ -214,7 +214,7 @@ class OpenIDCode(grants.OpenIDCode):
 
   def generate_user_info(self, user, scope):
     data = self.server.getSession(self.request.state)
-    return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])    return user_info
+    return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
