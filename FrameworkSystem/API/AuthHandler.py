@@ -12,7 +12,7 @@ from tornado import web, gen, template
 from tornado.escape import json_decode
 from tornado.template import Template
 
-from authlib.jose import jwk
+from authlib.jose import jwk, jwt
 # from authlib.jose import JsonWebKey
 from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
