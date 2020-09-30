@@ -194,7 +194,6 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
     # TODO: need to implement
     return False
 
-
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
@@ -288,7 +287,8 @@ class AuthServer(_AuthorizationServer):
                 'response_types_supported': ['code', 'device', 'id_token token', 'id_token'],
                 'grant_types_supported': ['authorization_code', 'implicit',
                                           'urn:ietf:params:oauth:grant-type:device_code'],
-                'code_challenge_methods_supported': ['pain', 'S256']}
+                'code_challenge_methods_supported': ['pain', 'S256'],
+                'jwks_uri': 'https://marosvn32.in2p3.fr/DIRAC/auth/jwk'}
     if metadata.get('OAUTH2_METADATA_FILE'):
       with open(metadata['OAUTH2_METADATA_FILE']) as f:
         metadata = json.load(f)
@@ -385,7 +385,7 @@ class AuthServer(_AuthorizationServer):
 
         :param str providerName: identity provider name
         :param dict response: authorization response
-        :param dict session: session data dictionary
+        :param str session: session 
 
         :return: S_OK(dict)/S_ERROR()
     """

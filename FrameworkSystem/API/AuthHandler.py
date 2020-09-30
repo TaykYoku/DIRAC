@@ -12,6 +12,7 @@ from tornado import web, gen, template
 from tornado.escape import json_decode
 from tornado.template import Template
 
+from authlib.jose import JsonWebKey
 from authlib.oauth2.base import OAuth2Error
 from authlib.common.security import generate_token
 
@@ -43,10 +44,22 @@ class AuthHandler(WebHandler):
   def web_index(self, instance):
     """ Well known endpoint
 
+        GET: /.well-known/openid-configuration
         GET: /.well-known/oauth-authorization-server
     """
     if self.request.method == "GET":
       self.finish(dict(self.server.metadata))
+
+  def web_jwk(self):
+    """ JWKs
+    """
+    if self.request.method == "GET":
+      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+        key = f.read()
+      key = JsonWebKey.import_key(key, {'kty': 'RSA'})
+      # key.as_dict()
+      # key.as_json()
+      self.finish(key.as_dict())
 
   @asyncGen
   def web_register(self):
