@@ -248,6 +248,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
 
         :return: OAuth2Code or None
     """
+    pprint(code)
     jws = JsonWebSignature(algorithms=['RS256'])
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
@@ -274,7 +275,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'client_id': self.request.args['client_id'], 'redirect_uri': None,  # how to get it
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
-    payload = json_b64encode(code)
+    payload = json_b64encode(dict(code))
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     return jws.serialize_compact(protected, payload, key)
