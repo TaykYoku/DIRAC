@@ -326,7 +326,7 @@ class AuthServer(_AuthorizationServer):
       self.init_jwt_config(metadata)
 
     self.register_grant(DeviceCodeGrant)
-    self.register_grant(OpenIDImplicitGrant)
+    # self.register_grant(OpenIDImplicitGrant)
     self.register_grant(AuthorizationCodeGrant,
                         [CodeChallenge(required=True), OpenIDCode(require_nonce=True)])
     self.register_endpoint(ClientRegistrationEndpoint)
