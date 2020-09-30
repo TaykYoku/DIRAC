@@ -250,7 +250,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     """
     pprint(code)
     jws = JsonWebSignature(algorithms=['RS256'])
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
     data = jws.deserialize_compact(code, key)
     try:
@@ -277,7 +277,8 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     print('--==--')
     pprint(dict(code))
-    payload = json_dumps(dict(code)) #json_b64encode(dict(code))
+    # payload = json_dumps(dict(code)) #
+    payload = json_b64encode(dict(code))
     pprint(payload)
     print('--==--')
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
