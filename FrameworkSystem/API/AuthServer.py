@@ -17,7 +17,7 @@ from authlib.oauth2.rfc8628 import (
     DeviceCodeGrant as _DeviceCodeGrant,
     DeviceCredentialDict,
 )
-from authlib.oidc.core import UserInfo
+from authlib.oidc.core import grants, UserInfo
 from authlib.oidc.core import ImplicitIDToken
 from authlib.oidc.core.grants import (
     OpenIDImplicitGrant as _OpenIDImplicitGrant
