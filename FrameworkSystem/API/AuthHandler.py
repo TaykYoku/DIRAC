@@ -323,7 +323,7 @@ class AuthHandler(WebHandler):
       # If present "Authorization" header it means that need to use another then certificate authZ
       authParts = auth.split()
       authType = authParts[0]
-      if authParts != 2 or authType.lower() != "bearer":
+      if len(authParts) != 2 or authType.lower() != "bearer":
         raise Exception("Invalid header authorization")
       token = authParts[1]
       # Read public key of DIRAC auth service
