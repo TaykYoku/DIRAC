@@ -275,7 +275,11 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'client_id': self.request.args['client_id'], 'redirect_uri': None,  # how to get it
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
+    print('--==--')
+    pprint(dict(code))
     payload = json_b64encode(dict(code))
+    pprint(payload)
+    print('--==--')
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     return jws.serialize_compact(protected, payload, key)
