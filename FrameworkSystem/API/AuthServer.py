@@ -181,7 +181,9 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
     return redirect_uri
   
   def get_jwt_config(self):
-    return dict(key='secret', alg='HS256', iss='Authlib', exp=3600)
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
+      key = f.read()
+    return dict(key=key, alg='RS256', iss='DIRACGrid', exp=3600)
 
   def generate_user_info(self, user, scopes):
     print('=== generate_user_info ===')
