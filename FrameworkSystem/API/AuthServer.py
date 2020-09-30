@@ -222,7 +222,8 @@ class OpenIDCode(_OpenIDCode):
     print(user)
     print(scope)
     # data = self.server.getSession(self.request.state)
-    return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])
+    # return UserInfo(sub=user[0], profile=data['profile'], grp=user[1])
+    return UserInfo(sub=user[0], grp=user[1])
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
