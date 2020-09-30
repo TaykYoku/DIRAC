@@ -277,7 +277,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     print('--==--')
     pprint(dict(code))
-    payload = dict(code) #json_b64encode(dict(code))
+    payload = json_dumps(dict(code)) #json_b64encode(dict(code))
     pprint(payload)
     print('--==--')
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
