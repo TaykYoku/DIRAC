@@ -254,7 +254,7 @@ class AuthHandler(WebHandler):
           Please choose group:
           <ul>
             {% for group, data in groups.items() %}
-              <li> <a href="{{url}}?{{query}}&chooseGroup={{group}}">{{group}}</a>
+              <li> <a href="{{url}}?state={{session}}&chooseGroup={{group}}">{{group}}</a>
                 : {{data['Status']}} </br>
                 {{data['Comment']}} </br>
                 {% if data.get('Action', '') %}
@@ -266,8 +266,8 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
-      query = '%s&session=%s' % (self.request.query, session)
-      self.finish(t.generate(url=url, query=query, groups=groupStatuses))
+      # query = '%s&session=%s' % (self.request.query, session)
+      self.finish(t.generate(url=url, session=session, groups=groupStatuses))
       return
 
     pprint(groupStatuses)
