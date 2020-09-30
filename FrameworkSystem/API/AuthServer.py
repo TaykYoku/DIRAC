@@ -472,7 +472,7 @@ class AuthServer(_AuthorizationServer):
     payload = {'sub': user[0],
                'grp': user[1],
                'iss': getSetup(),
-               'exp': 12 * 3600}
+               'exp': int(time()) + (12 * 3600)}
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
