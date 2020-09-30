@@ -197,6 +197,25 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
     # TODO: need to implement
     return False
 
+class OpenIDCode(grants.OpenIDCode):
+  def exists_nonce(self, nonce, request):
+    return False
+    # try:
+    #   AuthorizationCode.objects.get(client_id=request.client_id, nonce=nonce)
+    #   return True
+    # except AuthorizationCode.DoesNotExist:
+    #   return False
+
+  def get_jwt_config(self, grant):
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
+      key = f.read()
+    issuer = self.server.metadata['issuer']
+    return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
+
+  def generate_user_info(self, user, scope):
+    data = self.server.getSession(self.request.state)
+    return UserInfo(sub=data['userID'], profile=data['profile'], grp=data['group'])    return user_info
+
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
@@ -288,7 +307,7 @@ class AuthServer(_AuthorizationServer):
                 'token_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/token',
                 'registration_endpoint': 'https://marosvn32.in2p3.fr/DIRAC/auth/register',
                 'response_types_supported': ['code', 'device', 'id_token token', 'id_token'],
-                'grant_types_supported': ['authorization_code', 'implicit',
+                'grant_types_supported': ['authorization_code', 'implicit', 'code',
                                           'urn:ietf:params:oauth:grant-type:device_code'],
                 'code_challenge_methods_supported': ['pain', 'S256'],
                 'jwks_uri': 'https://marosvn32.in2p3.fr/DIRAC/auth/jwk'}
@@ -306,7 +325,8 @@ class AuthServer(_AuthorizationServer):
 
     self.register_grant(DeviceCodeGrant)
     self.register_grant(OpenIDImplicitGrant)
-    self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
+    self.register_grant(AuthorizationCodeGrant,
+                        [CodeChallenge(required=True), OpenIDCode(require_nonce=True)])
     self.register_endpoint(ClientRegistrationEndpoint)
     self.register_endpoint(DeviceAuthorizationEndpoint)
   
