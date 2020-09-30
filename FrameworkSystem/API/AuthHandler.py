@@ -319,6 +319,7 @@ class AuthHandler(WebHandler):
     auth = self.request.headers.get("Authorization")
     credDict = {}
     if auth:
+      print(auth)
       # If present "Authorization" header it means that need to use another then certificate authZ
       authParts = auth.split()
       authType = authParts[0]
