@@ -187,22 +187,10 @@ class AuthHandler(WebHandler):
 
     # Use here grant
     # flow = self.get_argument('response_type')
-    session = self.get_argument('state', generate_token(10))
-
-    # # Authorization code flow
-    # if flow == 'code':
-    #   sessionDict = {}
-    #   # sessionDict['flow'] = flow
-    #   sessionDict['client_id'] = self.get_argument('client_id')
-    #   sessionDict['group'] = self.get_argument('group', None)
-    #   codeChallenge = self.get_argument('code_challenge', None)
-    #   if codeChallenge:
-    #     sessionDict['code_challenge'] = codeChallenge
-    #     sessionDict['code_challenge_method'] = self.get_argument('code_challenge_method', 'pain')
-    #   self.server.addSession(session, **sessionDict)
+    # session = self.get_argument('state'), generate_token(10))
 
     # Submit second auth flow through IdP
-    result = self.server.getIdPAuthorization(idP, session)
+    result = self.server.getIdPAuthorization(idP, self.get_argument('state')) # session)
     if not result['OK']:
       raise WErr(503, result['Message'])
     self.log.notice('Redirect to', result['Value'])
@@ -221,7 +209,8 @@ class AuthHandler(WebHandler):
       return
 
     # Try to parse IdP session id
-    session = self.get_argument('session', self.get_argument('state', None))
+    # session = self.get_argument('session', self.get_argument('state', None))
+    session = self.get_argument('state')
 
     # Added group
     choosedGroup = self.get_argument('chooseGroup', None)
