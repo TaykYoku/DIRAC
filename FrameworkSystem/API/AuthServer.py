@@ -183,7 +183,8 @@ class OpenIDImplicitGrant(_OpenIDImplicitGrant):
   def get_jwt_config(self):
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
-    return dict(key=key, alg='RS256', iss='DIRACGrid', exp=3600)
+    issuer = self.server.metadata['issuer']
+    return dict(key=key, alg='RS256', iss=issuer, exp=3600)
 
   def generate_user_info(self, user, scopes):
     print('=== generate_user_info ===')
