@@ -22,6 +22,7 @@ from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.API.AuthServer import DeviceAuthorizationEndpoint, ClientRegistrationEndpoint
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 
 
@@ -62,7 +63,7 @@ class AuthHandler(WebHandler):
       # self.finish(key.as_dict())
   
   def web_userinfo(self):
-    self.finish({})
+    self.finish(self.__validateToken())
 
   @asyncGen
   def web_register(self):
@@ -305,3 +306,61 @@ class AuthHandler(WebHandler):
     for header in headers:
       self.set_header(*header)
     self.finish(data)
+
+  def __validateToken(self):
+    """ Load client certchain in DIRAC and extract informations.
+
+        The dictionary returned is designed to work with the AuthManager,
+        already written for DISET and re-used for HTTPS.
+
+        :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
+                  (not a DIRAC structure !)
+    """
+    auth = self.request.headers.get("Authorization")
+    credDict = {}
+    if auth:
+      # If present "Authorization" header it means that need to use another then certificate authZ
+      authParts = auth.split()
+      authType = authParts[0]
+      if authParts != 2 or authType.lower() != "bearer":
+        raise Exception("Invalid header authorization")
+      token = authParts[1]
+      # Read public key of DIRAC auth service
+      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+        key = f.read()
+      # Get claims and verify signature
+      claims = jwt.decode(token, key)
+      # Verify token
+      claims.validate()
+      # If no found 'group' claim, user group need to add as https argument
+      credDict['sub'] = claims.sub
+      credDict['group'] = claims.get('grp')
+    else:
+      #   chainAsText = self.request.get_ssl_certificate().as_pem()
+      #   peerChain = X509Chain()
+
+      #   # Here we read all certificate chain
+      #   cert_chain = self.request.get_ssl_certificate_chain()
+      #   for cert in cert_chain:
+      #     chainAsText += cert.as_pem()
+
+      #   peerChain.loadChainFromString(chainAsText)
+
+      #   # Retrieve the credentials
+      #   res = peerChain.getCredentials(withRegistryInfo=False)
+      #   if not res['OK']:
+      #     raise Exception(res['Message'])
+
+      #   credDict = res['Value']
+
+      # # We check if client sends extra credentials...
+      # if "extraCredentials" in self.request.arguments:
+      #   extraCred = self.get_argument("extraCredentials")
+      #   if extraCred:
+      #     credDict['extraCredentials'] = decode(extraCred)[0]
+      pass
+    result = Registry.getUsernameForID(credDict['sub'])
+    if not result['OK']:
+      raise Exception("Invalid user")
+    credDict['username'] = result['Value']
+    return credDict
