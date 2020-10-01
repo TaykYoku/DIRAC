@@ -24,18 +24,19 @@ class ProxyHandler(WebHandler):
   AUTH_PROPS = "authenticated"
   LOCATION = "/"
 
-  def initialize(self):
-    super(ProxyHandler, self).initialize()
-    self.args = {}
-    for arg in self.request.arguments:
-      if len(self.request.arguments[arg]) > 1:
-        self.args[arg] = self.request.arguments[arg]
-      else:
-        self.args[arg] = self.request.arguments[arg][0] or ''
-    return S_OK()
+  # def initialize(self):
+  #   super(ProxyHandler, self).initialize()
+  #   self.args = {}
+  #   for arg in self.request.arguments:
+  #     if len(self.request.arguments[arg]) > 1:
+  #       self.args[arg] = self.request.arguments[arg]
+  #     else:
+  #       self.args[arg] = self.request.arguments[arg][0] or ''
+  #   return S_OK()
 
+  path_proxy = ['([a-z]*)', '([a-z]*)']
   @asyncGen
-  def web_proxy(self):
+  def web_proxy(self, user=None, group=None):
     """ REST endpoints to user proxy management
 
         **GET** /proxy?<options> -- retrieve personal proxy
@@ -58,23 +59,26 @@ class ProxyHandler(WebHandler):
 
         **GET** /proxy/metadata?<options> -- retrieve proxy metadata..
     """
-    voms = self.args.get('voms')
-    proxyLifeTime = 3600 * 12
-    if re.match('[0-9]+', self.args.get('lifetime') or ''):
-      proxyLifeTime = int(self.args.get('lifetime'))
-    optns = self.overpath.strip('/').split('/')
+    voms = self.get_argument('voms', None)
+    try:
+      proxyLifeTime = int(self.get_argument('lifetime', 3600 * 12))
+    except Exception:
+      raise 
+    # if re.match('[0-9]+', self.args.get('lifetime') or ''):
+    #   proxyLifeTime = int(self.args.get('lifetime'))
+    # optns = self.overpath.strip('/').split('/')
 
     credGroup = self.getUserGroup()
     proxyCli = ProxyManagerClient(delegatedGroup=credGroup, delegatedID=self.getID(), delegatedDN=self.getDN())
 
     # GET
     if self.request.method == 'GET':
-      # Return content of Proxy DB
-      if 'metadata' in optns:
-        pass
+      # # Return content of Proxy DB
+      # if 'metadata' in optns:
+      #   pass
 
       # Return personal proxy
-      elif not self.overpath:
+      if not user and not group: #self.overpath:
         result = yield self.threadTask(proxyCli.downloadPersonalProxy, self.getUserName(),
                                        credGroup, requiredTimeLeft=proxyLifeTime, voms=voms)
         if not result['OK']:
@@ -86,9 +90,9 @@ class ProxyHandler(WebHandler):
         self.finishJEncode(result['Value'])
 
       # Return proxy
-      elif len(optns) == 2:
-        user = optns[0]
-        group = optns[1]
+      elif user and group:
+        # user = optns[0]
+        # group = optns[1]
 
         # Get proxy to string
         result = getDNForUsernameInGroup(user, group)
