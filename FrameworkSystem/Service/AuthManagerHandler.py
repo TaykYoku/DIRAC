@@ -214,6 +214,8 @@ class AuthManagerHandler(RequestHandler):
     user, ids = result["Value"]
 
     print('================== export_getIdProfiles ==================')
+    print('CREDS:')
+    pprint(self.getRemoteCredentials())
     print('userID: %s' % userID)
     p = self.__getProfiles()
     pprint.pprint(p)
