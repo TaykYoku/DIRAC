@@ -105,7 +105,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if result['OK']:
         result = self.__parseUserProfile(result['Value'])
         if result['OK']:
-          metadata[token['user_id']] = result['Value']
+          _, profile = result['Value']
+          metadata[token['user_id']] = profile
     
     return S_OK(metadata)
 
