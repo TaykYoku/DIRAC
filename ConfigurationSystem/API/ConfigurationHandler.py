@@ -66,7 +66,8 @@ class ConfigurationHandler(WebHandler):
     path = self.get_argument('path', '/')
 
     result = S_ERROR('%s request unsuported' % key)
-    if 'version' in self.get_arguments and self.get_argument('version', '0') >= gConfigurationData.getVersion():
+    version = self.get_argument('version', None)
+    if version and (version or '0') >= gConfigurationData.getVersion():
       self.finish()
     if key == 'dump':
       remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
