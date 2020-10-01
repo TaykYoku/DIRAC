@@ -104,11 +104,8 @@ class AuthManagerData(object):
     if result.get('Errno', 0) == 1112:
       self.__service.add('crash', 60, value=result)
     if result['OK'] and result['Value']:
-      if userID:
-        self.updateProfiles(userID, result['Value'])
-      else:
-        for uid, data in result['Value'].items():
-          self.updateProfiles(uid, data)
+      for uid, data in result['Value'].items():
+        self.updateProfiles(uid, data)
     return result
 
   def getIDsForDN(self, dn, provider=None):

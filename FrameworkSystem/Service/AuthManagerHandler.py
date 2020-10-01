@@ -67,7 +67,7 @@ class AuthManagerHandler(RequestHandler):
         :return: dict
     """
     if userID:
-      return cls.__cacheProfiles.get(userID) or {}
+      return {userID: cls.__cacheProfiles.get(userID) or {}}
     return cls.__cacheProfiles.getDict()
 
   @classmethod
@@ -231,8 +231,8 @@ class AuthManagerHandler(RequestHandler):
     data = {}
     for uid in ids:
       idDict = self.__getProfiles(userID=uid)
-      if idDict:
-        data[uid] = idDict
+      if idDict.get(uid):
+        data.update(idDict)
 
     return S_OK(data)
 
