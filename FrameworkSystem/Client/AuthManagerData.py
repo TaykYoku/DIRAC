@@ -71,6 +71,7 @@ class AuthManagerData(object):
     profileDict = self.__cacheProfiles.get(userID) or {}
     print('================== CLI DATA updateProfiles ==================')
     from pprint import pprint
+    print('User ID: %s' % userID)
     pprint(profileDict)
     pprint(data)
     for k, v in data.items():
