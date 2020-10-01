@@ -324,6 +324,8 @@ class ProxyInit(object):
     proxyAPI = None
     spinner = Halo()
 
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     def qrterminal(url):
       """ Show QR code
 
@@ -434,11 +436,10 @@ class ProxyInit(object):
           spin.color = 'yellow'
           spin.text = token['error'] + ' : ' + token.get('description', '')
           continue
-        spin.color = 'green'
-        spin.text = 'Token uploaded..'
         break
 
-    with Halo('Downloading proxy..') as spin:
+      spin.color = 'green'
+      spin.text = 'Download proxy..'
       url = '%ss:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, self.__piParams.diracGroup, self.__piParams.proxyLifeTime)
       addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
       if addVOMS:
@@ -446,21 +447,15 @@ class ProxyInit(object):
       with OAuth2Session(clientID, token=token) as sess:
         r = sess.get(url, verify=False)
         r.raise_for_status()
-      # r = requests.get(proxyAPI, 's:%s/g:%s/proxy' % (setup, self.__piParams.diracGroup),
-      #                      lifetime=self.__piParams.proxyLifeTime, voms=addVOMS)
-      # if not result['OK']:
-      #   sys.exit(result['Message'])
-      # proxy = result['Value']
-      proxy = r.text
-      print('== Proxy ==')
-      print(proxy)
+      proxy = decode(r.text)[0]
       if not proxy:
         sys.exit("Result is empty.")
+      
+      if not self.__piParams.proxyLoc:
+        self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
 
-    if not self.__piParams.proxyLoc:
-      self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
-
-    with Halo(text='Saving proxy to %s' % self.__piParams.proxyLoc):
+      spin.color = 'green'
+      spin.text = 'Saving proxy.. to %s..' % self.__piParams.proxyLoc
       try:
         with open(self.__piParams.proxyLoc, 'w+') as fd:
           fd.write(proxy.encode("UTF-8"))
@@ -468,226 +463,7 @@ class ProxyInit(object):
       except Exception as e:
         return S_ERROR("%s :%s" % (self.__piParams.proxyLoc, repr(e).replace(',)', ')')))
       self.__piParams.certLoc = self.__piParams.proxyLoc
-
-    result = Script.enableCS()
-    if not result['OK']:
-      return S_ERROR("Cannot contact CS to get user list")
-    threading.Thread(target=self.checkCAs).start()
-    gConfig.forceRefresh(fromMaster=True)
-    return S_OK(self.__piParams.proxyLoc)
-
-    
-    # try:
-    #   with open('/opt/dirac/pro/token_u%d' % os.getuid(), 'rb') as f:
-    #     token = json.load(f)
-    # except Exception:
-    #   token = None
-
-    # from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-    # # Search and load old token
-    # try:
-    #   with open('/tmp/token_u%d' % os.getuid(), 'rb') as f:
-    #     token = json.load(f)
-    # except Exception:
-    #   token = None
-
-    # if token:
-    #   if not OAuth2Token(token).is_expired():
-        
-    #     token = None
-    #     # Read public key of DIRAC auth service
-    #     with open('/opt/dirac/etc/grid-security/certificates/public.key', 'rb') as f:
-    #       key = f.read()
-    #     # Get claims and verify signature
-    #     claims = jwt.decode(token, key)
-    #     # Verify token
-    #     claims.validate()
-    #     if self.__piParams.diracGroup == claims.get('group'):
-    #     # If no found 'group' claim, user group need to add as https argument
-    #     self.__credDict = {'ID': claims.sub, 'group': claims.get('group')}
-
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    # if token:
-    #   check token exp(group,setup,livetime)
-    #   if good:
-    #     return
-    # else:
-      # 1. client = Loock client metadata
-      #    if not client:
-      #      meta = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', {'redirect_uri': ''}, verify=False).text
-      #      store client to file
-      #    else:
-      #      check client
-      #
-      # 2. data = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/device?client_id=PFUkOKbRTEbGEHnTqWep0hRC&group=dirac_user&provider=CheckIn_dev', verify=False).text
-      # 3. print(data['verification_url_complete'])
-      # 4. loop get token
-      #      token = requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/token?client_id=%s&grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s' % (client['client_id'], data['device_code']), verify=False).text
-      #      if error not in token:
-      #        break
-      #      print(token['error'])
-    #
-    # Get proxy
-
-
-    def restRequest(url, endpoint='', metod='GET', **kwargs):
-      """ Method to do http requests
-
-          :param str url: root path of request URL
-          :param str endpoint: DIRAC rest endpoint
-          :param str method: HTTP method
-          :param `**kwargs`: options that need to add to request
-
-          :return: S_OK(Responce)/S_ERROR()
-      """
-      # Collect options
-      opts = ''
-      for key in kwargs:
-        if kwargs[key]:
-          if not opts:
-            opts = '?%s=%s' % (key, kwargs[key])
-          else:
-            opts += '&%s=%s' % (key, kwargs[key])
-
-      # Make request
-      try:
-        r = s.get('%s/%s%s' % (url.strip('/'), endpoint.strip('/'), opts), verify=False)
-        r.raise_for_status()
-        # Save cookies
-        with open('/tmp/cache_u%d' % os.getuid(), 'wb+') as f:
-          pickle.dump(s.cookies, f)
-        return S_OK(decode(r.text)[0])
-      except requests.exceptions.Timeout:
-        return S_ERROR('Time out')
-      except requests.exceptions.RequestException as ex:
-        return S_ERROR(r.content or ex)
-      except Exception as ex:
-        return S_ERROR('Cannot read response: %s' % ex)
-
-    
-
-    with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
-      # Get https endpoint of OAuthService API from http API of ConfigurationService
-      confUrl = gConfig.getValue("/LocalInstallation/ConfigurationServerAPI")
-      if not confUrl:
-        sys.exit('Cannot get http url of configuration server.')
-      result = restRequest(confUrl, '/option', path='/Systems/Framework/Production/URLs/AuthAPI')
-      if not result['OK']:
-        sys.exit('Cannot get URL of authentication server:\n %s' % result['Message'])
-      authAPI = result['Value']
-      result = restRequest(confUrl, '/option', path='/Systems/Framework/Production/URLs/ProxyAPI')
-      if not result['OK']:
-        sys.exit('Cannot get URL of proxy server:\n %s' % result['Message'])
-      proxyAPI = result['Value']
-      result = restRequest(confUrl, '/option', path='/DIRAC/Setup')
-      if not result['OK']:
-        sys.exit('Cannot get DIRAC setup name:\n %s' % result['Message'])
-      setup = result['Value']
-
-      # Submit authorization session
-      params = {}
-      if self.__piParams.addEmail:
-        params['email'] = self.__piParams.Email
-      result = restRequest(authAPI, '/auth/%s' % self.__piParams.provider, **params)
-      if not result['OK']:
-        sys.exit(result['Message'])
-      authDict = result['Value']
-
-      if authDict.get('Comment'):
-        spin.info(authDict['Comment'].strip())
-
-      spin.result = None
-
-    if authDict['Status'] == 'needToAuth':
-      session = authDict['Session']
-      if not authDict.get('URL'):
-        sys.exit('Cannot get link for authentication.')
-      # Show QR code
-      if self.__piParams.addQRcode:
-        result = qrterminal(authDict['URL'])
-        if not result['OK']:
-          spinner.info(authDict['URL'])
-          spinner.color = 'red'
-          spinner.text = 'QRCode is crash: %s Please use upper link.' % result['Message']
-        else:
-          spinner.info('Scan QR code to continue: %s' % result['Value'])
-          spinner.text = 'Or use link: %s' % authDict['URL']
-      else:
-        spinner.info(authDict['URL'])
-        spinner.text = 'Use upper link to continue'
-
-      # Try to open in default browser
-      if webbrowser.open_new_tab(authDict['URL']):
-        spinner.text = '%s opening in default browser..' % authDict['URL']
-
-      comment = ''
-      with spinner:
-        # Loop: waiting status of request
-        __start = time.time()
-        __eNum = 0
-        while True:
-          time.sleep(5)
-          if time.time() - __start > 300:
-            sys.exit('Time out.')
-
-          result = restRequest(authAPI, '/auth/%s/status' % session)
-          if not result['OK']:
-            if __eNum < 3:
-              __eNum += 1
-              spinner.color = 'red'
-              spinner.text = result['Message']
-              continue
-            sys.exit(result['Message'])
-          authDict = result['Value']
-          if authDict['Status'] in ['prepared', 'in progress', 'finishing', 'redirect']:
-            if spinner.color != 'green':
-              spinner.text = '"%s" session %s' % (session, authDict['Status'])
-            spinner.color = 'green'
-            continue
-          break
-
-        comment = authDict['Comment'].strip()
-        if authDict['Status'] != 'authed':
-          sys.exit('Authentication failed. %s' % comment)
-        spinner.text = 'Authenticated success.'
-
-      if comment:
-        spinner.info(comment)
-
-    username = authDict['UserName']
-
-    with Halo(text='Downloading proxy') as spin:
-      # Get group status
-      result = restRequest(confUrl, '/getGroupsStatusByUsername', username=username)
-      if not result['OK']:
-        sys.exit('Cannot get status of groups: %s' % result['Message'])
-      groupsStatusDict = result['Value']
-      if self.__piParams.diracGroup not in groupsStatusDict:
-        sys.exit('%s is uncorrect.' % self.__piParams.diracGroup)
-      if groupsStatusDict[self.__piParams.diracGroup]['Status'] != 'ready':
-        sys.exit('Cannot get proxy: %s' % groupsStatusDict[self.__piParams.diracGroup]['Comment'])
-
-      addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
-      result = restRequest(proxyAPI, 's:%s/g:%s/proxy' % (setup, self.__piParams.diracGroup),
-                           lifetime=self.__piParams.proxyLifeTime, voms=addVOMS)
-      if not result['OK']:
-        sys.exit(result['Message'])
-      proxy = result['Value']
-      if not proxy:
-        sys.exit("Result is empty.")
-
-    if not self.__piParams.proxyLoc:
-      self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
-
-    with Halo(text='Saving proxy to %s' % self.__piParams.proxyLoc):
-      try:
-        with open(self.__piParams.proxyLoc, 'w+') as fd:
-          fd.write(proxy.encode("UTF-8"))
-        os.chmod(self.__piParams.proxyLoc, stat.S_IRUSR | stat.S_IWUSR)
-      except Exception as e:
-        return S_ERROR("%s :%s" % (self.__piParams.proxyLoc, repr(e).replace(',)', ')')))
-      self.__piParams.certLoc = self.__piParams.proxyLoc
+      spin.text = 'Proxy is saved to %s.' % self.__piParams.proxyLoc
 
     result = Script.enableCS()
     if not result['OK']:
