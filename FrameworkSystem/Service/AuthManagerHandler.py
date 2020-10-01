@@ -222,12 +222,16 @@ class AuthManagerHandler(RequestHandler):
 
     # For host
     if ids == 'all':
+      print('all')
+      pprint.pprint(self.__getProfiles(userID=userID))
       return S_OK(self.__getProfiles(userID=userID))
 
     # For user
     if userID:
       if userID not in ids:
         return S_ERROR('%s user not have access to %s ID information.' % (user, userID))
+      print('For user')
+      pprint.pprint(self.__getProfiles(userID=userID))
       return S_OK(self.__getProfiles(userID=userID))
 
     data = {}
@@ -235,7 +239,8 @@ class AuthManagerHandler(RequestHandler):
       idDict = self.__getProfiles(userID=uid)
       if idDict.get(uid):
         data.update(idDict)
-
+    print('Else')
+    pprint.pprint(data)
     return S_OK(data)
 
   types_parseAuthResponse = [six.string_types, six.string_types, dict]
