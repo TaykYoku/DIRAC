@@ -107,7 +107,7 @@ class AuthManagerData(object):
       if userID:
         self.updateProfiles(userID, result['Value'])
       else:
-        for uid, data in result['Value']:
+        for uid, data in result['Value'].items():
           self.updateProfiles(uid, data)
     return result
 
