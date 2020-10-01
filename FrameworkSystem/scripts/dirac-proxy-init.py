@@ -368,7 +368,7 @@ class ProxyInit(object):
 
       # Get REST endpoints from ConfigurationService
       try:
-        r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl)
+        r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl, verify=False)
         r.raise_for_status()
         proxyAPI = decode(r.text)[0]
       except requests.exceptions.Timeout:
