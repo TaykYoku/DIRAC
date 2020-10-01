@@ -122,7 +122,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   @checkResponse
   def parseAuthResponse(self, response, session=None):
     """ Make user info dict:
-          - username(preferd user name)
+          - username(preferred user name)
           - nosupport(VOs in response that not in DIRAC)
           - UsrOptns(User profile that convert to DIRAC user options)
           - Tokens(Contain refreshed tokens, type and etc.)
@@ -225,11 +225,11 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           listItemRegex = v
     except Exception as e:
       if not profile['Groups']:
-        self.log.warn('No "DiracGroups", no claim with DNs decsribe in Syntax/DNs section found.')
+        self.log.warn('No "DiracGroups", no claim with DNs describe in Syntax/DNs section found.')
       return S_OK((username, profile))
 
     if not userProfile.get(dnClaim) and not profile['Groups']:
-      self.log.warn('No "DiracGroups", no claim "%s" that decsribe DNs found.' % dnClaim)
+      self.log.warn('No "DiracGroups", no claim "%s" that describe DNs found.' % dnClaim)
     else:
 
       if not isinstance(userProfile[dnClaim], list):

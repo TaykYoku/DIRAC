@@ -429,7 +429,7 @@ class AuthServer(_AuthorizationServer):
   def parseIdPAuthorizationResponse(self, response, session):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
-        Create new or modify existend DIRAC user and store the session
+        Create new or modify existing DIRAC user and store the session
 
         :param str providerName: identity provider name
         :param dict response: authorization response

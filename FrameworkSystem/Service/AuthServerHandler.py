@@ -1,4 +1,4 @@
-""" The OAuth service provides a toolkit to authoticate throught OIDC session.
+""" The OAuth service provides a toolkit to authoticate through OIDC session.
 """
 from __future__ import absolute_import
 from __future__ import division

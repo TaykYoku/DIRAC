@@ -155,27 +155,48 @@ class WebHandler(tornado.web.RequestHandler):
     if self.request.protocol != "https" or self.__idp == "Visitor":
       return S_OK()
 
-    # For certificate
-    if self.__idp == 'Certificate':
+    auth = self.request.headers.get("Authorization")
+
+    if auth:
+      # If present "Authorization" header it means that need to use another then certificate authZ
+      authParts = auth.split()
+      authType = authParts[0]
+      if len(authParts) != 2 or authType.lower() != "bearer":
+        return S_ERROR("Invalid header authorization")
+      token = authParts[1]
+      # Read public key of DIRAC auth service
+      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+        key = f.read()
+      # Get claims and verify signature
+      claims = jwt.decode(token, key)
+      # Verify token
+      claims.validate()
+      # If no found 'group' claim, user group need to add as https argument
+      self.__credDict['ID'] = claims.sub
+      self.__credDict['group'] = claims.get('grp')
+      return S_OK()
+    else:
+      # For certificate
+      # if self.__idp == 'Certificate':
       return self.__readCertificate()
 
-    # Look enabled authentication types in CS
-    result = Conf.getCSSections("TypeAuths")
-    if not result['OK']:
-      self.log.warn('To enable idenyity provider need to use "TypeAuths" section, but %s' % result['Message'])
-    if self.__idp not in (result.get('Value') or []):
-      return S_ERROR("%s is absent in configuration." % self.__idp)
+    # # Look enabled authentication types in CS
+    # result = Conf.getCSSections("TypeAuths")
+    # if not result['OK']:
+    #   self.log.warn('To enable idenyity provider need to use "TypeAuths" section, but %s' % result['Message'])
+    # if self.__idp not in (result.get('Value') or []):
+    #   return S_ERROR("%s is absent in configuration." % self.__idp)
 
-    if not self.__session:
-      return S_ERROR('No found session in cookies.')
+    # if not self.__session:
+    #   return S_ERROR('No found session in cookies.')
 
-    # result = gAuthManagerData.getIDForSession(self.__session)
-    result = S_ERROR()
-    if not result['OK']:
-      self.set_cookie(self.__idp, '')
-    else:
-      self.__credDict['ID'] = result['Value']
-    return result
+    # # result = gAuthManagerData.getIDForSession(self.__session)
+    # result = S_ERROR()
+    # if not result['OK']:
+    #   self.set_cookie(self.__idp, '')
+    # else:
+    #   self.__credDict['ID'] = result['Value']
+    # return result
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
@@ -231,10 +252,10 @@ class WebHandler(tornado.web.RequestHandler):
       except KeyError:
         pass
 
-    result = Registry.getUsernameForDN(self.__credDict['DN'])
-    if not result['OK']:
-      return result
-    self.__credDict['username'] = result['Value']
+    # result = Registry.getUsernameForDN(self.__credDict['DN'])
+    # if not result['OK']:
+    #   return result
+    # self.__credDict['username'] = result['Value']
     return S_OK()
 
   @property
@@ -318,7 +339,7 @@ class WebHandler(tornado.web.RequestHandler):
     if ok:
       self.__credDict['validGroup'] = True
       # WARN: __credDict['properties'] already defined in AuthManager in the last version of DIRAC
-      self.__credDict['properties'] = Registry.getPropertiesForGroup(self.__credDict['group'], [])
+      # self.__credDict['properties'] = Registry.getPropertiesForGroup(self.__credDict['group'], [])
       msg = ' - '
       if self.__credDict.get('DN'):
         msg = '%s' % self.__credDict['DN']

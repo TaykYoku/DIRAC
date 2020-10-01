@@ -113,7 +113,7 @@ class ThreadConfig(threading.local):
   def load(self, tp):
     """ Save extra information
 
-        :param tuple tp: contain DN, group name, setup name, ID
+        :param tuple tp: contains DN, group name, setup name, userID
     """
     self.__ID = tp[3] or self.__ID
     self.__DN = tp[0] or self.__DN

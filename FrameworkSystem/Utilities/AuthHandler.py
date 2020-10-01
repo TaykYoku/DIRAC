@@ -21,7 +21,7 @@ template = """
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Authetication</title>
+    <title>Authentication</title>
     <meta charset="utf-8" />
   </head>
   <body>
@@ -132,7 +132,7 @@ class AuthHandler(WebHandler):
       if self.request.method == 'GET':
 
       t = Template('''<!DOCTYPE html>
-        <html><head><title>Authetication</title>
+        <html><head><title>Authentication</title>
           <meta charset="utf-8" /></head><body>
             %s <br>
             <script type="text/javascript">
@@ -204,13 +204,13 @@ class AuthHandler(WebHandler):
       elif result['Value']['Status'] == 'needToAuth':
         if self.args.get('email'):
           notify = yield self.threadTask(NotificationClient().sendMail, self.args['email'],
-                                         'Authentication throught %s' % idP,
-                                         'Please, go throught the link %s to authorize.' % result['Value']['URL'])
+                                         'Authentication through %s' % idP,
+                                         'Please, go through the link %s to authenticate.' % result['Value']['URL'])
           if not notify['OK']:
             result['Value']['Comment'] = '%s\n%s' % (result['Value'].get('Comment') or '', notify['Message'])
         self.log.notice('%s authorization session "%s" provider was created' % (result['Value']['Session'], idP))
       else:
-        raise WErr(500, 'Not correct status "%s" of %s' % (result['Value']['Status'], idP))
+        raise WErr(500, 'Incorrect status "%s" of %s' % (result['Value']['Status'], idP))
       self.finishJEncode(result['Value'])
 
     elif optns[0] == 'redirect':
@@ -231,7 +231,7 @@ class AuthHandler(WebHandler):
       comment = result['Value']['Comment']
       status = result['Value']['Status']
       t = Template('''<!DOCTYPE html>
-        <html><head><title>Authetication</title>
+        <html><head><title>Authentication</title>
           <meta charset="utf-8" /></head><body>
             %s <br>
             <script type="text/javascript">
@@ -249,7 +249,7 @@ class AuthHandler(WebHandler):
         self.log.info(session, 'authorization session flow.')
         result = yield self.threadTask(gSessionManager.getSessionAuthLink, session)
         if not result['OK']:
-          raise WErr(500, '%s session not exist or expired!\n%s' % (session, result['Message']))
+          raise WErr(500, '%s session does not exist or expired!\n%s' % (session, result['Message']))
         self.log.notice('Redirect to', result['Value'])
         self.redirect(result['Value'])
 

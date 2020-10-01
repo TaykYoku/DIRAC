@@ -1,4 +1,4 @@
-""" The OAuth service provides a toolkit to authoticate throught OIDC session.
+""" The OAuth service provides a toolkit to authenticate through an OIDC session.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -241,7 +241,7 @@ class AuthManagerHandler(RequestHandler):
   def export_parseAuthResponse(self, providerName, username, userProfile):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
-        Create new or modify existend DIRAC user and store the session
+        Create new or modify existing DIRAC user and store the session
 
         :param dict response: authorization response
         :param str session: session number
@@ -280,13 +280,13 @@ class AuthManagerHandler(RequestHandler):
 
     mail = {}
     mail['subject'] = "[SessionManager] User %s to be added." % parseDict['username']
-    mail['body'] = 'User %s was authenticated by ' % parseDict['UsrOptns']['FullName']
+    mail['body'] = 'User %s was authenticated by ' % parseDict['UserOptions']['FullName']
     mail['body'] += provider
     mail['body'] += "\n\nAuto updating of the user database is not allowed."
     mail['body'] += " New user %s to be added," % parseDict['username']
     mail['body'] += "with the following information:\n"
     mail['body'] += "\nUser name: %s\n" % parseDict['username']
-    mail['body'] += "\nUser profile:\n%s" % pprint.pformat(parseDict['UsrOptns'])
+    mail['body'] += "\nUser profile:\n%s" % pprint.pformat(parseDict['UserOptions'])
     mail['body'] += "\n\n------"
     mail['body'] += "\n This is a notification from the DIRAC AuthManager service, please do not reply.\n"
     result = S_OK()

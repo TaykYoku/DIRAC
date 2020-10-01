@@ -117,7 +117,7 @@ class ProxyManagerHandler(RequestHandler):
           :param str vo: VO name
       """
       usersDict = {}
-      result = S_ERROR('Cannot found administrators for %s VOMS VO' % vo)
+      result = S_ERROR('Cannot find administrators for %s VOMS VO' % vo)
       voAdmins = Registry.getVOOption(vo, "VOAdmin", [])
 
       for group in Registry.getGroupsForVO(vo).get('Value') or []:
@@ -228,8 +228,7 @@ class ProxyManagerHandler(RequestHandler):
         proxiesInfo[data['DN']][k] = v
 
     for dn, data in proxiesInfo.items():
-      proxiesInfo[dn]['SupportedGroups'] = list(set(data['SupportedGroups']))
-      proxiesInfo[dn]['SupportedGroups'].sort()
+      data['SupportedGroups'] = sorted(set(data['SupportedGroups']))
 
     return S_OK(proxiesInfo)
 

@@ -228,11 +228,6 @@ class ProxyInit(object):
       maxProviderLen = len('ProxyProvider')
       for userDN, data in self.__uploadedInfo.items():
         maxDNLen = max(maxDNLen, len(userDN))
-        print(maxProviderLen)
-        print(data)
-        print(data['provider'])
-        print(len(data['provider']))
-        print(max(maxProviderLen, len(data['provider'])))
         maxProviderLen = max(maxProviderLen, len(data['provider']))
       gLogger.notice(" %s | %s | %s | SupportedGroups" % ("DN".ljust(maxDNLen), "ProxyProvider".ljust(maxProviderLen),
                                                           "Until (GMT)".ljust(16)))
@@ -323,6 +318,7 @@ class ProxyInit(object):
     from DIRAC.FrameworkSystem.Utilities.halo import Halo
     from DIRAC.Core.Utilities.JEncode import decode, encode
     from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
+    from authlib.integrations.requests_client import OAuth2Session, OAuthError
 
     authAPI = None
     proxyAPI = None
@@ -363,6 +359,25 @@ class ProxyInit(object):
       return S_OK(__qr)
 
     with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
+      confUrl = gConfig.getValue("/LocalInstallation/ConfigurationServerAPI")
+      if not confUrl:
+        sys.exit('Could not get configuration server API URL.')
+      setup = gConfig.getValue("/LocalInstallation/Setup")
+      if not setup:
+        sys.exit('Could not get setup name.')
+
+      # Get REST endpoints from ConfigurationService
+      try:
+        r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl)
+        r.raise_for_status()
+        proxyAPI = decode(r.text)[0]
+      except requests.exceptions.Timeout:
+        sys.exit('Time out')
+      except requests.exceptions.RequestException as e:
+        sys.exit(r.content or e)
+      except Exception as e:
+        sys.exit('Cannot read response: %s' % ex)
+
       # Get token
       result = gSessionManager.submitUserAuthorizationFlow(idP=self.__piParams.provider, group=self.__piParams.diracGroup, grant='device')
       if not result['OK']:
@@ -422,9 +437,47 @@ class ProxyInit(object):
         spin.color = 'green'
         spin.text = 'Token uploaded to %s' % ('/opt/dirac/pro/token_u%d' % os.getuid())
         break
-
+    ###########################
+    ###########################
     pprint(token)
-    sys.exit()
+
+    with Halo('Downloading proxy..') as spin:
+      url = '%s/s:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, self.__piParams.diracGroup, self.__piParams.proxyLifeTime)
+      addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
+      if addVOMS:
+        url += '&voms=%s' % addVOMS
+      with OAuth2Session(clientID, token=token) as sess:
+        r = sess.get(url)
+      # r = requests.get(proxyAPI, 's:%s/g:%s/proxy' % (setup, self.__piParams.diracGroup),
+      #                      lifetime=self.__piParams.proxyLifeTime, voms=addVOMS)
+      # if not result['OK']:
+      #   sys.exit(result['Message'])
+      # proxy = result['Value']
+      proxy = r.text
+      print('== Proxy ==')
+      print(proxy)
+      if not proxy:
+        sys.exit("Result is empty.")
+
+    if not self.__piParams.proxyLoc:
+      self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
+
+    with Halo(text='Saving proxy to %s' % self.__piParams.proxyLoc):
+      try:
+        with open(self.__piParams.proxyLoc, 'w+') as fd:
+          fd.write(proxy.encode("UTF-8"))
+        os.chmod(self.__piParams.proxyLoc, stat.S_IRUSR | stat.S_IWUSR)
+      except Exception as e:
+        return S_ERROR("%s :%s" % (self.__piParams.proxyLoc, repr(e).replace(',)', ')')))
+      self.__piParams.certLoc = self.__piParams.proxyLoc
+
+    result = Script.enableCS()
+    if not result['OK']:
+      return S_ERROR("Cannot contact CS to get user list")
+    threading.Thread(target=self.checkCAs).start()
+    gConfig.forceRefresh(fromMaster=True)
+    return S_OK(self.__piParams.proxyLoc)
+
     
     # try:
     #   with open('/opt/dirac/pro/token_u%d' % os.getuid(), 'rb') as f:
