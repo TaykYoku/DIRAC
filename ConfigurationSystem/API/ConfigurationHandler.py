@@ -63,10 +63,10 @@ class ConfigurationHandler(WebHandler):
     # path = self.args.get('path', '/')
     # if not optns or len(optns) > 1:
     #   raise WErr(404, "You forgot to set attribute.")
-    path = self.request.get_argument('path', '/')
+    path = self.get_argument('path', '/')
 
     result = S_ERROR('%s request unsuported' % key)
-    if 'version' in self.request.get_arguments and self.request.get_argument('version', '0') >= gConfigurationData.getVersion():
+    if 'version' in self.get_arguments and self.get_argument('version', '0') >= gConfigurationData.getVersion():
       self.finish()
     if key == 'dump':
       remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
@@ -80,9 +80,9 @@ class ConfigurationHandler(WebHandler):
     elif key == 'sections':
       result = yield self.threadTask(gConfig.getSections, path)
     elif key == 'getGroupsStatusByUsername':
-      result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.request.get_arguments)
+      result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.get_arguments)
     elif any([key == m and re.match('^[a-z][A-z]+', m) for m in dir(Registry)]) and self.isRegisteredUser():
-      result = yield self.threadTask(getattr(Registry, key), **self.request.get_arguments)
+      result = yield self.threadTask(getattr(Registry, key), **self.get_arguments)
     else:
       raise WErr(500, '%s request unsuported' % key)
       # result = yield self.threadTask(getattr(Registry, key), **self.args)
