@@ -367,7 +367,6 @@ class ProxyInit(object):
         sys.exit('Could not get setup name.')
 
       # Get REST endpoints from ConfigurationService
-      r = None
       try:
         r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl)
         r.raise_for_status()
@@ -375,9 +374,9 @@ class ProxyInit(object):
       except requests.exceptions.Timeout:
         sys.exit('Time out')
       except requests.exceptions.RequestException as e:
-        sys.exit(r.content or e)
+        sys.exit(str(e))
       except Exception as e:
-        sys.exit('Cannot read response: %s' % ex)
+        sys.exit('Cannot read response: %s' % e)
 
       # Get token
       result = gSessionManager.submitUserAuthorizationFlow(idP=self.__piParams.provider, group=self.__piParams.diracGroup, grant='device')
