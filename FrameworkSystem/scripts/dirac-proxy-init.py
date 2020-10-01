@@ -435,14 +435,11 @@ class ProxyInit(object):
           spin.text = token['error'] + ' : ' + token.get('description', '')
           continue
         spin.color = 'green'
-        spin.text = 'Token uploaded to %s' % ('/opt/dirac/pro/token_u%d' % os.getuid())
+        spin.text = 'Token uploaded..'
         break
-    ###########################
-    ###########################
-    pprint(token)
 
     with Halo('Downloading proxy..') as spin:
-      url = '%s/s:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, self.__piParams.diracGroup, self.__piParams.proxyLifeTime)
+      url = '%ss:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, self.__piParams.diracGroup, self.__piParams.proxyLifeTime)
       addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
       if addVOMS:
         url += '&voms=%s' % addVOMS
