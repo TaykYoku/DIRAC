@@ -367,6 +367,7 @@ class ProxyInit(object):
         sys.exit('Could not get setup name.')
 
       # Get REST endpoints from ConfigurationService
+      r = None
       try:
         r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl)
         r.raise_for_status()
