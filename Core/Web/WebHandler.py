@@ -17,6 +17,8 @@ import tornado.ioloop
 import tornado.websocket
 import tornado.stack_context
 
+from authlib.jose import jwt
+
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Web import Conf
 from DIRAC.Core.Web.SessionData import SessionData
