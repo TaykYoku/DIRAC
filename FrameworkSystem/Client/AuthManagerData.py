@@ -106,7 +106,8 @@ class AuthManagerData(object):
       self.__service.add('crash', 60, value=result)
     if result['OK'] and result['Value']:
       for uid, data in result['Value'].items():
-        self.updateProfiles(uid, data)
+        if data:
+          self.updateProfiles(uid, data)
     return result
 
   def getIDsForDN(self, dn, provider=None):
