@@ -34,7 +34,7 @@ class ProxyHandler(WebHandler):
   #       self.args[arg] = self.request.arguments[arg][0] or ''
   #   return S_OK()
 
-  path_proxy = ['([a-z]*)', '([a-z]*)']
+  path_proxy = ['([a-z]*)[\/]?([a-z]*)']
   @asyncGen
   def web_proxy(self, user=None, group=None):
     """ REST endpoints to user proxy management
