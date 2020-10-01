@@ -21,18 +21,19 @@ class ConfigurationHandler(WebHandler):
   AUTH_PROPS = "all"
   LOCATION = "/"
 
-  def initialize(self):
-    super(ConfigurationHandler, self).initialize()
-    self.args = {}
-    for arg in self.request.arguments:
-      if len(self.request.arguments[arg]) > 1:
-        self.args[arg] = self.request.arguments[arg]
-      else:
-        self.args[arg] = self.request.arguments[arg][0] or ''
-    return S_OK()
+  # def initialize(self):
+  #   super(ConfigurationHandler, self).initialize()
+  #   self.args = {}
+  #   for arg in self.request.arguments:
+  #     if len(self.request.arguments[arg]) > 1:
+  #       self.args[arg] = self.request.arguments[arg]
+  #     else:
+  #       self.args[arg] = self.request.arguments[arg][0] or ''
+  #   return S_OK()
 
+  path_conf = ['([a-z]+)']
   @asyncGen
-  def web_conf(self):
+  def web_conf(self, key):
     """ REST endpoint for configuration system:
 
         **GET** /conf/<key>?<options> -- get configuration information
@@ -58,32 +59,33 @@ class ConfigurationHandler(WebHandler):
             +-----------+---------------------------------------+------------------------+
     """
     self.log.notice('Request configuration information')
-    optns = self.overpath.strip('/').split('/')
-    path = self.args.get('path', '/')
-    if not optns or len(optns) > 1:
-      raise WErr(404, "You forgot to set attribute.")
+    # optns = self.overpath.strip('/').split('/')
+    # path = self.args.get('path', '/')
+    # if not optns or len(optns) > 1:
+    #   raise WErr(404, "You forgot to set attribute.")
+    path = self.request.get_argument('path', '/')
 
-    result = S_ERROR('%s request unsuported' % optns[0])
-    if 'version' in self.args and (self.args.get('version') or '0') >= gConfigurationData.getVersion():
+    result = S_ERROR('%s request unsuported' % key)
+    if 'version' in self.request.get_arguments and self.request.get_argument('version', '0') >= gConfigurationData.getVersion():
       self.finish()
-    if optns[0] == 'dump':
+    if key == 'dump':
       remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
       result['Value'] = str(remoteCFG)
-    elif optns[0] == 'option':
+    elif key == 'option':
       result = yield self.threadTask(gConfig.getOption, path)
-    elif optns[0] == 'dict':
+    elif key == 'dict':
       result = yield self.threadTask(gConfig.getOptionsDict, path)
-    elif optns[0] == 'options':
+    elif key == 'options':
       result = yield self.threadTask(gConfig.getOptions, path)
-    elif optns[0] == 'sections':
+    elif key == 'sections':
       result = yield self.threadTask(gConfig.getSections, path)
-    elif optns[0] == 'getGroupsStatusByUsername':
-      result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.args)
-    elif any([optns[0] == m and re.match('^[a-z][A-z]+', m) for m in dir(Registry)]) and self.isRegisteredUser():
-      result = yield self.threadTask(getattr(Registry, optns[0]), **self.args)
+    elif key == 'getGroupsStatusByUsername':
+      result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.request.get_arguments)
+    elif any([key == m and re.match('^[a-z][A-z]+', m) for m in dir(Registry)]) and self.isRegisteredUser():
+      result = yield self.threadTask(getattr(Registry, key), **self.request.get_arguments)
     else:
-      raise WErr(500, '%s request unsuported' % optns[0])
-      # result = yield self.threadTask(getattr(Registry, optns[0]), **self.args)
+      raise WErr(500, '%s request unsuported' % key)
+      # result = yield self.threadTask(getattr(Registry, key), **self.args)
 
     if not result['OK']:
       raise WErr(404, result['Message'])
