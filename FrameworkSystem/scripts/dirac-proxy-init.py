@@ -447,7 +447,8 @@ class ProxyInit(object):
       if addVOMS:
         url += '&voms=%s' % addVOMS
       with OAuth2Session(clientID, token=token) as sess:
-        r = sess.get(url)
+        r = sess.get(url, verify=False)
+        r.raise_for_status()
       # r = requests.get(proxyAPI, 's:%s/g:%s/proxy' % (setup, self.__piParams.diracGroup),
       #                      lifetime=self.__piParams.proxyLifeTime, voms=addVOMS)
       # if not result['OK']:
