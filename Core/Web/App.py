@@ -30,8 +30,8 @@ __RCSID__ = "$Id$"
 
 class Application(_Application, AuthServer):
   def __init__(self, *args, **kwargs):
-    _Application.__init__(*args, **kwargs)
-    AuthServer.__init__()
+    _Application.__init__(self, *args, **kwargs)
+    AuthServer.__init__(self)
 
 
 class App(object):
