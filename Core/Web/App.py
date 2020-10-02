@@ -190,7 +190,7 @@ class App(object):
     # Configure tornado app
     self.__app = Application(routes, **kw) #if self.__handlerMgr.isAuth() else _Application(routes, **kw)
     if self.__handlerMgr.isAuth():
-      setattr(self.__app, _authServer, AuthServer())
+      setattr(self.__app, '_authServer', AuthServer())
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
