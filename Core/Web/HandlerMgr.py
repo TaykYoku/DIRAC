@@ -41,7 +41,7 @@ class HandlerMgr(object):
     self.__setupGroupRE = r"(?:/s:([\w-]*)/g:([\w.-]*))?"
     self.__shySetupGroupRE = r"(?:/s:(?:[\w-]*)/g:(?:[\w.-]*))?"
     self.log = gLogger.getSubLogger("Routing")
-    self.__appSettings = {}
+    self.__isAuthServer = False
 
   def getPaths(self, dirName):
     """ Get lists of paths for all installed and enabled extensions
@@ -105,7 +105,7 @@ class HandlerMgr(object):
       self.log.info("Found handler %s" % hn)
       handler = self.__handlers[hn]
       if handler.__name__ == 'AuthHandler':
-        self.__appSettings['authorizationServer'] = AuthServer()
+        self.__isAuthServer = True
       # CHeck it has AUTH_PROPS
       if isinstance(handler.AUTH_PROPS, type(None)):
         return S_ERROR("Handler %s does not have AUTH_PROPS defined. Fix it!" % hn)
@@ -180,5 +180,5 @@ class HandlerMgr(object):
         return result
     return S_OK(self.__routes)
 
-  def getSettings(self):
-    return self.__appSettings
+  def isAuth(self):
+    return self.__isAuthServer

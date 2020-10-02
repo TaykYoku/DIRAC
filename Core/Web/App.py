@@ -8,6 +8,7 @@ import imp
 import sys
 import signal
 import tornado.web
+from tornado.web.Application import Application as _Application
 import tornado.process
 import tornado.httpserver
 import tornado.autoreload
@@ -22,8 +23,15 @@ from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
 from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Web import Conf
+from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
 
 __RCSID__ = "$Id$"
+
+
+class Application(_Application, AuthServer):
+  def __init__(self, *args, **kwargs):
+    _Application.__init__(*args, **kwargs)
+    AuthServer.__init__()
 
 
 class App(object):
@@ -177,9 +185,9 @@ class App(object):
     # Debug mode?
     if kw['debug']:
       self.log.info("Configuring in developer mode...")
-    kw.update(self.__handlerMgr.getSettings())
+    # kw.update(self.__handlerMgr.getSettings())
     # Configure tornado app
-    self.__app = tornado.web.Application(routes, **kw)
+    self.__app = Application(routes, **kw) if self.__handlerMgr.isAuth() else _Application(routes, **kw)
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
     srv = tornado.httpserver.HTTPServer(self.__app, xheaders=True)
