@@ -21,17 +21,18 @@ from DIRAC import gLogger, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
-from DIRAC.Core.Web.SessionData import SessionData
+from DIRAC.Core.Web.SessionData import SessionData, SessionCache
 from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
+from DIRAC.Core.Utilities.DictCache import DictCache
 
 __RCSID__ = "$Id$"
 
 
-class Application(_Application, AuthServer):
+class Application(_Application):
   def __init__(self, *args, **kwargs):
-    _Application.__init__(self, *args, **kwargs)
-    AuthServer.__init__(self)
+    self.sessionCache = SessionCache()
+    super(Application, self).__init__(*args, **kwargs)
 
 
 class App(object):
@@ -187,7 +188,10 @@ class App(object):
       self.log.info("Configuring in developer mode...")
     # kw.update(self.__handlerMgr.getSettings())
     # Configure tornado app
-    self.__app = Application(routes, **kw) if self.__handlerMgr.isAuth() else _Application(routes, **kw)
+    self.__app = Application(routes, **kw) #if self.__handlerMgr.isAuth() else _Application(routes, **kw)
+    if self.__handlerMgr.isAuth():
+      setattr(self.__app, _authServer, AuthServer())
+    
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
     srv = tornado.httpserver.HTTPServer(self.__app, xheaders=True)

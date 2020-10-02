@@ -5,7 +5,8 @@ from __future__ import print_function
 import os
 from DIRAC import gConfig, gLogger
 from DIRAC.Core.Web import Conf
-from DIRAC.Core.Utilities import List
+from DIRAC.Core.Utilities import List, ThreadSafe
+from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.DISET.AuthManager import AuthManager
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
@@ -13,6 +14,39 @@ from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 
 __RCSID__ = "$Id$"
+
+gCacheSession = ThreadSafe.Synchronizer()
+
+class SessionCache(object):
+  def __init__(self, id):
+    self.cacheSession = DictCache()
+
+  @gCacheSession
+  def addSession(self, session, exp=300, **kwargs):
+    kwargs['Status'] = kwargs.get('Status', 'submited')
+    self.cacheSession.add(session, exp, kwargs)
+
+  @gCacheSession
+  def getSession(self, session=None):
+    return self.cacheSession.get(session) if session else self.cacheSession.getDict()
+  
+  @gCacheSession
+  def removeSession(self, session):
+    self.cacheSession.delete(session)
+
+  def updateSession(self, session, exp=300, **kwargs):
+    origData = self.getSession(session) or {}
+    for k, v in kwargs.items():
+      origData[k] = v
+    self.addSession(session, exp, **origData)
+  
+  def getSessionByOption(self, key, value):
+    if key and value:
+      sessions = self.getSession()
+      for session, data in sessions.items():
+        if data.get(key) == value:
+          return session, data
+    return None, {}
 
 
 class SessionData(object):

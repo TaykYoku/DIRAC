@@ -40,6 +40,7 @@ from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
+from DIRAC.Core.Web.SessionData import SessionCache
 
 gCacheClient = ThreadSafe.Synchronizer()
 gCacheSession = ThreadSafe.Synchronizer()
@@ -303,7 +304,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     return jws.serialize_compact(protected, payload, key)
 
 
-class AuthServer(_AuthorizationServer):
+class AuthServer(_AuthorizationServer, SessionCache):
   """ Implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
       Initialize it ::
 
@@ -314,10 +315,11 @@ class AuthServer(_AuthorizationServer):
   def __init__(self):
     self.__db = AuthDB2()
     self.idps = IdProviderFactory()
-    self.cacheSession = DictCache()
+    # self.cacheSession = DictCache()
     self.cacheClient = DictCache()
-    super(AuthServer, self).__init__(query_client=self.getClient,
-                                     save_token=lambda t, r: pprint('Token: %s' % t))
+    SessionCache.__init__(self)
+    _AuthorizationServer.__init__(self, query_client=self.getClient,
+                                        save_token=lambda t, r: pprint('Token: %s' % t))
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
 
@@ -376,32 +378,32 @@ class AuthServer(_AuthorizationServer):
         self.cacheClient.add(clientID, 24 * 3600, client)
     return client
 
-  @gCacheSession
-  def addSession(self, session, exp=300, **kwargs):
-    kwargs['Status'] = kwargs.get('Status', 'submited')
-    self.cacheSession.add(session, exp, kwargs)
+  # @gCacheSession
+  # def addSession(self, session, exp=300, **kwargs):
+  #   kwargs['Status'] = kwargs.get('Status', 'submited')
+  #   self.cacheSession.add(session, exp, kwargs)
 
-  @gCacheSession
-  def getSession(self, session=None):
-    return self.cacheSession.get(session) if session else self.cacheSession.getDict()
+  # @gCacheSession
+  # def getSession(self, session=None):
+  #   return self.cacheSession.get(session) if session else self.cacheSession.getDict()
   
-  @gCacheSession
-  def removeSession(self, session):
-    self.cacheSession.delete(session)
+  # @gCacheSession
+  # def removeSession(self, session):
+  #   self.cacheSession.delete(session)
 
-  def updateSession(self, session, exp=300, **kwargs):
-    origData = self.getSession(session) or {}
-    for k, v in kwargs.items():
-      origData[k] = v
-    self.addSession(session, exp, **origData)
+  # def updateSession(self, session, exp=300, **kwargs):
+  #   origData = self.getSession(session) or {}
+  #   for k, v in kwargs.items():
+  #     origData[k] = v
+  #   self.addSession(session, exp, **origData)
   
-  def getSessionByOption(self, key, value):
-    if key and value:
-      sessions = self.getSession()
-      for session, data in sessions.items():
-        if data.get(key) == value:
-          return session, data
-    return None, {}
+  # def getSessionByOption(self, key, value):
+  #   if key and value:
+  #     sessions = self.getSession()
+  #     for session, data in sessions.items():
+  #       if data.get(key) == value:
+  #         return session, data
+  #   return None, {}
 
   def getIdPAuthorization(self, providerName, mainSession):
     """ Submit subsession and return dict with authorization url and session number
