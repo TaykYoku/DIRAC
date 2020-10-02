@@ -8,7 +8,7 @@ import imp
 import sys
 import signal
 import tornado.web
-from tornado.web.Application import Application as _Application
+from tornado.web import Application as _Application
 import tornado.process
 import tornado.httpserver
 import tornado.autoreload
