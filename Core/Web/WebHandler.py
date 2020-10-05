@@ -28,7 +28,7 @@ from DIRAC.Core.DISET.AuthManager import AuthManager
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.Core.Utilities.JEncode import encode
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
-from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
+# from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 
 
 global gThreadPool
@@ -112,20 +112,13 @@ class WebHandler(tornado.web.RequestHandler):
     super(WebHandler, self).__init__(*args, **kwargs)
     if not WebHandler.__log:
       WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
-    # Look idetity provider and session
-    self.__idp = self.get_cookie("TypeAuth") or "Certificate"
-    self.__session = self.get_cookie(self.__idp) or None
+    self.__sessions = self.application.sessionCache
     # Fill credentials
     self.__credDict = {}
     self.__setup = Conf.setup()
     result = self.__processCredentials()
     if not result['OK']:
-      self.__idp = "Visitor"
       self.log.error(result['Message'], 'Continue as Visitor.')
-    self.log.verbose("%s authentication" % self.__idp,
-                     'with %s session' % self.__session if self.__session else '')
-    # Restore identity provider
-    self.set_cookie("TypeAuth", self.__idp)
     # Setup diset
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
@@ -133,7 +126,7 @@ class WebHandler(tornado.web.RequestHandler):
     match = self.PATH_RE.match(self.request.path)
     pathItems = match.groups()
     self._pathResult = self.__checkPath(*pathItems[:3])
-    self.overpath = pathItems[3:]  # and pathItems[3] or ''
+    # self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
 
@@ -154,51 +147,39 @@ class WebHandler(tornado.web.RequestHandler):
         :return: S_OK()/S_ERROR()
     """
     # Unsecure protocol only for visitors
-    if self.request.protocol != "https" or self.__idp == "Visitor":
+    if self.request.protocol != "https":  # or self.__idp == "Visitor":
       return S_OK()
 
-    auth = self.request.headers.get("Authorization")
+    # auth = self.request.headers.get("Authorization")
 
-    if auth:
-      # If present "Authorization" header it means that need to use another then certificate authZ
-      authParts = auth.split()
-      authType = authParts[0]
-      if len(authParts) != 2 or authType.lower() != "bearer":
-        return S_ERROR("Invalid header authorization")
-      token = authParts[1]
-      # Read public key of DIRAC auth service
-      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-        key = f.read()
-      # Get claims and verify signature
-      claims = jwt.decode(token, key)
-      # Verify token
-      claims.validate()
-      # If no found 'group' claim, user group need to add as https argument
-      self.__credDict['ID'] = claims.sub
-      self.__credDict['group'] = claims.get('grp')
-      return S_OK()
-    else:
-      # For certificate
-      # if self.__idp == 'Certificate':
-      return self.__readCertificate()
-
-    # # Look enabled authentication types in CS
-    # result = Conf.getCSSections("TypeAuths")
-    # if not result['OK']:
-    #   self.log.warn('To enable idenyity provider need to use "TypeAuths" section, but %s' % result['Message'])
-    # if self.__idp not in (result.get('Value') or []):
-    #   return S_ERROR("%s is absent in configuration." % self.__idp)
-
-    # if not self.__session:
-    #   return S_ERROR('No found session in cookies.')
-
-    # # result = gAuthManagerData.getIDForSession(self.__session)
-    # result = S_ERROR()
-    # if not result['OK']:
-    #   self.set_cookie(self.__idp, '')
+    # if auth:
+    #   # If present "Authorization" header it means that need to use another then certificate authZ
+    #   authParts = auth.split()
+    #   authType = authParts[0]
+    #   if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+    #     return S_ERROR("Invalid authorization header.")
+    #   token = authParts[1]
+    #   # Is session active?
+    #   session, data = self.application.sessionCache.getSessionByOption('access_token', token)
+    #   if not session:
+    #     return S_ERROR("Session expired.")
+    #   # Read public key of DIRAC auth service
+    #   with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+    #     key = f.read()
+    #   # Get claims and verify signature
+    #   claims = jwt.decode(token, key)
+    #   # Verify token
+    #   claims.validate()
+    #   # If no found 'group' claim, user group need to add as https argument
+    #   self.__credDict['ID'] = claims.sub
+    #   self.__credDict['group'] = claims.get('grp')
+    #   return S_OK()
     # else:
-    #   self.__credDict['ID'] = result['Value']
-    # return result
+    #   return self.__readCertificate()
+    result = self.__readSession()
+    if not result['OK']:
+      result = self.__readCertificate()
+    return result
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
@@ -214,6 +195,15 @@ class WebHandler(tornado.web.RequestHandler):
       cl.append(" (%s)" % self.__credDict['DN'])
     summ = "%s %s" % (summ, "".join(cl))
     return summ
+
+  def __readSession(self):
+    """ """
+    sessionData = self.application.sessionCache.getSession(self.get_cookie('session_id'))
+    if not sessionData:
+      return S_ERROR('Session expired.')
+    self.__credDict['ID'] = sessionData['ID']
+    self.__credDict['issuer'] = sessionData['issuer']
+    return S_OK()
 
   def __readCertificate(self):
     """ Fill credentional from certificate and check is registred
@@ -274,11 +264,11 @@ class WebHandler(tornado.web.RequestHandler):
   def getID(self):
     return self.__credDict.get('ID', '')
 
-  def getIdP(self):
-    return self.__idp
+  # def getIdP(self):
+  #   return self.__idp
 
-  def getSession(self):
-    return self.__session
+  # def getSession(self):
+  #   return self.__session
 
   def getUserName(self):
     return self.__credDict.get('username', '')
@@ -412,7 +402,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     return WOK(methodName)
 
-  def get(self, setup, group, route, *overpath):
+  def get(self, setup, group, route, *pathArgs):
     if not self._pathResult.ok:
       raise self._pathResult
     methodName = "web_%s" % self._pathResult.data
@@ -421,7 +411,7 @@ class WebHandler(tornado.web.RequestHandler):
     except AttributeError as e:
       self.log.fatal("This should not happen!! %s" % e)
       raise tornado.web.HTTPError(404)
-    return mObj(*overpath)
+    return mObj(*pathArgs)
 
   def post(self, *args, **kwargs):
     return self.get(*args, **kwargs)

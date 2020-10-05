@@ -18,8 +18,8 @@ from DIRAC.Core.Utilities import Time
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.Core.Security.Properties import CS_ADMINISTRATOR
-from DIRAC.Core.DISET.AuthManager import initializationOfCertificate, initializationOfGroup,\
-    forwardingCredentials, initializationOfSession
+from DIRAC.Core.DISET.AuthManager import authorizeByCertificate,\
+    forwardingCredentials, authorizeBySession
 
 
 def getServiceOption(serviceInfo, optionName, defaultValue):
@@ -103,10 +103,9 @@ class RequestHandler(object):
     credDict = self.__trPool.get(self.__trid).getConnectingCredentials()
     forwardingCredentials(credDict, logObj=self.log)
     if credDict.get('ID'):
-      initializationOfSession(credDict, logObj=self.log)
+      authorizeBySession(credDict, logObj=self.log)
     else:
-      initializationOfCertificate(credDict, logObj=self.log)
-    initializationOfGroup(credDict, logObj=self.log)
+      authorizeByCertificate(credDict, logObj=self.log)
     return credDict
 
   @classmethod

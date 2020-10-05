@@ -48,12 +48,15 @@ class IdProviderFactory(object):
 
         :return: S_OK(IdProvider)/S_ERROR()
     """
-    result = getProviderInfo(idProvider)
-    if not result['OK']:
-      self.log.error('Failed to read configuration', '%s: %s' % (subClassName, result['Message']))
-      return result
-    pDict = result['Value']
-    pDict['ProviderName'] = idProvider
+    if isinstance(idProvider, dict):
+      pDict = idProvider
+    else:
+      result = getProviderInfo(idProvider)
+      if not result['OK']:
+        self.log.error('Failed to read configuration', '%s: %s' % (subClassName, result['Message']))
+        return result
+      pDict = result['Value']
+      pDict['ProviderName'] = idProvider
     pDict['sessionManager'] = sessionManager
     pType = pDict['ProviderType']
 

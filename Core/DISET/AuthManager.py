@@ -52,7 +52,7 @@ def forwardingCredentials(credDict, logObj=gLogger):
   return False
 
 
-def initializationOfSession(credDict, logObj=gLogger):
+def authorizeBySession(credDict, logObj=gLogger):
   """ Discover the username associated to the authentication session. It will check if the selected group is valid.
       The username will be included in the credentials dictionary. And will discover DN for group if last not set.
 
@@ -68,10 +68,10 @@ def initializationOfSession(credDict, logObj=gLogger):
     credDict[KW_GROUP] = "visitor"
     return False
   credDict[KW_USERNAME] = result['Value']
-  return True
+  return __checkGroup(credDict, logObj=gLogger)
 
 
-def initializationOfCertificate(credDict, logObj=gLogger):
+def authorizeByCertificate(credDict, logObj=gLogger):
   """ Discover the username associated to the certificate DN. It will check if the selected group is valid.
       The username will be included in the credentials dictionary.
 
@@ -85,7 +85,7 @@ def initializationOfCertificate(credDict, logObj=gLogger):
   if result['OK'] and result['Value']:
     credDict[KW_USERNAME] = result['Value']
     credDict[KW_GROUP] = KW_HOSTS_GROUP
-    return True
+    return __checkGroup(credDict, logObj=gLogger)
   elif credDict.get(KW_GROUP) == KW_HOSTS_GROUP:
     logObj.warn("Cannot find hostname for DN %s: %s" % (credDict[KW_DN], result['Message']))
     credDict[KW_USERNAME] = "anonymous"
@@ -99,10 +99,10 @@ def initializationOfCertificate(credDict, logObj=gLogger):
     credDict[KW_GROUP] = "visitor"
     return False
   credDict[KW_USERNAME] = result['Value']
-  return True
+  return __checkGroup(credDict, logObj=gLogger)
 
 
-def initializationOfGroup(credDict, logObj=gLogger):
+def __checkGroup(credDict, logObj=gLogger):
   """ Check/get default group
 
       :param dict credDict: Credentials to check
@@ -202,47 +202,43 @@ class AuthManager(object):
       else:
         return False
 
-    # Check authorization
     authorized = True
-    # Search user name
+    # User/group authorization
     if not credDict.get(KW_USERNAME):
       if credDict.get(KW_DN):
         # With certificate
-        authorized = initializationOfCertificate(credDict, logObj=self.__authLogger)
+        authorized = authorizeByCertificate(credDict, logObj=self.__authLogger)
       elif credDict.get(KW_ID):
         # With IdP session
-        authorized = initializationOfSession(credDict, logObj=self.__authLogger)
+        authorized = authorizeBySession(credDict, logObj=self.__authLogger)
       else:
         credDict[KW_USERNAME] = "anonymous"
         credDict[KW_GROUP] = "visitor"
         authorized = False
 
-    # Search group
-    if authorized:
-      authorized = initializationOfGroup(credDict, logObj=self.__authLogger)
+    # Access to the service
 
-    # Authorize check
-    if allowAll or authorized:
-      # Properties check
-      if not self.matchProperties(credDict, list(set(requiredProperties) - set(['Any', 'any',
-                                                                                'All', 'all',
-                                                                                'authenticated',
-                                                                                'Authenticated']))):
-        self.__authLogger.warn("Client is not authorized\nValid properties: %s\nClient: %s" %
-                               (requiredProperties, credDict))
-        return False
-      # Groups check
-      elif validGroups and credDict[KW_GROUP] not in validGroups:
-        self.__authLogger.warn("Client is not authorized\nValid groups: %s\nClient: %s" %
-                               (validGroups, credDict))
-        return False
-      else:
-        if not authorized:
-          self.__authLogger.debug("Accepted request from unsecure transport")
-        return True
-    else:
+    # Check free access
+    if not allowAll and not authorized:
       self.__authLogger.debug("User is invalid or does not belong to the group it's saying")
-    return False
+      return False
+    # Match properties
+    if not self.matchProperties(credDict, list(set(requiredProperties) - set(['Any', 'any',
+                                                                              'All', 'all',
+                                                                              'authenticated',
+                                                                              'Authenticated']))):
+      self.__authLogger.warn("Client is not authorized\nValid properties: %s\nClient: %s" %
+                              (requiredProperties, credDict))
+      return False
+    # Match allowed groups
+    if validGroups and credDict[KW_GROUP] not in validGroups:
+      self.__authLogger.warn("Client is not authorized\nValid groups: %s\nClient: %s" %
+                              (validGroups, credDict))
+      return False
+    # Access allowed
+    if not authorized:
+      self.__authLogger.debug("Accepted request from unsecure transport")
+    return True
 
   def getValidPropertiesForMethod(self, method, defaultProperties=False):
     """ Get all authorized groups for calling a method

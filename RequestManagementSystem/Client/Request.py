@@ -25,7 +25,7 @@ import six
 # # from DIRAC
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Security.ProxyInfo import getProxyInfo
-from DIRAC.Core.DISET.AuthManager import initializationOfCertificate, initializationOfGroup
+from DIRAC.Core.DISET.AuthManager import authorizeByCertificate
 from DIRAC.RequestManagementSystem.Client.Operation import Operation
 from DIRAC.RequestManagementSystem.private.JSONUtils import RMSEncoder
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers
@@ -93,7 +93,7 @@ class Request(object):
       credDict['group'] = proxyInfo["Value"].get('group')
       credDict['username'] = proxyInfo["Value"].get('username')
 
-      if initializationOfCertificate(credDict) and initializationOfGroup(credDict):
+      if authorizeByCertificate(credDict):
         self.Owner = credDict["username"]
         self.OwnerDN = credDict["DN"]
         self.OwnerGroup = credDict["group"]

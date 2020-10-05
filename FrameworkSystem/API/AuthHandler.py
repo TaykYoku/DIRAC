@@ -81,7 +81,7 @@ class AuthHandler(WebHandler):
     """ Device authorization flow
 
         POST: /device?client_id=.. &scope=..
-          group - optional
+          # group - optional
           provider - optional
         
         GET: /device/<user code>
@@ -131,7 +131,7 @@ class AuthHandler(WebHandler):
   def web_authorization(self, provider=None):
     """ Authorization endpoint
 
-        GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)&group=..
+        GET: /authorization/< DIRACs IdP >?client_id=.. &response_type=(code|device)&scope=..      #group=..
 
         Device flow:
           &user_code=..                         (required)
@@ -214,10 +214,8 @@ class AuthHandler(WebHandler):
     session = self.get_argument('state')
 
     # Added group
-    choosedGroup = self.get_argument('chooseGroup', None)
-    if choosedGroup:
-      self.server.updateSession(session, group=choosedGroup)
-    else:
+    choosedScope = self.get_argument('chooseScope', [])
+    if not choosedScope:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
       result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
@@ -233,18 +231,29 @@ class AuthHandler(WebHandler):
     username = sessionDict['username']
     request = sessionDict['request']    
     userID = sessionDict['userID']
-    group = sessionDict.get('group')
+
+    if choosedScope:
+      # Modify scope in main session
+      request.data['scope'] = list(set(request.data['scope']) + set(choosedScope))
+      self.server.updateSession(session, request=request)
+
+    #group = sessionDict.get('group')
+
+    # Search groups in scope
+    # scopes = list(set(request.args['scope']) + set(choosedScope))
+    groups = [(s.split(':')[1]) for s in request.data['scope'] if s.startswith('g:')]
 
     # Researche Group
-    result = gProxyManager.getGroupsStatusByUsername(username)
+    result = gProxyManager.getGroupsStatusByUsername(username, groups)
     if not result['OK']:
       self.server.updateSession(session, Status='failed', Comment=result['Message'])
       self.finish(result['Message'])
       return
     groupStatuses = result['Value']
 
-    reqGroup = self.get_argument('group', group)
-    if not reqGroup:
+    # reqGroup = self.get_argument('group', group)
+    # if not reqGroup:
+    if not groups:
       t = template.Template('''<!DOCTYPE html>
       <html>
         <head>
@@ -255,7 +264,7 @@ class AuthHandler(WebHandler):
           Please choose group:
           <ul>
             {% for group, data in groups.items() %}
-              <li> <a href="{{url}}?state={{session}}&chooseGroup={{group}}">{{group}}</a>
+              <li> <a href="{{url}}?state={{session}}&chooseScope=g:{{group}}">{{group}}</a>
                 : {{data['Status']}} </br>
                 {{data['Comment']}} </br>
                 {% if data.get('Action', '') %}
@@ -272,25 +281,27 @@ class AuthHandler(WebHandler):
       return
 
     pprint(groupStatuses)
-    thisGroup = groupStatuses.get(reqGroup)
-    if not thisGroup:
-      self.finish('%s - wrone group for %s user.' % (reqGroup, username))
-      return
+    for group in groups:
+      status = groupStatuses[group]['Status']
+      action = groupStatuses[group].get('Action')
+
+      # thisGroup = groupStatuses.get(reqGroup)
+      # if not thisGroup:
+      #   self.finish('%s - wrone group for %s user.' % (reqGroup, username))
+      #   return
     
-    elif thisGroup['Status'] == 'needToAuth':
-      
-      # Submit second auth flow through IdP
-      idP = thisGroup['Action'][1][0]
-      result = self.server.getIdPAuthorization(idP, session)
-      if not result['OK']:
-        raise WErr(503, result['Message'])
-      self.log.notice('Redirect to', result['Value'])
-      self.redirect(result['Value'])
-      return
-    
-    elif thisGroup['Status'] not in ['ready', 'unknown']:
-      self.finish('%s - bad group status' % thisGroup['Status'])
-      return
+      if status == 'needToAuth':
+        # Submit second auth flow through IdP
+        idP = action[1][0]
+        result = self.server.getIdPAuthorization(idP, session)
+        if not result['OK']:
+          raise WErr(503, result['Message'])
+        self.log.notice('Redirect to', result['Value'])
+        self.redirect(result['Value'])
+        return
+      if status not in ['ready', 'unknown']:
+        self.finish('%s - bad group status' % status)
+        return
 
     # self.server.updateSession(session, Status='authed')
 
@@ -318,49 +329,23 @@ class AuthHandler(WebHandler):
     """
     auth = self.request.headers.get("Authorization")
     credDict = {}
-    if auth:
-      # If present "Authorization" header it means that need to use another then certificate authZ
-      authParts = auth.split()
-      authType = authParts[0]
-      if len(authParts) != 2 or authType.lower() != "bearer":
-        raise Exception("Invalid header authorization")
-      token = authParts[1]
-      # Read public key of DIRAC auth service
-      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-        key = f.read()
-      # Get claims and verify signature
-      claims = jwt.decode(token, key)
-      # Verify token
-      claims.validate()
-      # If no found 'group' claim, user group need to add as https argument
-      credDict['sub'] = claims.sub
-      credDict['group'] = claims.get('grp')
-    else:
-      #   chainAsText = self.request.get_ssl_certificate().as_pem()
-      #   peerChain = X509Chain()
-
-      #   # Here we read all certificate chain
-      #   cert_chain = self.request.get_ssl_certificate_chain()
-      #   for cert in cert_chain:
-      #     chainAsText += cert.as_pem()
-
-      #   peerChain.loadChainFromString(chainAsText)
-
-      #   # Retrieve the credentials
-      #   res = peerChain.getCredentials(withRegistryInfo=False)
-      #   if not res['OK']:
-      #     raise Exception(res['Message'])
-
-      #   credDict = res['Value']
-
-      # # We check if client sends extra credentials...
-      # if "extraCredentials" in self.request.arguments:
-      #   extraCred = self.get_argument("extraCredentials")
-      #   if extraCred:
-      #     credDict['extraCredentials'] = decode(extraCred)[0]
-      pass
-    result = Registry.getUsernameForID(credDict['sub'])
+    if not auth:
+      raise WErr(401, 'Unauthorize')
+    # If present "Authorization" header it means that need to use another then certificate authZ
+    authParts = auth.split()
+    authType = authParts[0]
+    if len(authParts) != 2 or authType.lower() != "bearer":
+      raise Exception("Invalid header authorization")
+    token = authParts[1]
+    # Read public key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      key = f.read()
+    # Get claims and verify signature
+    claims = jwt.decode(token, key)
+    # Verify token
+    claims.validate()
+    result = Registry.getUsernameForID(claims.sub)
     if not result['OK']:
-      raise Exception("Invalid user")
-    credDict['username'] = result['Value']
-    return credDict
+      raise Exception("User is not valid.")
+    claims['username'] = result['Value']
+    return claims

@@ -21,18 +21,24 @@ from DIRAC import gLogger, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
-from DIRAC.Core.Web.SessionData import SessionData, SessionCache
+from DIRAC.Core.Web.SessionData import SessionData, SessionStorage
 from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
 from DIRAC.Core.Utilities.DictCache import DictCache
+from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 
 __RCSID__ = "$Id$"
 
 
-class Application(_Application):
+class Application(_Application, OAuth2IdProvider):
   def __init__(self, *args, **kwargs):
-    self.sessionCache = SessionCache()
-    super(Application, self).__init__(*args, **kwargs)
+    self.sessionCache = SessionStorage()
+    _Application.__init__(self, *args, **kwargs)
+    result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
+    if not result['OK']:
+      raise("Can't load web portal settings.")
+    settings = result['Value']
+    OAuth2IdProvider.__init__(self, sessionManager=, **settings)
 
 
 class App(object):

@@ -17,7 +17,7 @@ __RCSID__ = "$Id$"
 
 gCacheSession = ThreadSafe.Synchronizer()
 
-class SessionCache(object):
+class SessionStorage(object):
   def __init__(self):
     self.cacheSession = DictCache()
 
