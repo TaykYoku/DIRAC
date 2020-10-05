@@ -38,7 +38,7 @@ class Application(_Application, OAuth2IdProvider):
     if not result['OK']:
       raise("Can't load web portal settings.")
     settings = result['Value']
-    OAuth2IdProvider.__init__(self, sessionManager=, **settings)
+    # OAuth2IdProvider.__init__(self, sessionManager=, **settings)
 
 
 class App(object):
