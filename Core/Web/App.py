@@ -21,23 +21,27 @@ from DIRAC import gLogger, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
-from DIRAC.Core.Web.SessionData import SessionData, SessionStorage
+from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
-from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
+
+from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
+
+require_oauth = ResourceProtector()
+require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
 
 __RCSID__ = "$Id$"
 
 
-class Application(_Application, OAuth2IdProvider):
+class Application(_Application, OAuth2IdProvider, SessionManager):
   def __init__(self, *args, **kwargs):
-    self.sessionCache = SessionStorage()
     _Application.__init__(self, *args, **kwargs)
-    result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
-    if not result['OK']:
-      raise("Can't load web portal settings.")
-    settings = result['Value']
+    SessionManager.__init__(self)
+    # result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
+    # if not result['OK']:
+    #   raise("Can't load web portal settings.")
+    # settings = result['Value']
     # OAuth2IdProvider.__init__(self, sessionManager=, **settings)
 
 

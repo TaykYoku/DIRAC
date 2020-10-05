@@ -112,7 +112,7 @@ class WebHandler(tornado.web.RequestHandler):
     super(WebHandler, self).__init__(*args, **kwargs)
     if not WebHandler.__log:
       WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
-    self.__sessions = self.application.sessionCache
+    # self.__sessions = self.application.sessionCache
     # Fill credentials
     self.__credDict = {}
     self.__setup = Conf.setup()
@@ -153,23 +153,23 @@ class WebHandler(tornado.web.RequestHandler):
     # auth = self.request.headers.get("Authorization")
 
     # if auth:
-    #   # If present "Authorization" header it means that need to use another then certificate authZ
-    #   authParts = auth.split()
-    #   authType = authParts[0]
-    #   if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-    #     return S_ERROR("Invalid authorization header.")
-    #   token = authParts[1]
-    #   # Is session active?
-    #   session, data = self.application.sessionCache.getSessionByOption('access_token', token)
-    #   if not session:
-    #     return S_ERROR("Session expired.")
-    #   # Read public key of DIRAC auth service
-    #   with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-    #     key = f.read()
-    #   # Get claims and verify signature
-    #   claims = jwt.decode(token, key)
-    #   # Verify token
-    #   claims.validate()
+      # # If present "Authorization" header it means that need to use another then certificate authZ
+      # authParts = auth.split()
+      # authType = authParts[0]
+      # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+      #   return S_ERROR("Invalid authorization header.")
+      # token = authParts[1]
+      # # Is session active?
+      # session, data = self.application.sessionCache.getSessionByOption('access_token', token)
+      # if not session:
+      #   return S_ERROR("Session expired.")
+      # # Read public key of DIRAC auth service
+      # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      #   key = f.read()
+      # # Get claims and verify signature
+      # claims = jwt.decode(token, key)
+      # # Verify token
+      # claims.validate()
     #   # If no found 'group' claim, user group need to add as https argument
     #   self.__credDict['ID'] = claims.sub
     #   self.__credDict['group'] = claims.get('grp')
@@ -197,10 +197,43 @@ class WebHandler(tornado.web.RequestHandler):
     return summ
 
   def __readSession(self):
-    """ """
-    sessionData = self.application.sessionCache.getSession(self.get_cookie('session_id'))
+    """ Fill credentionals from session
+
+        :return: S_OK()/S_ERROR()
+    """
+    auth = self.request.headers.get("Authorization")
+    if not auth:
+      return S_ERROR("Invalid authorization header.")
+
+    # If present "Authorization" header it means that need to use another then certificate authZ
+    authParts = auth.split()
+    authType = authParts[0]
+    token = authParts[1]
+    if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+      return S_ERROR("Invalid authorization header.")
+    
+    # Is session active?
+    sessionData = self.application.getSession(self.get_cookie('session_id'))
     if not sessionData:
       return S_ERROR('Session expired.')
+    
+    sAToken = sessionData['access_token']
+    sRToken = sessionData['refresh_token']
+
+    if sAToken != token:
+      return S_ERROR('Session expired.')
+
+
+    # Read public key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      key = f.read()
+    # Get claims and verify signature
+    claims = jwt.decode(sessionData['refresh_token'], key)
+    # Verify token
+    claims.validate()
+    if  claims.exp
+    
+
     self.__credDict['ID'] = sessionData['ID']
     self.__credDict['issuer'] = sessionData['issuer']
     return S_OK()

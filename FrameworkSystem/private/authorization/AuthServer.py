@@ -4,7 +4,7 @@ from pprint import pprint
 from tornado.escape import json_decode
 
 from authlib.deprecate import deprecate
-from authlib.jose import jwt, JsonWebSignature
+from authlib.jose import jwt
 from authlib.oauth2 import (
     OAuth2Error,
     OAuth2Request,
