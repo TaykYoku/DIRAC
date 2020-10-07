@@ -231,7 +231,8 @@ class WebHandler(tornado.web.RequestHandler):
     claims = jwt.decode(sessionData['refresh_token'], key)
     # Verify token
     claims.validate()
-    if  claims.exp
+    if claims.exp:
+      pass
     
 
     self.__credDict['ID'] = sessionData['ID']
