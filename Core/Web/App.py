@@ -26,10 +26,10 @@ from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization import AuthServer
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 
-from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
+# from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
 
-require_oauth = ResourceProtector()
-require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
+# require_oauth = ResourceProtector()
+# require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
 
 __RCSID__ = "$Id$"
 
