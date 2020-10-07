@@ -31,7 +31,7 @@ from DIRAC.Core.Security import Locations
 from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
-from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
+from DIRAC.FrameworkSystem.private.authorization import AuthServer
 
 import redis
 

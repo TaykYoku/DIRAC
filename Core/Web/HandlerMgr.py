@@ -18,7 +18,7 @@ from DIRAC.Core.Web.StaticHandler import StaticHandler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.Core.Utilities.DIRACSingleton import DIRACSingleton
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
-from DIRAC.FrameworkSystem.API.AuthServer import AuthServer
+from DIRAC.FrameworkSystem.private.authorization import AuthServer
 
 __RCSID__ = "$Id$"
 
