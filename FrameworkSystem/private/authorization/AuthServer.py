@@ -66,10 +66,10 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
       metadata.validate()
       self.metadata = metadata
 
-    self.config.setdefault('error_uris', metadata.get('OAUTH2_ERROR_URIS'))
-    if metadata.get('OAUTH2_JWT_ENABLED'):
+    self.config.setdefault('error_uris', self.metadata.get('OAUTH2_ERROR_URIS'))
+    if self.metadata.get('OAUTH2_JWT_ENABLED'):
       deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
-      self.init_jwt_config(metadata)
+      self.init_jwt_config(self.metadata)
 
     self.register_grant(RefreshTokenGrant)
     self.register_grant(DeviceCodeGrant)
