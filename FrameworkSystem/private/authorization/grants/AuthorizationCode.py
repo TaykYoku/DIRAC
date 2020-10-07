@@ -6,7 +6,7 @@ from pprint import pprint
 from authlib.jose import JsonWebSignature
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
-from authlib.oauth2.rfc6749.grants import _AuthorizationCodeGrant
+from authlib.oauth2.rfc6749.grants import AuthorizationCodeGrant as _AuthorizationCodeGrant
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urlsafe_b64decode, json_loads
 
