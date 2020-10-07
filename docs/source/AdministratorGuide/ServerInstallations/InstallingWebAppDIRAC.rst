@@ -319,91 +319,70 @@ The content of the site.conf (please modify it!!!)::
    }
 
    server {
-     listen 80;
-
-     #Your server name if you have weird network config. Otherwise leave commented
-     #server_name  lbvobox33.cern.ch;
+     # Use always HTTPS
+     listen 80 default_server;
+     listen [::]:80 default_server;
      server_name dzmathe.cern.ch;
+     return 301 https://$server_name$request_uri;
+   }
 
-     root /opt/dirac/pro;
-
-     location ~ ^/[a-zA-Z]+/(s:.*/g:.*/)?static/(.+\.(jpg|jpeg|gif|png|bmp|ico|pdf))$ {
-       alias /opt/dirac/pro/;
-       #Add one more for every static path. For instance for LHCbWebDIRAC:
-       #try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
-       try_files WebAppDIRAC/WebApp/static/$2 /;
-       expires 10d;
-       gzip_static on;
-       gzip_disable "MSIE [1-6]\.";
-       add_header Cache-Control public;
-       break;
-     }
-
-     location ~ ^/[a-zA-Z]+/(s:.*/g:.*/)?static/(.+)$ {
-       alias /opt/dirac/pro/;
-       #Add one more for every static path. For instance for LHCbWebDIRAC:
-       #try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
-       try_files WebAppDIRAC/WebApp/static/$2 /;
-       expires 1d;
-       gzip_static on;
-       gzip_disable "MSIE [1-6]\.";
-       add_header Cache-Control public;
-       break;
-     }
-
-     location ~ /DIRAC/ {
-       proxy_pass_header Server;
-       proxy_set_header Host $http_host;
-       proxy_redirect off;
-       proxy_set_header X-Real-IP $remote_addr;
-       proxy_set_header X-Scheme $scheme;
-       proxy_pass http://tornadoserver;
-       proxy_read_timeout 3600;
-       proxy_send_timeout 3600;
-
-       gzip on;
-       gzip_proxied any;
-       gzip_comp_level 9;
-       gzip_types text/plain text/css application/javascript application/xml application/json;
-
-      # WebSocket support (nginx 1.4)
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection "upgrade";
-
-      break;
-     }
-     location / {
-      rewrite ^ http://$server_name/DIRAC/ permanent;
-      }
-    }
    server {
-     listen 443 default ssl; ## listen for ipv4
-
-     #server_name  lbvobox33.cern.ch;
-     server_name  dzmathe.cern.ch;
+     # Enabling HTTP/2
+     listen 443 ssl http2 default_server;      # For IPv4
+     listen [::]:443 ssl http2 default_server; # For IPv6
+     server_name dzmathe.cern.ch;              # Server domain name
 
      ssl_prefer_server_ciphers On;
      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
      ssl_ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS;
-
-     #Certs that will be shown to the user connecting to the web.
-     #Preferably NOT grid certs. Use something that the user cert will not complain about
-     ssl_certificate    /opt/dirac/etc/grid-security/hostcert.pem;
+    
+     # Certs that will be shown to the user connecting to the web.
+     # Preferably NOT grid certs. Use something that the user cert will not complain about
+     ssl_certificate     /opt/dirac/etc/grid-security/hostcert.pem;
      ssl_certificate_key /opt/dirac/etc/grid-security/hostkey.pem;
 
+     ssl_session_tickets off;
+
+     # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
+     # Generate your DH parameters with OpenSSL:
+     # ~ cd /etc/nginx/ssl
+     # ~ openssl dhparam -out dhparam.pem 4096 
+     ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+
+     # HSTS (ngx_http_headers_module is required) (15768000 seconds = 6 months)
+     add_header Strict-Transport-Security max-age=15768000;
+     
+     # To secure NGINX from Click-jacking attack
+     add_header X-Frame-Options SAMEORIGIN always;
+
+     # OCSP Stapling --- fetch OCSP records from URL in ssl_certificate and cache them
+     ssl_stapling on;
+     ssl_stapling_verify on;
+
+     # DNS resolver for stapling so that the resolver defaults to Google’s DNS
+     resolver 8.8.4.4 8.8.8.8;
+
      ssl_client_certificate /opt/dirac/pro/etc/grid-security/cas.pem;
-   #  ssl_crl /opt/dirac/pro/etc/grid-security/allRevokedCerts.pem;
-     ssl_verify_client on;
+     # ssl_crl /opt/dirac/pro/etc/grid-security/allRevokedCerts.pem;
+     ssl_verify_client optional;
      ssl_verify_depth 10;
      ssl_session_cache shared:SSL:10m;
 
      root /opt/dirac/pro;
+     
+     location /DIRAC/upload {
+       if ($ssl_client_s_dn=$master_dn) {
+         # Store files to this directory
+         upload_store $root_path/webRoot/www/pilot/;
+         upload_cleanup 400 404 499 500-505;
+         break;
+       }
+     }
 
      location ~ ^/[a-zA-Z]+/(s:.*/g:.*/)?static/(.+\.(jpg|jpeg|gif|png|bmp|ico|pdf))$ {
        alias /opt/dirac/pro/;
-       #Add one more for every static path. For instance for LHCbWebDIRAC:
-       #try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
+       # Add one more for every static path. For instance for LHCbWebDIRAC:
+       # try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
        try_files WebAppDIRAC/WebApp/static/$2 /;
        expires 10d;
        gzip_static on;
@@ -414,8 +393,8 @@ The content of the site.conf (please modify it!!!)::
 
      location ~ ^/[a-zA-Z]+/(s:.*/g:.*/)?static/(.+)$ {
        alias /opt/dirac/pro/;
-       #Add one more for every static path. For instance for LHCbWebDIRAC:
-       #try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
+       # Add one more for every static path. For instance for LHCbWebDIRAC:
+       # try_files LHCbWebDIRAC/WebApp/static/$2 WebAppDIRAC/WebApp/static/$2 /;
        try_files WebAppDIRAC/WebApp/static/$2 /;
        expires 1d;
        gzip_static on;
@@ -423,6 +402,7 @@ The content of the site.conf (please modify it!!!)::
        add_header Cache-Control public;
        break;
      }
+
      location ~ /DIRAC/ {
       proxy_pass_header Server;
       proxy_set_header Host $http_host;
@@ -437,21 +417,21 @@ The content of the site.conf (please modify it!!!)::
       proxy_set_header X-Ssl_client_s_dn $ssl_client_s_dn;
       proxy_set_header X-Ssl_client_i_dn $ssl_client_i_dn;
 
-       gzip on;
-       gzip_proxied any;
-       gzip_comp_level 9;
-       gzip_types text/plain text/css application/javascript application/xml application/json;
+      gzip on;
+      gzip_proxied any;
+      gzip_comp_level 9;
+      gzip_types text/plain text/css application/javascript application/xml application/json;
 
-       # WebSocket support (nginx 1.4)
-       proxy_http_version 1.1;
-       proxy_set_header Upgrade $http_upgrade;
-       proxy_set_header Connection "upgrade";
+      # WebSocket support (nginx 1.4)
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
 
-       break;
+      break;
      }
 
      location / {
-       rewrite ^ https://$server_name/DIRAC/ permanent;
+      rewrite ^ https://$server_name/DIRAC/ permanent;
      }
    }
 
