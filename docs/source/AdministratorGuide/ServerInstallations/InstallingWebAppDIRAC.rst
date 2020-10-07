@@ -369,15 +369,6 @@ The content of the site.conf (please modify it!!!)::
      ssl_session_cache shared:SSL:10m;
 
      root /opt/dirac/pro;
-     
-     location /DIRAC/upload {
-       if ($ssl_client_s_dn=$master_dn) {
-         # Store files to this directory
-         upload_store $root_path/webRoot/www/pilot/;
-         upload_cleanup 400 404 499 500-505;
-         break;
-       }
-     }
 
      location ~ ^/[a-zA-Z]+/(s:.*/g:.*/)?static/(.+\.(jpg|jpeg|gif|png|bmp|ico|pdf))$ {
        alias /opt/dirac/pro/;

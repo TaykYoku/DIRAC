@@ -28,15 +28,33 @@ The pilot.json file is always kept in sync with the content of the Configuration
 At every configuration update, the pilot.json file content will also be updated.
 
 
-If you use the DIRAC webserver please
+You need to configure your webserver, if you use nginx:
 
-- add the following option to the WebApp CS section::
+- add a location block to handler your requests and the "upload" access permissions inside::
+
+    location /DIRAC/upload {
+      # Access based on the host name or IP address
+      # Allowed only for 192.168.1.10
+      allow 192.168.1.10;
+      deny  all;
+
+      # Store files to this directory
+      upload_store /path/to/pilot/;
+      upload_cleanup 400 404 499 500-505;
+      break;
+
+      # Access based on the host certificate DN
+      #set $allowed_dn /O=my/OU=server/CN=dn;
+      #if ($ssl_client_s_dn=$allowed_dn) {
+      #  upload_store /path/to/pilot/;
+      #  upload_cleanup 400 404 499 500-505;
+      #  break;
+      #}
+    }
        
-    /WebApp/StaticDirs=pilot
-       
-- create the following directory in the DIRAC webserver machine::
+- create the following directory in the webserver machine::
    
-    mkdir /opt/dirac/webRoot/www/pilot/
+    mkdir /path/to/pilot/
   
 
 Other options that can be set also in the Operations part of the CS include:
