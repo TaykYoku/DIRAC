@@ -3,10 +3,11 @@ from __future__ import division
 from __future__ import print_function
 
 from authlib.oauth2 import OAuth2Error
+from authlib.oauth2.rfc6749.grants import AuthorizationEndpointMixin
 from authlib.oauth2.rfc8628 import (
     DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
     DeviceCodeGrant as _DeviceCodeGrant,
-    DeviceCredentialDict,
+    DeviceCredentialDict
 )
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
@@ -24,7 +25,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     self.server.addSession(data['device_code'], client_id=client_id, scope=scope, **data)
 
 
-class DeviceCodeGrant(_DeviceCodeGrant, grants.AuthorizationEndpointMixin):
+class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
   RESPONSE_TYPES = {'device'}
 
   def validate_authorization_request(self):
