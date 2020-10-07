@@ -20,7 +20,8 @@ from authlib.common.security import generate_token
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 # from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
-from DIRAC.FrameworkSystem.private.authorization.grants import DeviceAuthorizationEndpoint, ClientRegistrationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.utils import ClientRegistrationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.grants import DeviceAuthorizationEndpoint
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
