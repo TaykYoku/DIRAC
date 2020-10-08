@@ -19,7 +19,8 @@ class TokenManager(object):
     self.__maxAge = maxAge
 
   @gCacheSession
-  def addSession(self, session, exp=self.__addTime, **kwargs):
+  def addSession(self, session, exp=None, **kwargs):
+    exp = exp or self.__addTime
     if not isinstance(session, Session):
       session = Session(session, kwargs, exp)
     if session.age > self.__maxAge:
