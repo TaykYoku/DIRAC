@@ -36,7 +36,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            update_token=update_token, **parameters)
     # Convert scope to list
     scope = scope or ''
-    self.scope = [s.strip() for s in scope.strip().replace('+',' ').split(',' if ',' in scope else ' ')]
+    self.scope = [s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')]
     self.parameters = parameters
     self.exceptions = exceptions
     self.name = name or parameters.get('ProviderName')
@@ -47,22 +47,28 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer, True))
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
-    # Here "t" is `OAuth2Token` type
-    self.update_token = lambda t, refresh_token: self.sessionManager.updateToken(dict(t), refresh_token)
+    self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
     print('========= %s ===========' % self.name)
     print(self.client_id)
     print(self.client_secret)
     print(self.token)
 
+  def _storeToken(self, token, session):
+    self.sessionManager.storeToken(dict(self.token))
+
+  def _updateToken(self, token, refresh_token):
+    # Here "t" is `OAuth2Token` type
+    self.sessionManager.updateToken(dict(t), refresh_token)
+
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
-        try:
-          return func(*args, **kwargs)
-        except exceptions.Timeout:
-          return S_ERROR('Time out')
-        except exceptions.RequestException as ex:
-          return S_ERROR(str(ex))
+      try:
+        return func(*args, **kwargs)
+      except exceptions.Timeout:
+        return S_ERROR('Time out')
+      except exceptions.RequestException as ex:
+        return S_ERROR(str(ex))
     return function_wrapper
 
   @checkResponse
@@ -136,6 +142,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """
     print('====>> IDP parseAuthResponse')
     print(response.uri)
+    session = session or response.args['state']
     self.fetch_access_token(authorization_response=response.uri)
     print('---->> IDP __getUserInfo')
     # Get user info
@@ -155,7 +162,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['user_id'] = userProfile['ID']
     print(dict(self.token))
     print(dict(self.token)['access_token'])
-    result = self.sessionManager.storeToken(dict(self.token))
+    result = self._storeToken(token, session)
     if not result['OK']:
       return result
 

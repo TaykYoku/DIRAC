@@ -37,11 +37,17 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
   def __init__(self, *args, **kwargs):
     _Application.__init__(self, *args, **kwargs)
     SessionManager.__init__(self)
-    # result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
-    # if not result['OK']:
-    #   raise("Can't load web portal settings.")
-    # settings = result['Value']
-    # OAuth2IdProvider.__init__(self, sessionManager=, **settings)
+    result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
+    if not result['OK']:
+      raise("Can't load web portal settings.")
+    OAuth2IdProvider.__init__(self, **result['Value'])
+  
+  def _updateToken(self, token, refresh_token):
+    session, _ = self.getSessionByOption('refresh_token', refresh_token)
+    self.updateSession(session, token=token)
+  
+  def _storeToken(self, token, session):
+    self.updateSession(session, token=token)
 
 
 class App(object):
@@ -195,7 +201,6 @@ class App(object):
     # Debug mode?
     if kw['debug']:
       self.log.info("Configuring in developer mode...")
-    # kw.update(self.__handlerMgr.getSettings())
     # Configure tornado app
     self.__app = Application(routes, **kw) #if self.__handlerMgr.isAuth() else _Application(routes, **kw)
     if self.__handlerMgr.isAuth():

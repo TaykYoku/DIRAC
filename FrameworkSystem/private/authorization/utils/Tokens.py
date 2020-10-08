@@ -11,6 +11,51 @@ from authlib.oauth2.rfc6749 import (
     HttpRequest,
 )
 
+
+class TokenManager(object):
+  def __init__(self, addTime=300, maxAge=3600 * 12):
+    self.__tokens = DictCache()
+    self.__addTime = addTime
+    self.__maxAge = maxAge
+
+  @gCacheSession
+  def addSession(self, session, exp=self.__addTime, **kwargs):
+    if not isinstance(session, Session):
+      session = Session(session, kwargs, exp)
+    if session.age > self.__maxAge:
+      return self.__sessions.delete(session.id)
+    self.__sessions.add(session.id, min(exp, self.__maxAge), session)
+
+  @gCacheSession
+  def getSession(self, session):
+    return self.__sessions.get(session.id if isinstance(session, Session) else session)
+
+  @gCacheSession
+  def getSessions(self):
+    return self.__sessions.getDict()
+  
+  @gCacheSession
+  def removeSession(self, session):
+    self.__sessions.delete(session.id if isinstance(session, Session) else session)
+
+  def updateSession(self, session, exp=self.__addTime, **kwargs):
+    sObj = self.getSession(session.id if isinstance(session, Session) else session)
+    if sObj and sObj.age < self.__maxAge:
+      if (sObj.age + exp) > self.__maxAge:
+        exp = self.__maxAge - sObj.age
+      for k, v in kwargs.items() or {}:
+        sObj[k] = v
+      self.addSession(sObj, exp)
+  
+  def getSessionByOption(self, key, value):
+    if key and value:
+      sessions = self.getSessions()
+      for session, data in sessions.items():
+        if data.get(key) == value:
+          return session, data
+    return None, None
+
+
 class ResourceProtector(_ResourceProtector):
   """ A protecting method for resource servers. Creating a ``require_oauth``
       decorator easily with ResourceProtector::

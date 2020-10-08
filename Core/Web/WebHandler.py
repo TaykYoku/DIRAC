@@ -8,8 +8,10 @@ import ssl
 import json
 import functools
 import traceback
+from time import time
 
 from concurrent.futures import ThreadPoolExecutor
+from authlib.common.security import generate_token
 
 import tornado.web
 import tornado.gen
@@ -112,23 +114,40 @@ class WebHandler(tornado.web.RequestHandler):
     super(WebHandler, self).__init__(*args, **kwargs)
     if not WebHandler.__log:
       WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
-    # self.__sessions = self.application.sessionCache
+
+    # Parse URI
+    setup, group, route = self.__parseURI()
+    self.__setup = setup or Conf.setup()
+
+    # Check session
+    self.__session = self.application.getSession(self.get_cookie('session_id'))
+
     # Fill credentials
-    self.__credDict = {}
-    self.__setup = Conf.setup()
+    self.__credDict = dict(group=group)
     result = self.__processCredentials()
     if not result['OK']:
       self.log.error(result['Message'], 'Continue as Visitor.')
+
     # Setup diset
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
-    match = self.PATH_RE.match(self.request.path)
-    pathItems = match.groups()
-    self._pathResult = self.__checkPath(*pathItems[:3])
+    
     # self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
+  
+  def __parseURI(self):
+    match = self.PATH_RE.match(self.request.path)
+    return match.groups()
+  
+  # def __readSession(self, group):
+  #   self.__session = self.application.getSession(self.get_cookie('session_id'))
+  #   if not self.__session:
+  #     state = generate_token(10)
+  #     url, _ = self.application.submitNewSession(state)
+  #     self.application.addSession(state, next=self.request.uri)
+  #     self.redirect(url)
 
   def __forceRefreshCS(self):
     """ Force refresh configuration from master configuration server
@@ -150,36 +169,9 @@ class WebHandler(tornado.web.RequestHandler):
     if self.request.protocol != "https":  # or self.__idp == "Visitor":
       return S_OK()
 
-    # auth = self.request.headers.get("Authorization")
-
-    # if auth:
-      # # If present "Authorization" header it means that need to use another then certificate authZ
-      # authParts = auth.split()
-      # authType = authParts[0]
-      # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-      #   return S_ERROR("Invalid authorization header.")
-      # token = authParts[1]
-      # # Is session active?
-      # session, data = self.application.sessionCache.getSessionByOption('access_token', token)
-      # if not session:
-      #   return S_ERROR("Session expired.")
-      # # Read public key of DIRAC auth service
-      # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-      #   key = f.read()
-      # # Get claims and verify signature
-      # claims = jwt.decode(token, key)
-      # # Verify token
-      # claims.validate()
-    #   # If no found 'group' claim, user group need to add as https argument
-    #   self.__credDict['ID'] = claims.sub
-    #   self.__credDict['group'] = claims.get('grp')
-    #   return S_OK()
-    # else:
-    #   return self.__readCertificate()
-    result = self.__readSession()
-    if not result['OK']:
-      result = self.__readCertificate()
-    return result
+    if self.__session:
+      return self.__readSession()
+    return self.__readCertificate()
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
@@ -208,35 +200,33 @@ class WebHandler(tornado.web.RequestHandler):
     # If present "Authorization" header it means that need to use another then certificate authZ
     authParts = auth.split()
     authType = authParts[0]
-    token = authParts[1]
+    authToken = authParts[1]
     if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
       return S_ERROR("Invalid authorization header.")
     
     # Is session active?
-    sessionData = self.application.getSession(self.get_cookie('session_id'))
-    if not sessionData:
+    if not self.__session.token or self.__session.token.get('access_token') != authToken:
       return S_ERROR('Session expired.')
-    
-    sAToken = sessionData['access_token']
-    sRToken = sessionData['refresh_token']
-
-    if sAToken != token:
-      return S_ERROR('Session expired.')
-
 
     # Read public key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
     # Get claims and verify signature
-    claims = jwt.decode(sessionData['refresh_token'], key)
+    claims = jwt.decode(self.__session.token['refresh_token'], key)
     # Verify token
     claims.validate()
-    if claims.exp:
-      pass
-    
+    if claims.exp < time():
+      return S_ERROR('Session expired.')
 
-    self.__credDict['ID'] = sessionData['ID']
-    self.__credDict['issuer'] = sessionData['issuer']
+    scopes = self.__session.token.scopes
+    if self.__credDict['group'] and (self.__credDict['group'] not in scopes or 'changeGroup' not in scopes):
+      return S_ERROR('Session not support %s group.' % self.__credDict['group'])
+
+    self.__credDict['ID'] = self.__session['ID']
+    self.__credDict['issuer'] = self.__session.get('issuer')
+
+    # Update session expired time
+    self.application.updateSession(self.__session)
     return S_OK()
 
   def __readCertificate(self):
@@ -278,10 +268,6 @@ class WebHandler(tornado.web.RequestHandler):
       except KeyError:
         pass
 
-    # result = Registry.getUsernameForDN(self.__credDict['DN'])
-    # if not result['OK']:
-    #   return result
-    # self.__credDict['username'] = result['Value']
     return S_OK()
 
   @property
@@ -357,9 +343,8 @@ class WebHandler(tornado.web.RequestHandler):
     """
     if not isinstance(self.AUTH_PROPS, (list, tuple)):
       self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
-
     self.__credDict['validGroup'] = False
-    self.__credDict['group'] = group
+    # self.__credDict['group'] = group
     auth = AuthManager(Conf.getAuthSectionForHandler(handlerRoute))
     ok = auth.authQuery(method, self.__credDict, self.AUTH_PROPS)
     if ok:
@@ -383,7 +368,6 @@ class WebHandler(tornado.web.RequestHandler):
     if self.__credDict.get('DN') and self.isTrustedHost(self.__credDict['DN']):
       self.log.info("Request is coming from Trusted host")
       return True
-
     return ok
 
   def isTrustedHost(self, dn):

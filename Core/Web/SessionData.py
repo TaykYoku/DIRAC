@@ -17,37 +17,6 @@ __RCSID__ = "$Id$"
 
 gCacheSession = ThreadSafe.Synchronizer()
 
-class SessionStorage(object):
-  def __init__(self):
-    self.cacheSession = DictCache()
-
-  @gCacheSession
-  def addSession(self, session, exp=300, **kwargs):
-    kwargs['Status'] = kwargs.get('Status', 'submited')
-    self.cacheSession.add(session, exp, kwargs)
-
-  @gCacheSession
-  def getSession(self, session=None):
-    return self.cacheSession.get(session) if session else self.cacheSession.getDict()
-  
-  @gCacheSession
-  def removeSession(self, session):
-    self.cacheSession.delete(session)
-
-  def updateSession(self, session, exp=300, **kwargs):
-    origData = self.getSession(session) or {}
-    for k, v in kwargs.items():
-      origData[k] = v
-    self.addSession(session, exp, **origData)
-  
-  def getSessionByOption(self, key, value):
-    if key and value:
-      sessions = self.getSession()
-      for session, data in sessions.items():
-        if data.get(key) == value:
-          return session, data
-    return None, {}
-
 
 class SessionData(object):
 
