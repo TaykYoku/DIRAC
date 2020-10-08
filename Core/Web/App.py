@@ -40,6 +40,9 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
     result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
     if not result['OK']:
       raise("Can't load web portal settings.")
+    print('=========== METADATA ===============')
+    from pprint import pprint
+    pprint(result['Value'])
     OAuth2IdProvider.__init__(self, **result['Value'])
   
   def _updateToken(self, token, refresh_token):
