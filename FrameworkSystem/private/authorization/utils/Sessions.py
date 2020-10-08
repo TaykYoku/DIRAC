@@ -70,7 +70,8 @@ class SessionManager(object):
   def removeSession(self, session):
     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
-  def updateSession(self, session, exp=self.__addTime, **kwargs):
+  def updateSession(self, session, exp=None, **kwargs):
+    exp = exp or self.__addTime
     sObj = self.getSession(session.id if isinstance(session, Session) else session)
     if sObj and sObj.age < self.__maxAge:
       if (sObj.age + exp) > self.__maxAge:
