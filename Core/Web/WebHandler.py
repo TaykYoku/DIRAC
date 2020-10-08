@@ -133,6 +133,8 @@ class WebHandler(tornado.web.RequestHandler):
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
     
+    self._pathResult = self.__checkPath(setup, group, route)
+    
     # self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
