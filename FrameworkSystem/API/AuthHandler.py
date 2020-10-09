@@ -215,6 +215,7 @@ class AuthHandler(WebHandler):
 
     # Added group
     choosedScope = self.get_arguments('chooseScope', None)
+    print('======== chooseScope')
     pprint(self.get_arguments('chooseScope'))
     if not choosedScope:
       # Parse result of the second authentication flow
