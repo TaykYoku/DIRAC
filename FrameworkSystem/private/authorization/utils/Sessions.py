@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from time import time
+from pprint import pprint
 
 from DIRAC import gLogger
 from DIRAC.Core.Utilities import ThreadSafe
@@ -53,11 +54,15 @@ class SessionManager(object):
 
   @gCacheSession
   def addSession(self, session, exp=None, **kwargs):
+    print('ADD SESSION:')
     exp = exp or self.__addTime
     if not isinstance(session, Session):
       session = Session(session, kwargs, exp)
     if session.age > self.__maxAge:
       return self.__sessions.delete(session.id)
+    print('id: %s' % session.id)
+    pprint(dict(session))
+    print('------------')
     self.__sessions.add(session.id, min(exp, self.__maxAge), session)
 
   @gCacheSession
