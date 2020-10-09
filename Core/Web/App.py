@@ -12,6 +12,7 @@ from tornado.web import Application as _Application
 import tornado.process
 import tornado.httpserver
 import tornado.autoreload
+from pprint import pprint
 
 from diraccfg import CFG
 
@@ -41,7 +42,6 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
     if not result['OK']:
       raise("Can't load web portal settings.")
     print('=========== METADATA ===============')
-    from pprint import pprint
     pprint(result['Value'])
     OAuth2IdProvider.__init__(self, **result['Value'])
     self.loadMetadata()
