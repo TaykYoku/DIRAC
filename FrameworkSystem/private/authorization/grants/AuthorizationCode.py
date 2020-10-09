@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from pprint import pprint
+from time import time
 from authlib.jose import JsonWebSignature
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
