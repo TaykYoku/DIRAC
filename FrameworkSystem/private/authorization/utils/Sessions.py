@@ -81,7 +81,7 @@ class SessionManager(object):
     print('UPDATE SESSION:')
     exp = exp or self.__addTime
     sObj = self.getSession(session.id if isinstance(session, Session) else session)
-    pprint(dict(session))
+    pprint(dict(sObj))
     if sObj and sObj.age < self.__maxAge:
       if (sObj.age + exp) > self.__maxAge:
         exp = self.__maxAge - sObj.age
