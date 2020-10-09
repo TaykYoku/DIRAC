@@ -816,7 +816,8 @@ def getDNsForUsernameInGroup(username, group, checkStatus=False):
       DNs += userDNs
   else:
     DNs += userDNs
-
-  if DNs:
-    return S_OK(list(set(DNs)))
+  
+  dns = list(set([e for e in DNs if e]))
+  if dns:
+    return S_OK(list(set(dns)))
   return S_ERROR('For %s@%s not found DN%s.' % (username, group, ' or it suspended' if checkStatus else ''))
