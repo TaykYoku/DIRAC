@@ -78,7 +78,7 @@ class SessionManager(object):
     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
   def updateSession(self, session, exp=None, **kwargs):
-    print('UPDATE SESSION:')
+    print('UPDATE SESSION: %s' % session.id if isinstance(session, Session) else session)
     exp = exp or self.__addTime
     sObj = self.getSession(session.id if isinstance(session, Session) else session)
     pprint(dict(sObj))
