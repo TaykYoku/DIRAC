@@ -148,7 +148,7 @@ class AuthManagerData(object):
         return result
       profile = result['Value'].get(uid, {})
     pprint(profile)
-    print('====================')
+    print('=====================')
     return S_OK(profile.get('DNs', []))
 
   def getDNOptionForID(self, uid, dn, option):

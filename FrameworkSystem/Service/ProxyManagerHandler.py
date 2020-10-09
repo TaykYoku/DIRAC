@@ -593,6 +593,8 @@ class ProxyManagerHandler(RequestHandler):
     # Sort user DNs for groups and proxy providers
     for group in groups:
       result = Registry.getDNsForUsernameInGroup(username, group)
+      print('group: %s' % group)
+      pprint(result)
       if not result['OK']:
         if group not in statusDict:
           statusDict[group] = [{'Status': 'failed', 'Comment': result['Message']}]
