@@ -52,10 +52,6 @@ class AuthHandler(WebHandler):
         GET: /.well-known/oauth-authorization-server
     """
     if self.request.method == "GET":
-      print('======== /.well-known/openid-configuration ==========')
-      # pprint(gConfig.getOptionsDictRecursively("/Framework/Production/Services/AuthManager/AuthorizationServer"))
-      pprint(gConfig.getConfigurationTree())
-      pprint(dict(self.server.metadata))
       self.finish(dict(self.server.metadata))
 
   def web_jwk(self):
