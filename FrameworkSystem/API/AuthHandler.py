@@ -51,6 +51,8 @@ class AuthHandler(WebHandler):
         GET: /.well-known/oauth-authorization-server
     """
     if self.request.method == "GET":
+      print('======== /.well-known/openid-configuration ==========')
+      pprint(dict(self.server.metadata))
       self.finish(dict(self.server.metadata))
 
   def web_jwk(self):
