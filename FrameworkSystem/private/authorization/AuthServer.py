@@ -64,9 +64,8 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     if result['OK']:
       data = {}
       # Search values with type list
-      for key, value in result['Value'].items():
-        l = [e for e in value.replace(', ', ',').split(',') if e]
-        data[key] = value if len(l) == 1 else l
+      for key, v in result['Value'].items():
+        data[key] = [e for e in v.replace(', ', ',').split(',') if e] if ',' in v else v
       # Verify metadata
       metadata = self.metadata_class(data)
       metadata.validate()
