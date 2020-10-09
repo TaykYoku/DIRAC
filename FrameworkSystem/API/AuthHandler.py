@@ -228,6 +228,7 @@ class AuthHandler(WebHandler):
 
     # Main session metadata
     print('MAIN SESSION: %s' % session)
+    print(self.server.getSessions)
     sessionDict = self.server.getSession(session)
     pprint(sessionDict)
     username = sessionDict['username']
