@@ -162,7 +162,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['user_id'] = userProfile['ID']
     print(dict(self.token))
     print(dict(self.token)['access_token'])
-    result = self._storeToken(token, session)
+    result = self._storeToken(self.token, session)
     if not result['OK']:
       return result
 
