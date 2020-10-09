@@ -41,7 +41,7 @@ class AuthHandler(WebHandler):
   def initialize(self):
     super(AuthHandler, self).initialize()
     pprint(self.application.settings)
-    pprint(gConfig.getOptionsDictRecursively("/Framework/Production/Services/AuthManager/AuthorizationServer"))
+    
     self.server = self.application._authServer #self.application.settings['authorizationServer']
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
@@ -53,6 +53,7 @@ class AuthHandler(WebHandler):
     """
     if self.request.method == "GET":
       print('======== /.well-known/openid-configuration ==========')
+      pprint(gConfig.getOptionsDictRecursively("/Framework/Production/Services/AuthManager/AuthorizationServer"))
       pprint(dict(self.server.metadata))
       self.finish(dict(self.server.metadata))
 
