@@ -144,7 +144,6 @@ class AuthManagerData(object):
     profile = self.getProfiles(userID=uid)
     if not profile:
       result = self.resfreshProfiles(userID=uid)
-      print('Refresh res: %s' % result)
       if not result['OK']:
         return result
       profile = result['Value'].get(uid, {})

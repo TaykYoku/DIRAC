@@ -250,7 +250,7 @@ class AuthHandler(WebHandler):
 
     if choosedScope:
       # Modify scope in main session
-      request.data['scope'] = list(set(request.data['scope']) + set(choosedScope))
+      request.data['scope'] = list(set(request.data['scope'].extend(choosedScope)))
       self.server.updateSession(session, request=request)
 
     #group = sessionDict.get('group')
