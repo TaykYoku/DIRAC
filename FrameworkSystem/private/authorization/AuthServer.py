@@ -62,8 +62,13 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     self.metadata = {}
     result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
     if result['OK']:
-      pprint(result['Value'])
-      metadata = self.metadata_class(result['Value'])
+      data = {}
+      # Search values with type list
+      for key, value in result['Value']:
+        l = [e for e in value.replace(', ', ',').split(',') if e]
+        data[key] = value if len(l) != 1 else l
+      # Verify metadata
+      metadata = self.metadata_class(data)
       metadata.validate()
       self.metadata = metadata
 
