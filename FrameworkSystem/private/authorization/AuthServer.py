@@ -64,7 +64,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     if result['OK']:
       data = {}
       # Search values with type list
-      for key, value in result['Value']:
+      for key, value in result['Value'].items():
         l = [e for e in value.replace(', ', ',').split(',') if e]
         data[key] = value if len(l) != 1 else l
       # Verify metadata
