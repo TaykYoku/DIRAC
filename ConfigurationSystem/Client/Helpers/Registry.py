@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 import six
 import errno
+from pprint import pprint
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
