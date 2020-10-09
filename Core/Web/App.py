@@ -44,6 +44,7 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
     from pprint import pprint
     pprint(result['Value'])
     OAuth2IdProvider.__init__(self, **result['Value'])
+    self.loadMetadata()
   
   def _updateToken(self, token, refresh_token):
     session, _ = self.getSessionByOption('refresh_token', refresh_token)
