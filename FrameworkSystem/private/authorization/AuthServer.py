@@ -60,7 +60,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     self.generate_token = BearerToken(self.access_token_generator)
     self.config = {}
     self.metadata = {}
-    result = gConfig.getOptionsDictRecursively("/Framework/Production/Services/AuthManager")  #/AuthorizationServer")
+    result = gConfig.getOptionsDictRecursively("/Framework")#/Production/Services/AuthManager")  #/AuthorizationServer")
     print('====== METADATA ======')
     print(result)
     if result['OK']:
