@@ -706,7 +706,7 @@ class ProxyManagerHandler(RequestHandler):
       # If for DN not found proxy provider
       if not prov or prov == 'Certificate':
         for dn in dns:
-          st = {'Status': 'not ready', 'DN': dn, "Action": ['upload proxy'],
+          st = {'Status': 'not ready', 'DN': dn, "Action": ['upload proxy', ['/']],
                 "Comment": 'You have no proxy with(%s) uploaded to DIRAC.' % dn}
           for group, dns in groupDict.items():
             if group not in statusDict:
