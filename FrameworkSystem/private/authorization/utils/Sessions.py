@@ -79,6 +79,10 @@ class SessionManager(object):
 
   def updateSession(self, session, exp=None, **kwargs):
     print('UPDATE SESSION: %s' % session.id if isinstance(session, Session) else session)
+    print(session)
+    print(type(session))
+    print(session.id if isinstance(session, Session) else session)
+    pprint(kwargs)
     exp = exp or self.__addTime
     sObj = self.getSession(session.id if isinstance(session, Session) else session)
     pprint(dict(sObj))
