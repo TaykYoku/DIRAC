@@ -145,6 +145,9 @@ class AuthHandler(WebHandler):
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
     """
+    print('=== Sessions ===')
+    pprint(self.server.getSessions())
+    print('----------------')
     if self.request.method == 'GET':
       try:
         grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
@@ -182,7 +185,9 @@ class AuthHandler(WebHandler):
       self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
                              query='?' + self.request.query, idPs=idPs))
       return
-
+    print('=== Sessions ===')
+    pprint(self.server.getSessions())
+    print('----------------')
     # Check IdP
     if idP not in idPs:
       self.finish('%s is not registered in DIRAC.' % idP)
@@ -197,13 +202,18 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       raise WErr(503, result['Message'])
     self.log.notice('Redirect to', result['Value'])
+    print('=== Sessions ===')
+    pprint(self.server.getSessions())
+    print('----------------')
     self.redirect(result['Value'])
 
   @asyncGen
   def web_redirect(self):
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
-
+    print('=== Sessions ===')
+    pprint(self.server.getSessions())
+    print('----------------')
     # Try to catch errors
     error = self.get_argument('error', None)
     if error:
@@ -228,7 +238,9 @@ class AuthHandler(WebHandler):
 
     # Main session metadata
     print('MAIN SESSION: %s' % session)
+    print('=== Sessions ===')
     pprint(self.server.getSessions())
+    print('----------------')
     sessionDict = self.server.getSession(session)
     pprint(sessionDict)
     username = sessionDict['username']
