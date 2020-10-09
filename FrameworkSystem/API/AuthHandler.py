@@ -227,7 +227,7 @@ class AuthHandler(WebHandler):
     session = self.get_argument('state')
 
     # Added group
-    choosedScope = self.get_argument('chooseScope', [])
+    choosedScope = self.get_arguments('chooseScope', None)
     if not choosedScope:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
@@ -252,7 +252,7 @@ class AuthHandler(WebHandler):
       # Modify scope in main session
       print('----- choosedScope ----')
       pprint(request.data)
-      request.data['scope'] = list(set(request.data['scope'].extend(choosedScope)))
+      request.data['scope'] = ' '.join(list(set(request.data['scope'].strip().extend(choosedScope))))
       self.server.updateSession(session, request=request)
 
     #group = sessionDict.get('group')
