@@ -228,6 +228,7 @@ class AuthHandler(WebHandler):
 
     # Added group
     choosedScope = self.get_arguments('chooseScope', None)
+    pprint(self.get_arguments())
     if not choosedScope:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
