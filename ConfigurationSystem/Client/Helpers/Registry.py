@@ -760,6 +760,8 @@ def getDNsForUsername(username):
   for uid in getIDsForUsername(username):
     result = gAuthManagerData.getDNsForID(uid)
     if result['OK']:
+      print('--> getDNsForUsername(%s)' % username)
+      pprint(result['Value'])
       userDNs += result['Value']
   return S_OK(list(set(userDNs)))
 
