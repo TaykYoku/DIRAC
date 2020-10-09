@@ -150,7 +150,8 @@ class AuthHandler(WebHandler):
     print('----------------')
     if self.request.method == 'GET':
       try:
-        grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
+        # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
+        grant = self.server.validate_consent_request(self.request, None)
         # grant.validate_authorization_request()
         # validate_code_authorization_request(grant)
         # validate_authorization_redirect_uri(request, client)
