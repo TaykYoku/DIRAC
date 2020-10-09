@@ -120,6 +120,9 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    print('=== AUTHSERV: Sessions ===')
+    pprint(self.getSessions())
+    print('----------------')
     # Check session
     sessionDict = self.getSession(session)
     if not sessionDict:
@@ -141,11 +144,15 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
-    
+    print('=== AUTHSERV: Sessions ===')
+    pprint(self.getSessions())
+    print('----------------')
     username, profile = result['Value']
     if username and profile:
       self.updateSession(mainSession, username=username, profile=profile, userID=profile['ID'])
-
+    print('=== AUTHSERV: Sessions ===')
+    pprint(self.getSessions())
+    print('----------------')
     return S_OK(mainSession)
 
   def access_token_generator(self, client, grant_type, user, scope):
