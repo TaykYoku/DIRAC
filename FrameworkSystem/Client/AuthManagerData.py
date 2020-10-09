@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import six
+from pprint import pprint
 
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities import ThreadSafe, DIRACSingleton
@@ -70,7 +71,6 @@ class AuthManagerData(object):
     """
     profileDict = self.__cacheProfiles.get(userID) or {}
     print('================== CLI DATA updateProfiles ==================')
-    from pprint import pprint
     print('User ID: %s' % userID)
     pprint(profileDict)
     pprint(data)
@@ -140,12 +140,15 @@ class AuthManagerData(object):
 
         :return: S_OK(list)/S_ERROR()
     """
+    print('==== getDNsForID ====')
     profile = self.getProfiles(userID=uid)
     if not profile:
       result = self.resfreshProfiles(userID=uid)
       if not result['OK']:
         return result
       profile = result['Value']
+    pprint(profile)
+    print('====================')
     return S_OK(profile.get('DNs', []))
 
   def getDNOptionForID(self, uid, dn, option):

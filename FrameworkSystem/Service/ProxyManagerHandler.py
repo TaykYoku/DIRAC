@@ -596,7 +596,8 @@ class ProxyManagerHandler(RequestHandler):
         if group not in statusDict:
           statusDict[group] = [{'Status': 'failed', 'Comment': result['Message']}]
         continue
-      for dn in [result['Value'][0]]:  # we get only fist DN for now
+      # we get only fist DN for now
+      for dn in [result['Value'][0]]:  
         result = self.__proxyDB.getProxyProviderForDN(dn, username=username)
         if not result['OK']:
           return result
