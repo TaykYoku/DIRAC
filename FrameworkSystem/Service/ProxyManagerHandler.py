@@ -577,6 +577,7 @@ class ProxyManagerHandler(RequestHandler):
     # #   { ... }
     # #   <group2>: {} ... }
     # # }
+    print('GET STATUS FOR %s user, %s groups' % (username, groups))
     statusDict = {}
     result = Registry.getGroupsForUser(username)
     if not result['OK']:
