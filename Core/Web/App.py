@@ -51,6 +51,7 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
   
   def _storeToken(self, token, session):
     self.updateSession(session, token=token)
+    return S_OK()
 
 
 class App(object):

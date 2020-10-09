@@ -55,7 +55,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     print(self.token)
 
   def _storeToken(self, token, session):
-    self.sessionManager.storeToken(dict(self.token))
+    return self.sessionManager.storeToken(dict(self.token))
 
   def _updateToken(self, token, refresh_token):
     # Here "t" is `OAuth2Token` type
