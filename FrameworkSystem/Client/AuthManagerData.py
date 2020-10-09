@@ -146,7 +146,7 @@ class AuthManagerData(object):
       result = self.resfreshProfiles(userID=uid)
       if not result['OK']:
         return result
-      profile = result['Value']
+      profile = result['Value'].get(uid, {})
     pprint(profile)
     print('====================')
     return S_OK(profile.get('DNs', []))
