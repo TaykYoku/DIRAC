@@ -266,6 +266,8 @@ class AuthHandler(WebHandler):
       self.finish(result['Message'])
       return
     groupStatuses = result['Value']
+    print('======= Group STATUSES:')
+    pprint(groupStatuses)
 
     # reqGroup = self.get_argument('group', group)
     # if not reqGroup:
