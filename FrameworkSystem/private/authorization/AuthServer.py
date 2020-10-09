@@ -62,7 +62,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     self.metadata = {}
     result = gConfig.getOptionsDictRecursively("/Framework")#/Production/Services/AuthManager")  #/AuthorizationServer")
     print('====== METADATA ======')
-    pprint(gConfig.getConfigurationTree())
+    pprint(gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer'))
     if result['OK']:
       metadata = self.metadata_class(result['Value'])
       metadata.validate()
