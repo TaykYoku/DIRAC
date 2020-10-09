@@ -760,8 +760,6 @@ def getDNsForUsername(username):
   for uid in getIDsForUsername(username):
     result = gAuthManagerData.getDNsForID(uid)
     if result['OK']:
-      print('--> getDNsForUsername(%s)' % username)
-      print(result['Value'])
       userDNs += result['Value']
   return S_OK(list(set(userDNs)))
 
@@ -795,6 +793,8 @@ def getDNsForUsernameInGroup(username, group, checkStatus=False):
   if not result['OK']:
     return result
   userDNs = result['Value']
+  print('== getDNsForUsernameInGroup ==')
+  pprint(userDNs)
 
   vo = getGroupOption(group, 'VO')
   if checkStatus and vo in getUserOption(username, 'Suspended', []):
@@ -818,8 +818,11 @@ def getDNsForUsernameInGroup(username, group, checkStatus=False):
       DNs += userDNs
   else:
     DNs += userDNs
-  
+  print('-------------------------')
+  pprint(DNs)
   dns = list(set([e for e in DNs if e]))
+  print('-------------------------')
+  pprint(dns)
   if dns:
     return S_OK(list(set(dns)))
   return S_ERROR('For %s@%s not found DN%s.' % (username, group, ' or it suspended' if checkStatus else ''))

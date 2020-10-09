@@ -54,15 +54,12 @@ class SessionManager(object):
 
   @gCacheSession
   def addSession(self, session, exp=None, **kwargs):
-    print('ADD SESSION:')
     exp = exp or self.__addTime
     if not isinstance(session, Session):
       session = Session(session, kwargs, exp)
     if session.age > self.__maxAge:
       return self.__sessions.delete(session.id)
-    print('id: %s' % session.id)
-    pprint(dict(session))
-    print('------------')
+    print('ADD SESSION: %s' % session.id)
     self.__sessions.add(session.id, min(exp, self.__maxAge), session)
 
   @gCacheSession
