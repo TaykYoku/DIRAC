@@ -84,7 +84,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except ValueError as e:
       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     print('--->> MeataData')
-    pprint(self.metadata)
+    pprint.pprint(self.metadata)
     return S_OK(metadata)
 
   def request(self, *args, **kwargs):
