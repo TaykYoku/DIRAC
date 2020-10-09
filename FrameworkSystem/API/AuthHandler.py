@@ -232,9 +232,9 @@ class AuthHandler(WebHandler):
     request = sessionDict['request']    
     userID = sessionDict['userID']
 
+    scopes = request.data['scope'].split()
     if choosedScope:
       # Modify scope in main session
-      scopes = request.data['scope'].split()
       scopes.extend(choosedScope)
       request.data['scope'] = ' '.join(list(set(scopes)))
       self.server.updateSession(session, request=request)
@@ -243,7 +243,7 @@ class AuthHandler(WebHandler):
 
     # Search groups in scope
     # scopes = list(set(request.args['scope']) + set(choosedScope))
-    groups = [(s.split(':')[1]) for s in request.data['scope'] if s.startswith('g:')]
+    groups = [s.split(':')[1] for s in scopes if s.startswith('g:')]
     print('GROUPS: %s' % groups)
 
     # Researche Group
