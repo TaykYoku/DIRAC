@@ -23,17 +23,17 @@ class ClientManager(object):
     result = self.__db.addClient(data)
     if result['OK']:
       data = result['Value']
-      self.cacheClient.add(data['client_id'], 24 * 3600, Client(data))
+      self.__clients.add(data['client_id'], 24 * 3600, Client(data))
     return result
 
   @gCacheClient
   def getClient(self, clientID):
-    client = self.cacheClient.get(clientID)
+    client = self.__clients.get(clientID)
     if not client:
       result = self.__db.getClient(clientID)
       if result['OK']:
         client = Client(result['Value'])
-        self.cacheClient.add(clientID, 24 * 3600, client)
+        self.__clients.add(clientID, 24 * 3600, client)
     return client
 
 
