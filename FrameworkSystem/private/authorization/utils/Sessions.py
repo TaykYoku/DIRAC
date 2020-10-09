@@ -80,8 +80,11 @@ class SessionManager(object):
   def updateSession(self, session, exp=None, **kwargs):
     print('UPDATE SESSION: %s' % (session.id if isinstance(session, Session) else session))
     exp = exp or self.__addTime
-    sObj = self.getSession(session.id if isinstance(session, Session) else session)
-    if not sObj or sObj.age < self.__maxAge:
+    sID = session.id if isinstance(session, Session) else session
+    sObj = self.getSession(sID)
+    if not sObj:
+      return self.addSession(sID, exp, **kwargs)
+    if sObj.age < self.__maxAge:
       if (sObj.age + exp) > self.__maxAge:
         exp = self.__maxAge - sObj.age
       for k, v in kwargs.items() or {}:
