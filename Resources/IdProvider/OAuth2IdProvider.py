@@ -85,7 +85,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
     print('--->> MeataData')
     pprint.pprint(self.metadata)
-    return S_OK(metadata)
+    return S_OK(self.metadata)
 
   def request(self, *args, **kwargs):
     self.token_endpoint_auth_methods_supported = self.metadata.get('token_endpoint_auth_methods_supported')
@@ -93,7 +93,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
         self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
     return OAuth2Session.request(self, *args, **kwargs)
-
 
   def getIDsMetadata(self, ids=None):
     """ Metadata for IDs
