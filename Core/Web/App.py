@@ -45,6 +45,9 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
     pprint(result['Value'])
     OAuth2IdProvider.__init__(self, **result['Value'])
     self.metadata = self.loadMetadata()
+    print('--APP META:')
+    pprint(self.metadata)
+    self.fetch_access_token(authorization_response=response.uri)
   
   def _updateToken(self, token, refresh_token):
     session, _ = self.getSessionByOption('refresh_token', refresh_token)
