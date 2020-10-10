@@ -145,6 +145,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     print('====>> IDP parseAuthResponse')
     print(response.uri)
     session = session or response.args['state']
+    print('--> METADATA:')
+    pprint.pprint(self.metadata)
     self.fetch_access_token(authorization_response=response.uri)
     print('---->> IDP __getUserInfo')
     # Get user info
