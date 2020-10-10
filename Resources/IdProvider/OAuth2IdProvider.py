@@ -75,7 +75,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def loadMetadata(self):
     r = None
     try:
-      r = self.request('GET', self.server_metadata_url, withhold_token=True, verify=False)
+      r = self.request('GET', self.server_metadata_url, withhold_token=True)
       metadata = self.metadata_class(r.json())
       metadata.validate()
       for k, v in metadata.items():
@@ -92,7 +92,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if self.token_endpoint_auth_methods_supported:
       if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
         self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
-    return OAuth2Session.request(self, *args, **kwargs)
+    return OAuth2Session.request(self, verify=False, *args, **kwargs)
 
   def getIDsMetadata(self, ids=None):
     """ Metadata for IDs
