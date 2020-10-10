@@ -44,7 +44,10 @@ class Application(_Application, OAuth2IdProvider, SessionManager):
     print('=========== METADATA ===============')
     pprint(result['Value'])
     OAuth2IdProvider.__init__(self, **result['Value'])
-    self.metadata = self.loadMetadata()
+    result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
+    if not result['OK']:
+      raise("Can't load authorization server settings.")
+    self.metadata = result['Value']  #self.loadMetadata()
     print('--APP META:')
     pprint(self.metadata)
     self.fetch_access_token(authorization_response='response.uri')
