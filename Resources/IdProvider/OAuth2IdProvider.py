@@ -75,7 +75,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def loadMetadata(self):
     r = None
     try:
-      r = self.request('GET', self.server_metadata_url, withhold_token=True)
+      r = self.request('GET', self.server_metadata_url, withhold_token=True, verify=False)
       metadata = self.metadata_class(r.json())
       metadata.validate()
       for k, v in metadata.items():
