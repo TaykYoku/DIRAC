@@ -256,8 +256,6 @@ class AuthHandler(WebHandler):
     print('======= Group STATUSES:')
     pprint(groupStatuses)
 
-    # reqGroup = self.get_argument('group', group)
-    # if not reqGroup:
     if not groups:
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -281,18 +279,12 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
-      # query = '%s&session=%s' % (self.request.query, session)
       self.finish(t.generate(url=url, session=session, groups=groupStatuses))
       return
 
     for group in groups:
       status = groupStatuses[group]['Status']
       action = groupStatuses[group].get('Action')
-
-      # thisGroup = groupStatuses.get(reqGroup)
-      # if not thisGroup:
-      #   self.finish('%s - wrone group for %s user.' % (reqGroup, username))
-      #   return
     
       if status == 'needToAuth':
         # Submit second auth flow through IdP

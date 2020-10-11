@@ -158,8 +158,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
   def access_token_generator(self, client, grant_type, user, scope):
     print('GENERATE ACCESS TOKEN')
     header = {'alg': 'RS256'}
-    payload = {'sub': user[0],
-               'grp': user[1],
+    payload = {'sub': user,
                'iss': self.metadata['issuer'],
                'iat': int(time()),
                'exp': int(time()) + (12 * 3600),
