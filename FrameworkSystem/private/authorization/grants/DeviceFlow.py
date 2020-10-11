@@ -73,6 +73,8 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     print('===== DEVICE CREDS =====')
     from pprint import pprint
     pprint(data)
+    print(data.get('scope'))
+    print(DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
