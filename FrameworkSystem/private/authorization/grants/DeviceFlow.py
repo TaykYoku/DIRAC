@@ -70,6 +70,9 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     # data['device_code'] = device_code
     data['interval'] = 5
     data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
+    print('===== DEVICE CREDS =====')
+    from pprint import pprint
+    pprint(data)
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
