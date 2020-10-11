@@ -116,32 +116,33 @@ class WebHandler(tornado.web.RequestHandler):
       WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
 
     # Parse URI
-    setup, group, route = self.__parseURI()
-    self.__setup = setup or Conf.setup()
+    self.__parseURI()
 
     # Check session
     self.__session = self.application.getSession(self.get_cookie('session_id'))
 
     # Fill credentials
-    self.__credDict = dict(group=group)
-    result = self.__processCredentials()
-    if not result['OK']:
-      self.log.error(result['Message'], 'Continue as Visitor.')
+    self.__processCredentials()
 
     # Setup diset
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
     
-    self._pathResult = self.__checkPath(setup, group, route)
-    
+    self._pathResult = self.__checkPath()
+
     # self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
   
   def __parseURI(self):
     match = self.PATH_RE.match(self.request.path)
-    return match.groups()
+    groups = match.groups()
+    self.__setup = groups[0] or Conf.setup()
+    self.__group = groups[1]
+    self.__route = groups[2]
+    self.__args = groups[3:]
+
   
   # def __readSession(self, group):
   #   self.__session = self.application.getSession(self.get_cookie('session_id'))
@@ -171,9 +172,10 @@ class WebHandler(tornado.web.RequestHandler):
     if self.request.protocol != "https":  # or self.__idp == "Visitor":
       return S_OK()
 
-    if self.__session:
-      return self.__readSession()
-    return self.__readCertificate()
+    self.__credDict = {'group': self.__group}
+    result = self.__readSession() if self.__session else self.__readCertificate()
+    if not result['OK']:
+      self.log.error(result['Message'], 'Continue as Visitor.')
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
@@ -221,8 +223,8 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     scopes = self.__session.token.scopes
-    if self.__credDict['group'] and (self.__credDict['group'] not in scopes or 'changeGroup' not in scopes):
-      return S_ERROR('Session not support %s group.' % self.__credDict['group'])
+    if self.__group and (self.__group not in scopes or 'changeGroup' not in scopes):
+      return S_ERROR('Session not support %s group.' % self.__group)
 
     self.__credDict['ID'] = self.__session['ID']
     self.__credDict['issuer'] = self.__session.get('issuer')
@@ -386,25 +388,20 @@ class WebHandler(tornado.web.RequestHandler):
         return True
     return False
 
-  def __checkPath(self, setup, group, route):
+  def __checkPath(self):
     """ Check the request, auth, credentials and DISET config
-
-        :param str setup: setup name
-        :param str group: group name
-        :param str route: route
 
         :return: WOK()/WErr()
     """
-    if route[-1] == "/":
+    if self.__route[-1] == "/":
       methodName = "index"
-      handlerRoute = route
+      handlerRoute = self.__route
     else:
-      iP = route.rfind("/")
-      methodName = route[iP + 1:]
-      handlerRoute = route[:iP]
-    if setup:
-      self.__setup = setup
-    if not self.__auth(handlerRoute, group, methodName):
+      iP = self.__route.rfind("/")
+      methodName = self.__route[iP + 1:]
+      handlerRoute = self.__route[:iP]
+
+    if not self.__auth(handlerRoute, self.__group, methodName):
       return WErr(401, "Unauthorized. %s" % methodName)
 
     DN = self.getDN()
@@ -417,7 +414,7 @@ class WebHandler(tornado.web.RequestHandler):
     # pylint: disable=no-value-for-parameter
     if self.getUserGroup():  # pylint: disable=no-value-for-parameter
       self.__disetConfig.setGroup(self.getUserGroup())  # pylint: disable=no-value-for-parameter
-    self.__disetConfig.setSetup(setup)
+    self.__disetConfig.setSetup(self.__setup)
     self.__disetDump = self.__disetConfig.dump()
 
     return WOK(methodName)
