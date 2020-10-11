@@ -118,8 +118,9 @@ class WebHandler(tornado.web.RequestHandler):
     # Parse URI
     self.__parseURI()
 
-    # Check session
+    # Authorization type
     self.__session = self.application.getSession(self.get_cookie('session_id'))
+    self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
     self.__processCredentials()
@@ -143,7 +144,6 @@ class WebHandler(tornado.web.RequestHandler):
     self.__route = groups[2]
     self.__args = groups[3:]
 
-  
   # def __readSession(self, group):
   #   self.__session = self.application.getSession(self.get_cookie('session_id'))
   #   if not self.__session:
@@ -173,7 +173,12 @@ class WebHandler(tornado.web.RequestHandler):
       return S_OK()
 
     self.__credDict = {'group': self.__group}
-    result = self.__readSession() if self.__session else self.__readCertificate()
+    if self.__session:
+      result = self.__readSession()
+    elif self.__jwtAuth:
+      result = self.__readToken()
+    else:  # Certificate
+      result = self.__readCertificate()
     if not result['OK']:
       self.log.error(result['Message'], 'Continue as Visitor.')
 
@@ -197,20 +202,23 @@ class WebHandler(tornado.web.RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    auth = self.request.headers.get("Authorization")
-    if not auth:
-      return S_ERROR("Invalid authorization header.")
-
-    # If present "Authorization" header it means that need to use another then certificate authZ
-    authParts = auth.split()
-    authType = authParts[0]
-    authToken = authParts[1]
-    if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-      return S_ERROR("Invalid authorization header.")
-    
-    # Is session active?
-    if not self.__session.token or self.__session.token.get('access_token') != authToken:
+    # auth = self.request.headers.get("Authorization")
+    # if not auth:
+    #   return S_ERROR("Invalid authorization header.")
+    if not self.__session.token:
       return S_ERROR('Session expired.')
+
+    if self.__jwtAuth:
+      # If present "Authorization" header it means that need to use another then certificate authZ
+      authParts = self.__jwtAuth.split()
+      authType = authParts[0]
+      authToken = authParts[1]
+      if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+        return S_ERROR("Invalid authorization header.")
+      
+      # Is session active?
+      if self.__session.token.get('access_token') != authToken:
+        return S_ERROR('Session expired.')
 
     # Read public key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
@@ -223,7 +231,8 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     scopes = self.__session.token.scopes
-    if self.__group and (self.__group not in scopes or 'changeGroup' not in scopes):
+    groups = [s.split(':')[1] for s in claims.scopes if s.startswith('g:')]
+    if self.__group and (self.__group not in groups or 'changeGroup' not in scopes):
       return S_ERROR('Session not support %s group.' % self.__group)
 
     self.__credDict['ID'] = self.__session['ID']
@@ -231,6 +240,36 @@ class WebHandler(tornado.web.RequestHandler):
 
     # Update session expired time
     self.application.updateSession(self.__session)
+    return S_OK()
+
+  def __readToken(self, old=False):
+    # If present "Authorization" header it means that need to use another then certificate authZ
+    authParts = self.__jwtAuth.split()
+    authType = authParts[0]
+    authToken = authParts[1]
+    if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+      return S_ERROR("Invalid authorization header.")
+
+    # Read public key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      key = f.read()
+    # Get claims and verify signature
+    claims = jwt.decode(authToken, key)
+    # Verify token
+    claims.validate()
+    if not old and claims.exp < time():
+      return S_ERROR('Token expired.')
+
+    groups = [s.split(':')[1] for s in claims.scopes if s.startswith('g:')]
+    if not self.__group:
+      self.__group = groups[0]
+      self.__credDict['group'] = self.__group
+
+    if self.__group not in groups:
+      return S_ERROR('Token not support %s group.' % self.__group)
+    
+    self.__credDict['ID'] = claims.sub
+    self.__credDict['issuer'] = claims.iss
     return S_OK()
 
   def __readCertificate(self):
