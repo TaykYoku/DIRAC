@@ -45,6 +45,13 @@ class Client(OAuth2ClientMixin):
     self.client_id_issued_at = params['client_id_issued_at']
     self.client_secret_expires_at = params['client_secret_expires_at']
     self.client_metadata = params['client_metadata']
+  
+  def get_allowed_scope(self, scope):
+    if not scope:
+      return ''
+    allowed = set(self.scope.split())
+    scopes = scope_to_list(scope)
+    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:')])
 
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
