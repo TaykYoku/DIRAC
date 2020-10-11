@@ -82,7 +82,7 @@ class AuthManagerClient(Client):
 
     url = 'https://marosvn32.in2p3.fr/DIRAC/auth/device?client_id=%s' % client['client_id']
     if group:
-      url += '&scope=%s' % group
+      url += '&scope=g:%s' % group
     if idP:
       url += '&provider=%s' % idP
     try:
