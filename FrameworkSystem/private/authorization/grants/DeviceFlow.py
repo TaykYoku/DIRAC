@@ -11,6 +11,11 @@ from authlib.oauth2.rfc8628 import (
     DeviceCredentialDict
 )
 
+from DIRAC import gLogger
+
+log = gLogger.getSubLogger(__name__)
+
+
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
   def create_endpoint_response(self, req):
     c, data, h = super(DeviceAuthorizationEndpoint, self).create_endpoint_response(req)
