@@ -231,7 +231,7 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     scopes = self.__session.token.scopes
-    groups = [s.split(':')[1] for s in claims.scopes if s.startswith('g:')]
+    groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
     if self.__group and (self.__group not in groups or 'changeGroup' not in scopes):
       return S_ERROR('Session not support %s group.' % self.__group)
 
@@ -260,7 +260,7 @@ class WebHandler(tornado.web.RequestHandler):
     if not old and claims.exp < time():
       return S_ERROR('Token expired.')
 
-    groups = [s.split(':')[1] for s in claims.scopes if s.startswith('g:')]
+    groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
     if not self.__group:
       self.__group = groups[0]
       self.__credDict['group'] = self.__group
