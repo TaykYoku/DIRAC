@@ -67,8 +67,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     if not data:
       return None
     data['expires_at'] = data['expires_in'] + int(time())
-    data['device_code'] = device_code
-    data['scope'] = ''
+    # data['device_code'] = device_code
     data['interval'] = 5
     data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
     return DeviceCredentialDict(data)
@@ -76,7 +75,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
   def query_user_grant(self, user_code):
     _, data = self.server.getSessionByOption('user_code', user_code)
     return (data['userID'], True) if data.get('username') else None
-    # return ((data['userID'], data['group']), True) if data.get('username') else None
 
   def should_slow_down(self, credential, now):
     return False
