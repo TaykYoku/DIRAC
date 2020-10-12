@@ -7,6 +7,7 @@ from __future__ import print_function
 import re
 import json
 from pprint import pprint
+import requests
 
 from tornado import web, gen, template
 from tornado.escape import json_decode
