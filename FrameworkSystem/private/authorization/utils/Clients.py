@@ -5,6 +5,7 @@ from __future__ import print_function
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from authlib.oauth2.rfc7591 import ClientRegistrationEndpoint as _ClientRegistrationEndpoint
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
+from authlib.common.security import generate_token
 
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
