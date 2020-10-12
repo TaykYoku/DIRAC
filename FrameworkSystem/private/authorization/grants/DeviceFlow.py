@@ -67,14 +67,8 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     if not data:
       return None
     data['expires_at'] = data['expires_in'] + int(time())
-    # data['device_code'] = device_code
     data['interval'] = 5
     data['verification_uri'] = 'https://marosvn32.in2p3.fr/DIRAC/auth/device'
-    print('===== DEVICE CREDS =====')
-    from pprint import pprint
-    pprint(data)
-    print(data.get('scope'))
-    print(DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):

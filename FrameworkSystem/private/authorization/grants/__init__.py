@@ -5,8 +5,9 @@ from __future__ import print_function
 from .AuthorizationCode import AuthorizationCodeGrant, OpenIDCode
 from .RefreshToken import RefreshTokenGrant
 from .DeviceFlow import DeviceCodeGrant, DeviceAuthorizationEndpoint
+from .ImplicitFlow import OpenIDImplicitGrant
 
 __all__ = [
     'AuthorizationCodeGrant', 'RefreshTokenGrant', 'DeviceCodeGrant',
-    'OpenIDCode', 'DeviceAuthorizationEndpoint'
+    'OpenIDCode', 'DeviceAuthorizationEndpoint', 'OpenIDImplicitGrant'
 ]

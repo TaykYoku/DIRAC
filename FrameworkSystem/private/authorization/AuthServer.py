@@ -11,12 +11,14 @@ from authlib.oauth2 import (
     HttpRequest,
     AuthorizationServer as _AuthorizationServer,
 )
+from authlib.oauth2.rfc6749.grants import ImplicitGrant
 from .grants import (
   DeviceAuthorizationEndpoint,
   DeviceCodeGrant,
   OpenIDCode,
   AuthorizationCodeGrant,
-  RefreshTokenGrant
+  RefreshTokenGrant,
+  OpenIDImplicitGrant
 )
 from .utils import (
   Client,
@@ -76,6 +78,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
       deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
       self.init_jwt_config(self.metadata)
 
+    self.register_grant(ImplicitGrant) #OpenIDImplicitGrant)
     self.register_grant(RefreshTokenGrant)
     self.register_grant(DeviceCodeGrant)
     self.register_grant(AuthorizationCodeGrant,
@@ -120,7 +123,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    print('=== AUTHSERV: Sessions ===')
+    print('=== AUTHSERV: parseIdPAuthorizationResponse ===')
     pprint(self.getSessions())
     print('----------------')
     # Check session

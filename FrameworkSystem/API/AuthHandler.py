@@ -187,9 +187,14 @@ class AuthHandler(WebHandler):
       self.finish('%s is not registered in DIRAC.' % idP)
       return
 
-    # Use here grant
-    # flow = self.get_argument('response_type')
-    # session = self.get_argument('state'), generate_token(10))
+    # IMPLICIT test
+    if grant.GRANT_TYPE == 'implicit' and self.get_argument('access_token', None):
+      result = self.__implicitFlow()
+      if not result['OK']:
+        raise WErr(503, result['Message'])
+      username = result['Value']
+      self.__finish(*self.server.create_authorization_response(self.request, username))
+      return
 
     # Submit second auth flow through IdP
     result = self.server.getIdPAuthorization(idP, self.get_argument('state')) # session)
@@ -239,10 +244,6 @@ class AuthHandler(WebHandler):
       request.data['scope'] = ' '.join(list(set(scopes)))
       self.server.updateSession(session, request=request)
 
-    #group = sessionDict.get('group')
-
-    # Search groups in scope
-    # scopes = list(set(request.args['scope']) + set(choosedScope))
     groups = [s.split(':')[1] for s in scopes if s.startswith('g:')]
     print('GROUPS: %s' % groups)
 
@@ -313,6 +314,53 @@ class AuthHandler(WebHandler):
     for header in headers:
       self.set_header(*header)
     self.finish(data)
+  
+  def __implicitFlow(self):
+    accessToken = self.get_argument('access_token')
+    providerName = self.get_argument('provider')
+    result = self.server.idps.getIdProvider(providerName)
+    if not result['OK']:
+      return result
+    provObj = result['Value']
+
+    # get keys
+    try:
+      r = requests.get(provObj.metadata['jwks_uri'], verify=False)
+      r.raise_for_status()
+      jwks = r.json()
+    except requests.exceptions.Timeout:
+      return S_ERROR('Authentication server is not answer.')
+    except requests.exceptions.RequestException as ex:
+      return S_ERROR(r.content or ex)
+    except Exception as ex:
+      return S_ERROR('Cannot read response: %s' % ex)
+
+    # Get claims and verify signature
+    claims = jwt.decode(accessToken, jwks)
+    # Verify token
+    claims.validate()
+    if claims.exp < time():
+      return S_ERROR('Token expired.')
+
+    provObj.token = accessToken
+    result = provObj._fillUserProfile(useToken=True)
+    if not result['OK']:
+      return result
+    username, userProfile = result['Value']
+
+    # Check group
+    group = [s.split(':')[1] for s in scopes if s.startswith('g:')][0]
+
+    # Researche Group
+    result = gProxyManager.getGroupsStatusByUsername(username, group)
+    if not result['OK']:
+      return result
+    groupStatuses = result['Value']
+
+    status = groupStatuses[group]['Status']
+    if status not in ['ready', 'unknown']:
+      return S_ERROR('%s - bad group status' % status)
+    return S_OK(username)
 
   def __validateToken(self):
     """ Load client certchain in DIRAC and extract informations.
