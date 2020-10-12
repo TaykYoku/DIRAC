@@ -143,6 +143,7 @@ class AuthHandler(WebHandler):
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
     """
+    grant = None
     if self.request.method == 'GET':
       try:
         # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
