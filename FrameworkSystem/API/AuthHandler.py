@@ -320,6 +320,7 @@ class AuthHandler(WebHandler):
       self.set_header(*header)
     self.finish(data)
   
+  @asyncGen
   def __implicitFlow(self):
     accessToken = self.get_argument('access_token')
     providerName = self.get_argument('provider')
@@ -347,7 +348,7 @@ class AuthHandler(WebHandler):
 
     provObj.token = accessToken
     print('--> _fillUserProfile')
-    result = provObj._fillUserProfile(useToken=True)
+    result = yield self.threadTask(provObj._fillUserProfile, True)
     if not result['OK']:
       return result
     username, userProfile = result['Value']
