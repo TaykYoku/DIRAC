@@ -344,10 +344,9 @@ class AuthHandler(WebHandler):
     claims = jwt.decode(accessToken, jwks)
     # Verify token
     claims.validate()
-    if claims.exp < time():
-      return S_ERROR('Token expired.')
 
     provObj.token = accessToken
+    print('--> _fillUserProfile')
     result = provObj._fillUserProfile(useToken=True)
     if not result['OK']:
       return result
