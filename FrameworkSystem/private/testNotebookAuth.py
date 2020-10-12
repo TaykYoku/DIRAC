@@ -28,7 +28,7 @@ class notebookAuth(object):
         self.accessToken = f.read()
     
     url = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization?client_id=%s' % self.metadata['client_id']
-    url += '&redirect_uri=%s' % self.metadata['redirect_uri']
+    #url += '&redirect_uri=%s' % self.metadata['redirect_uri']
     url += '&response_type=%s' % self.metadata['response_type']
     if self.group:
       url += '&scope=g:%s' % self.group
