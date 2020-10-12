@@ -178,7 +178,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def __getUserInfo(self, useToken=None):
     r = None
     try:
-      r = self.request('GET', 'https://marosvn32.in2p3.fr/DIRAC/auth/redirect', #self.metadata['userinfo_endpoint'],
+      r = self.request('GET', #'https://marosvn32.in2p3.fr/DIRAC/auth/redirect',
+                       self.metadata['userinfo_endpoint'],
                        withhold_token=useToken)
       r.raise_for_status()
       return S_OK(r.json())
