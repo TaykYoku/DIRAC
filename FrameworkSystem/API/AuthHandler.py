@@ -71,7 +71,7 @@ class AuthHandler(WebHandler):
 
         POST: /register?client_id=.. &scope=.. &redirect_uri=..
         
-        requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={'grant_types': ['implicit'], 'response_types': ['token'], 'redirect_uri': 'https://dirac.egi.eu'}, verify=False).text
+        requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={'grant_types': ['implicit'], 'response_types': ['token'], 'redirect_uris': ['https://dirac.egi.eu'], 'token_endpoint_auth_method': 'none'}, verify=False).text
     """
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
@@ -149,7 +149,7 @@ class AuthHandler(WebHandler):
     if self.request.method == 'GET':
       try:
         # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
-        grant = self.server.validate_consent_request(self.request, None)
+        grant, _ = self.server.validate_consent_request(self.request, None)
         # grant.validate_authorization_request()
         # validate_code_authorization_request(grant)
         # validate_authorization_redirect_uri(request, client)
