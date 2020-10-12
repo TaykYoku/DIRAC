@@ -362,9 +362,7 @@ class AuthHandler(WebHandler):
     except Exception as ex:
       return S_ERROR('Cannot read response: %s' % ex)
 
-    provObj.token = accessToken
-    print('--> _fillUserProfile')
-    result = provObj._fillUserProfile()#True)
+    result = provObj._parseUserProfile(profile)
     if not result['OK']:
       return result
     username, userProfile = result['Value']

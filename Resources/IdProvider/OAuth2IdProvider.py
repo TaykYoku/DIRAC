@@ -108,7 +108,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       self.token = token
       result = self.__getUserInfo()
       if result['OK']:
-        result = self.__parseUserProfile(result['Value'])
+        result = self._parseUserProfile(result['Value'])
         if result['OK']:
           _, profile = result['Value']
           metadata[token['user_id']] = profile
@@ -173,7 +173,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   
   def _fillUserProfile(self, useToken=None):
     result = self.__getUserInfo(useToken)
-    return self.__parseUserProfile(result['Value']) if result['OK'] else result
+    return self._parseUserProfile(result['Value']) if result['OK'] else result
 
   def __getUserInfo(self, useToken=None):
     r = None
@@ -186,7 +186,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except (self.exceptions.RequestException, ValueError) as e:
       return S_ERROR("%s: %s" % (e.message, r.text if r else ''))
 
-  def __parseUserProfile(self, userProfile):
+  def _parseUserProfile(self, userProfile):
     """ Parse user profile
 
         :param dict userProfile: user profile in OAuht2 format
