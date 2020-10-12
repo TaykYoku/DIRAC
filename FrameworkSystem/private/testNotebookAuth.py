@@ -34,7 +34,7 @@ class notebookAuth(object):
       url += '&scope=g:%s' % self.group
     url += '&provider=CheckIn&access_token=%s' % self.accessToken
     try:
-      r = requests.post(url, verify=False)
+      r = requests.get(url, verify=False)
       r.raise_for_status()
       return S_OK(r.json())
     except requests.exceptions.Timeout:
