@@ -380,7 +380,7 @@ class AuthHandler(WebHandler):
     print(group)
 
     # Researche Group
-    result = gProxyManager.getGroupsStatusByUsername(username, group)
+    result = gProxyManager.getGroupsStatusByUsername(username, [group])
     if not result['OK']:
       return result
     groupStatuses = result['Value']
