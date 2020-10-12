@@ -377,6 +377,7 @@ class AuthHandler(WebHandler):
     print(self.get_arguments('scope'))
     print(self.get_argument('scope'))
     group = [s.split(':')[1] for s in self.get_arguments('scope') if s.startswith('g:')][0]
+    print(group)
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username, group)
