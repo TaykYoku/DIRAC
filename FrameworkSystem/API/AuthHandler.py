@@ -384,6 +384,7 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       return result
     groupStatuses = result['Value']
+    pprint(groupStatuses)
 
     status = groupStatuses[group]['Status']
     if status not in ['ready', 'unknown']:
