@@ -36,6 +36,7 @@ class notebookAuth(object):
     try:
       r = requests.get(url, verify=False)
       r.raise_for_status()
+      print(r.text)
       return S_OK(r.json())
     except requests.exceptions.Timeout:
       return S_ERROR('Authentication server is not answer.')
