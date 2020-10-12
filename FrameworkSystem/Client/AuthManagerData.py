@@ -97,6 +97,7 @@ class AuthManagerData(object):
 
         :return: S_OK()/S_ERROR()
     """
+    print('==== resfreshProfiles ====')
     servCrash = self.__service.get('crash')
     if servCrash:
       return servCrash
