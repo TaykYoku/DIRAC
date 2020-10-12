@@ -351,7 +351,7 @@ class AuthHandler(WebHandler):
 
     provObj.token = accessToken
     print('--> _fillUserProfile')
-    result = provObj._fillUserProfile(True)
+    result = provObj._fillUserProfile()#True)
     if not result['OK']:
       return result
     username, userProfile = result['Value']
