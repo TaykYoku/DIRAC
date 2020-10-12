@@ -212,6 +212,10 @@ class AuthHandler(WebHandler):
   def web_redirect(self):
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
+    self.log.info(self.request.uri)
+    self.log.info(self.request.query)
+    self.log.info(self.request.body)
+    self.log.info(self.request.headers)
     # Try to catch errors
     error = self.get_argument('error', None)
     if error:
