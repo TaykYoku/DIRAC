@@ -13,7 +13,7 @@ class notebookAuth(object):
     # Load meta
     result = gConfig.getOptionsDictRecursively("/LocalInstallation/AuthorizationClient")
     if not result['OK']:
-      raise("Can't load web portal settings.")
+      raise Exception("Can't load web portal settings.")
     self.metadata = result['Value']
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
