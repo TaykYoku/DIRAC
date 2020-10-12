@@ -373,7 +373,7 @@ class AuthHandler(WebHandler):
     # username, userProfile = result['Value']
 
     # Check group
-    group = [s.split(':')[1] for s in self.get_argument('scope').split() if s.startswith('g:')][0]
+    group = [s.split(':')[1] for s in self.get_argument('scope').split(' ') if s.startswith('g:')][0]
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username, group)
