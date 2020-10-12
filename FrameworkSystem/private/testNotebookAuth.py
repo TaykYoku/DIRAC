@@ -25,9 +25,10 @@ class notebookAuth(object):
     
     url = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization?client_id=%s' % self.metadata['client_id']
     url += '&redirect_uri=%s' % self.metadata['redirect_uri']
+    url += '&response_type=%s' % self.metadata['response_type']
     if group:
       url += '&scope=g:%s' % group
-    url += '&provider=CheckIn&response_type=token&access_token=%s' % accessToken
+    url += '&provider=CheckIn&access_token=%s' % accessToken
     try:
       r = requests.post(url, verify=False)
       r.raise_for_status()
