@@ -225,10 +225,9 @@ class WebHandler(tornado.web.RequestHandler):
       key = f.read()
     # Get claims and verify signature
     claims = jwt.decode(self.__session.token['refresh_token'], key)
+    
     # Verify token
     claims.validate()
-    if claims.exp < time():
-      return S_ERROR('Session expired.')
 
     scopes = self.__session.token.scopes
     groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
@@ -255,10 +254,10 @@ class WebHandler(tornado.web.RequestHandler):
       key = f.read()
     # Get claims and verify signature
     claims = jwt.decode(authToken, key)
+    
     # Verify token
-    claims.validate()
-    if not old and claims.exp < time():
-      return S_ERROR('Token expired.')
+    if not old:
+      claims.validate()
 
     groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
     if not self.__group:
