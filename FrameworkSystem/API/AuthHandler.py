@@ -353,7 +353,7 @@ class AuthHandler(WebHandler):
       r = requests.get(provObj.metadata['userinfo_endpoint'],
                        headers={'Authorization': 'Bearer ' + accessToken}, verify=False)
       r.raise_for_status()
-      print(t.text)
+      print(r.text)
       profile = r.json()
     except requests.exceptions.Timeout:
       return S_ERROR('Authentication server is not answer.')
