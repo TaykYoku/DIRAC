@@ -9,7 +9,7 @@ from DIRAC.Core.Utilities.JEncode import decode, encode
 
 class notebookAuth(object):
   def __init__(self):
-    self.log = gLogger()
+    self.log = gLogger.getSubLogger(__name__)
     # Load meta
     result = gConfig.getOptionsDictRecursively("/LocalInstallation/AuthorizationClient")
     if not result['OK']:
