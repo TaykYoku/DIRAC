@@ -8,8 +8,12 @@ from DIRAC.Core.Utilities.JEncode import decode, encode
 
 
 class notebookAuth(object):
-  def __init__(self):
+  def __init__(self, group, lifetime=3600 * 12, voms=False, aToken=None):
     self.log = gLogger.getSubLogger(__name__)
+    self.group = group
+    self.lifetime = lifetime
+    self.voms = voms
+    self.accessToken = aToken or '/var/run/secrets/egi.eu/access_token'
     # Load meta
     result = gConfig.getOptionsDictRecursively("/LocalInstallation/AuthorizationClient")
     if not result['OK']:
@@ -18,17 +22,17 @@ class notebookAuth(object):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-  def getToken(self, accessToken):
-    if accessToken.startswith('/'):
-      with open(accessToken, 'rb') as f:
-        accessToken = f.read()
+  def getToken(self):
+    if self.accessToken.startswith('/'):
+      with open(self.accessToken, 'rb') as f:
+        self.accessToken = f.read()
     
     url = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization?client_id=%s' % self.metadata['client_id']
     url += '&redirect_uri=%s' % self.metadata['redirect_uri']
     url += '&response_type=%s' % self.metadata['response_type']
-    if group:
-      url += '&scope=g:%s' % group
-    url += '&provider=CheckIn&access_token=%s' % accessToken
+    if self.group:
+      url += '&scope=g:%s' % self.group
+    url += '&provider=CheckIn&access_token=%s' % self.accessToken
     try:
       r = requests.post(url, verify=False)
       r.raise_for_status()
@@ -40,7 +44,7 @@ class notebookAuth(object):
     except Exception as ex:
       return S_ERROR('Cannot read response: %s' % ex)
 
-    def getProxyWithToken(self, token, group, lifetime=3600 * 12, voms=False):
+    def getProxyWithToken(self, token):
       confUrl = gConfig.getValue("/LocalInstallation/ConfigurationServerAPI")
       if not confUrl:
         return S_ERROR('Could not get configuration server API URL.')
