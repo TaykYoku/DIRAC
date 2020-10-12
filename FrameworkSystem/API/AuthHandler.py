@@ -349,6 +349,19 @@ class AuthHandler(WebHandler):
     # Verify token
     claims.validate()
 
+    try:
+      r = requests.get(provObj.metadata['userinfo_endpoint'],
+                       headers={'Authorization': 'Bearer ' + accessToken}, verify=False)
+      r.raise_for_status()
+      print(t.text)
+      profile = r.json()
+    except requests.exceptions.Timeout:
+      return S_ERROR('Authentication server is not answer.')
+    except requests.exceptions.RequestException as ex:
+      return S_ERROR(r.content or ex)
+    except Exception as ex:
+      return S_ERROR('Cannot read response: %s' % ex)
+
     provObj.token = accessToken
     print('--> _fillUserProfile')
     result = provObj._fillUserProfile()#True)
