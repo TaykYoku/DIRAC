@@ -32,7 +32,7 @@ class notebookAuth(object):
     url += '&response_type=%s' % self.metadata['response_type']
     if self.group:
       url += '&scope=g:%s' % self.group
-    url += '&provider=CheckIn_dev&access_token=%s' % self.accessToken
+    url += '&provider=CheckIn&access_token=%s' % self.accessToken
     try:
       r = requests.get(url, verify=False)
       r.raise_for_status()
