@@ -30,12 +30,15 @@ class ClientManager(object):
 
   @gCacheClient
   def getClient(self, clientID):
+    print('getClient: %s ' % clientID) 
     client = self.__clients.get(clientID)
+    print(client)
     if not client:
       result = self.__db.getClient(clientID)
       if result['OK']:
         client = Client(result['Value'])
         self.__clients.add(clientID, 24 * 3600, client)
+    print('finish: client: %s' % client)
     return client
 
 
