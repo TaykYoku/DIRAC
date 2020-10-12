@@ -320,7 +320,6 @@ class AuthHandler(WebHandler):
       self.set_header(*header)
     self.finish(data)
   
-  @asyncGen
   def __implicitFlow(self):
     accessToken = self.get_argument('access_token')
     providerName = self.get_argument('provider')
