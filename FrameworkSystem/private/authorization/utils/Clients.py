@@ -64,6 +64,9 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     return True
 
   def save_client(self, client_info, client_metadata, request):
+    print("Save client:")
+    print(client_info)
+    print(client_metadata)
     for k, v in [('grant_types',
                   ['authorization_code', 'urn:ietf:params:oauth:grant-type:device_code']),
                  ('response_types', ['code', 'device']),

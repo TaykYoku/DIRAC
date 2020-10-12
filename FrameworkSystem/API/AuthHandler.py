@@ -69,7 +69,9 @@ class AuthHandler(WebHandler):
   def web_register(self):
     """ Client registry
 
-        POST: /registry?client_id=.. &scope=.. &redirect_uri=..
+        POST: /register?client_id=.. &scope=.. &redirect_uri=..
+        
+        requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={'grant_types': ['implicit'], 'response_types': ['token'], 'redirect_uri': 'https://dirac.egi.eu'}, verify=False).text
     """
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
