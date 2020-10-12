@@ -194,7 +194,7 @@ class AuthHandler(WebHandler):
 
     # IMPLICIT test
     if grant.GRANT_TYPE == 'implicit' and self.get_argument('access_token', None):
-      result = self.__implicitFlow()
+      result = yield self.threadTask(self.__implicitFlow)
       if not result['OK']:
         raise WErr(503, result['Message'])
       username = result['Value']
@@ -347,7 +347,7 @@ class AuthHandler(WebHandler):
 
     provObj.token = accessToken
     print('--> _fillUserProfile')
-    result = yield self.threadTask(provObj._fillUserProfile, True)
+    result = provObj._fillUserProfile(True)
     if not result['OK']:
       return result
     username, userProfile = result['Value']
