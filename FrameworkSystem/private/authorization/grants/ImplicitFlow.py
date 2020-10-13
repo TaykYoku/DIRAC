@@ -17,7 +17,8 @@ class NotebookImplicitGrant(_ImplicitGrant):
     state = self.request.state
     if grant_user:
       self.request.user = grant_user
-      token = self.generate_token(user=grant_user, scope=self.request.scope, include_refresh_token=False)
+      token = self.generate_token(self.request.client, self.GRANT_TYPE,
+                                  user=grant_user, scope=self.request.scope, include_refresh_token=False)
       log.debug('Grant token %r to %r', token, self.request.client)
       return 200, token, []
     else:
