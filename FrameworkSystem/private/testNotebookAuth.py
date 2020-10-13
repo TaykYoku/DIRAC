@@ -8,10 +8,10 @@ from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
 
-
 class notebookAuth(object):
-  def __init__(self, group, lifetime=3600 * 12, voms=False, aToken=None):
+  def __init__(self, group, lifetime=3600 * 12, voms=False, aToken=None, proxyPath=None):
     self.log = gLogger.getSubLogger(__name__)
+    self.pPath = proxyPath or '/tmp/x509up_u%s' % os.getuid()
     self.group = group
     self.lifetime = lifetime
     self.voms = voms
@@ -22,7 +22,6 @@ class notebookAuth(object):
       raise Exception("Can't load web portal settings.")
     self.metadata = result['Value']
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
   def getToken(self):
     if self.accessToken.startswith('/'):
@@ -88,16 +87,14 @@ class notebookAuth(object):
 
     if not proxy:
       return S_ERROR("Result is empty.")
-    
-    proxyLoc = '/tmp/x509up_u%s' % os.getuid()
 
-    self.log.notice('Saving proxy.. to %s..' % proxyLoc)
+    self.log.notice('Saving proxy.. to %s..' % self.pPath)
     try:
-      with open(proxyLoc, 'w+') as fd:
+      with open(self.pPath, 'w+') as fd:
         fd.write(proxy.encode("UTF-8"))
-      os.chmod(proxyLoc, stat.S_IRUSR | stat.S_IWUSR)
+      os.chmod(self.pPath, stat.S_IRUSR | stat.S_IWUSR)
     except Exception as e:
-      return S_ERROR("%s :%s" % (proxyLoc, repr(e).replace(',)', ')')))
+      return S_ERROR("%s :%s" % (self.pPath, repr(e).replace(',)', ')')))
 
-    self.log.notice('Proxy is saved to %s.' % proxyLoc)
+    self.log.notice('Proxy is saved to %s.' % self.pPath)
     return S_OK()
