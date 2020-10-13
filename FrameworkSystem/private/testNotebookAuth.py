@@ -66,8 +66,8 @@ class notebookAuth(object):
       return S_ERROR('Cannot read response: %s' % e)
     
     # Get proxy
-    url = '%ss:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, group, lifetime)
-    voms = voms or Registry.getGroupOption(group, "AutoAddVOMS", False)
+    url = '%ss:%s/g:%s/proxy?lifetime=%s' % (proxyAPI, setup, self.group, self.lifetime)
+    voms = self.voms or Registry.getGroupOption(self.group, "AutoAddVOMS", False)
     if voms:
       url += '&voms=%s' % voms
     with OAuth2Session(clientID, token=token) as sess:
