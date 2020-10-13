@@ -5,6 +5,8 @@ import urllib3
 
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities.JEncode import decode, encode
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+
 
 
 class notebookAuth(object):
