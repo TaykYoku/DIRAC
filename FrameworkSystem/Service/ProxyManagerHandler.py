@@ -229,7 +229,7 @@ class ProxyManagerHandler(RequestHandler):
 
     for dn, data in proxiesInfo.items():
       pprint.pprint(data)
-      data['SupportedGroups'] = sorted(set(data['SupportedGroups']))
+      data['groups'] = sorted(set(data['groups']))
 
     return S_OK(proxiesInfo)
 
