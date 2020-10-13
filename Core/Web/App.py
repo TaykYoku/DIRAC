@@ -34,22 +34,24 @@ from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager
 __RCSID__ = "$Id$"
 
 
-class Application(_Application, OAuth2IdProvider, SessionManager):
+class Application(_Application, SessionManager):
   def __init__(self, *args, **kwargs):
     _Application.__init__(self, *args, **kwargs)
+
+    # WebPortal
     SessionManager.__init__(self)
-    result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
-    if not result['OK']:
-      raise("Can't load web portal settings.")
-    print('=========== METADATA ===============')
-    pprint(result['Value'])
-    OAuth2IdProvider.__init__(self, **result['Value'])
-    result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
-    if not result['OK']:
-      raise("Can't load authorization server settings.")
-    self.metadata = result['Value']  #self.loadMetadata()
-    print('--APP META:')
-    pprint(self.metadata)
+    # result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
+    # if not result['OK']:
+    #   raise("Can't load web portal settings.")
+    # print('=========== METADATA ===============')
+    # pprint(result['Value'])
+    # OAuth2IdProvider.__init__(self, **result['Value'])
+    # result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
+    # if not result['OK']:
+    #   raise("Can't load authorization server settings.")
+    # self.metadata = result['Value']  #self.loadMetadata()
+    # print('--APP META:')
+    # pprint(self.metadata)
   
   def _updateToken(self, token, refresh_token):
     session, _ = self.getSessionByOption('refresh_token', refresh_token)
@@ -212,9 +214,22 @@ class App(object):
     if kw['debug']:
       self.log.info("Configuring in developer mode...")
     # Configure tornado app
-    self.__app = Application(routes, **kw) #if self.__handlerMgr.isAuth() else _Application(routes, **kw)
-    if self.__handlerMgr.isAuth():
+    self.__app = Application(routes, **kw)
+
+    if self.__handlerMgr.isAuthServer():
       setattr(self.__app, '_authServer', AuthServer())
+    
+    if self.__handlerMgr.isPortal():
+      result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
+      if not result['OK']:
+        raise Exception("Can't load web portal settings.")
+      clientSettings = result['Value']
+      result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
+      if not result['OK']:
+        raise("Can't load authorization server settings.")
+      serverMetadata = result['Value']
+      setattr(self.__app, 'metadata', serverMetadata)
+      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers

@@ -42,6 +42,7 @@ class HandlerMgr(object):
     self.__shySetupGroupRE = r"(?:/s:(?:[\w-]*)/g:(?:[\w.-]*))?"
     self.log = gLogger.getSubLogger("Routing")
     self.__isAuthServer = False
+    self.__isPortal = True
 
   def getPaths(self, dirName):
     """ Get lists of paths for all installed and enabled extensions
@@ -180,5 +181,8 @@ class HandlerMgr(object):
         return result
     return S_OK(self.__routes)
 
-  def isAuth(self):
+  def isAuthServer(self):
     return self.__isAuthServer
+  
+  def isPortal(self):
+    return self.__isPortal
