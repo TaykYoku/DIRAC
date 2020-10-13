@@ -224,12 +224,12 @@ class App(object):
       if not result['OK']:
         raise Exception("Can't load web portal settings.")
       clientSettings = result['Value']
+      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
       result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
       if not result['OK']:
         raise("Can't load authorization server settings.")
       serverMetadata = result['Value']
-      setattr(self.__app, 'metadata', serverMetadata)
-      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
+      setattr(self.__app._authClient, 'metadata', serverMetadata)
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
