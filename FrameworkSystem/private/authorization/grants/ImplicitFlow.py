@@ -14,8 +14,16 @@ log = gLogger.getSubLogger(__name__)
 
 class NotebookImplicitGrant(_ImplicitGrant):
   def create_authorization_response(self, redirect_uri, grant_user):
-    c, p, h = super(NotebookImplicitGrant, self).create_authorization_response(redirect_uri, grant_user)
-    return 200, h[0][1], []
+    state = self.request.state
+    if grant_user:
+      self.request.user = grant_user
+      token = self.generate_token(user=grant_user, scope=self.request.scope, include_refresh_token=False)
+      log.debug('Grant token %r to %r', token, self.request.client)
+      return 200, token, []
+    else:
+      raise AccessDeniedError(state=state, redirect_uri=redirect_uri, redirect_fragment=True)
+    # c, p, h = super(NotebookImplicitGrant, self).create_authorization_response(redirect_uri, grant_user)
+    # return 200, h[0][1], []
 
 
 class OpenIDImplicitGrant(_OpenIDImplicitGrant):
