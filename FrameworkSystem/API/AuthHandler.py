@@ -152,10 +152,6 @@ class AuthHandler(WebHandler):
       try:
         # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
         grant, _ = self.server.validate_consent_request(self.request, None)
-        # grant.validate_authorization_request()
-        # validate_code_authorization_request(grant)
-        # validate_authorization_redirect_uri(request, client)
-        # 
       except OAuth2Error as error:
         self.finish("%s</br>%s" % (error.error, error.description))
         return
@@ -197,8 +193,7 @@ class AuthHandler(WebHandler):
       result = yield self.threadTask(self.__implicitFlow)
       if not result['OK']:
         raise WErr(503, result['Message'])
-      username = result['Value']
-      self.__finish(*self.server.create_authorization_response(self.request, username))
+      self.__finish(*self.server.create_authorization_response(self.request, result['Value']))
       return
 
     # Submit second auth flow through IdP
@@ -353,7 +348,7 @@ class AuthHandler(WebHandler):
     if not result['OK']:
       return S_ERROR("User is not valid.")
     username = result['Value']
-    
+
     # Check group
     print('============ implicit')
     print(self.get_arguments('scope'))
@@ -371,7 +366,7 @@ class AuthHandler(WebHandler):
     status = groupStatuses[group]['Status']
     if status not in ['ready', 'unknown']:
       return S_ERROR('%s - bad group status' % status)
-    return S_OK(username)
+    return S_OK(claims.sub)
 
   def __validateToken(self):
     """ Load client certchain in DIRAC and extract informations.
