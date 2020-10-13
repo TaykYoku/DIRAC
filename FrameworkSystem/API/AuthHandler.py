@@ -48,12 +48,15 @@ class AuthHandler(WebHandler):
         GET: /.well-known/openid-configuration
         GET: /.well-known/oauth-authorization-server
     """
+    print('------ web_.well-known --------')
     if self.request.method == "GET":
       self.finish(dict(self.server.metadata))
+    print('-----> web_.well-known <-------')
 
   def web_jwk(self):
     """ JWKs
     """
+    print('------ web_jwk --------')
     if self.request.method == "GET":
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
@@ -61,11 +64,14 @@ class AuthHandler(WebHandler):
       # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
       self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
       # self.finish(key.as_dict())
+    print('-----> web_jwk <-------')
   
   @asyncGen
   def web_userinfo(self):
+    print('------ web_userinfo --------')
     r = yield self.threadTask(self.__validateToken)
     self.finish(r)
+    print('-----> web_userinfo <-------')
 
   @asyncGen
   def web_register(self):
@@ -75,9 +81,11 @@ class AuthHandler(WebHandler):
         
         requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={'grant_types': ['implicit'], 'response_types': ['token'], 'redirect_uris': ['https://dirac.egi.eu'], 'token_endpoint_auth_method': 'none'}, verify=False).text
     """
+    print('------ web_register --------')
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     self.__finish(*r)
+    print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
   @asyncGen
@@ -90,6 +98,7 @@ class AuthHandler(WebHandler):
         
         GET: /device/<user code>
     """
+    print('------ web_device --------')
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
@@ -129,6 +138,7 @@ class AuthHandler(WebHandler):
       </html>''')
       self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
                              query='?' + self.request.query))
+    print('-----> web_device <-------')
 
   path_authorization = ['([A-z0-9]*)']
   @asyncGen
@@ -147,6 +157,7 @@ class AuthHandler(WebHandler):
           &code_challenge=..                    (PKCE, optional)
           &code_challenge_method=(pain|S256)    ('pain' by default, optional)
     """
+    print('------ web_authorization --------')
     grant = None
     if self.request.method == 'GET':
       try:
@@ -202,9 +213,11 @@ class AuthHandler(WebHandler):
       raise WErr(503, result['Message'])
     self.log.notice('Redirect to', result['Value'])
     self.redirect(result['Value'])
+    print('-----> web_authorization <-------')
 
   @asyncGen
   def web_redirect(self):
+    print('------ web_redirect --------')
     # Redirect endpoint for response
     self.log.info('REDIRECT RESPONSE:\n', self.request)
     self.log.info(self.request.uri)
@@ -308,11 +321,14 @@ class AuthHandler(WebHandler):
     ###### RESPONSE
     r = yield self.threadTask(self.server.create_authorization_response, request, username)
     self.__finish(*r)
+    print('-----> web_redirect <-------')
 
   @asyncGen
   def web_token(self):
+    print('------ web_token --------')
     r = yield self.threadTask(self.server.create_token_response, self.request)
     self.__finish(*r)
+    print('-----> web_token <-------')
   
   def __finish(self, data, code, headers):
     self.set_status(code)
