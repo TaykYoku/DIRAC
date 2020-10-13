@@ -34,15 +34,12 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(WebHandler):
   AUTH_PROPS = 'all'
-  LOCATION = "/auth" #"/DIRAC/auth"
+  LOCATION = "/auth"
   METHOD_PREFIX = "web_"
 
-  # def initializeRequest(self):
-  #   self.server = self.application.authorizationServer
-  
   def initialize(self):
     super(AuthHandler, self).initialize()
-    self.server = self.application._authServer #self.application.settings['authorizationServer']
+    self.server = self.application._authServer
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
   def web_index(self, instance):
@@ -60,12 +57,15 @@ class AuthHandler(WebHandler):
     if self.request.method == "GET":
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
+      # For newer version
       # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
       self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
       # self.finish(key.as_dict())
   
+  @asyncGen
   def web_userinfo(self):
-    self.finish(self.__validateToken())
+    r = yield self.threadTask(self.__validateToken)
+    self.finish(r)
 
   @asyncGen
   def web_register(self):
@@ -98,7 +98,7 @@ class AuthHandler(WebHandler):
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
       if userCode:
-        session, data = self.server.getSessionByOption('user_code', userCode)
+        session, data = yield self.threadTask(self.server.getSessionByOption, 'user_code', userCode)
         if not session:
           self.finish('%s authorization session expired.' % session)
           return
@@ -151,13 +151,13 @@ class AuthHandler(WebHandler):
     if self.request.method == 'GET':
       try:
         # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
-        grant, _ = self.server.validate_consent_request(self.request, None)
+        grant, _ = yield self.threadTask(self.server.validate_consent_request, self.request, None)
       except OAuth2Error as error:
         self.finish("%s</br>%s" % (error.error, error.description))
         return
 
     # Research supported IdPs
-    result = getProvidersForInstance('Id')
+    result = yield self.threadTask(getProvidersForInstance, 'Id')
     if not result['OK']:
       raise WErr(503, result['Message'])
     idPs = result['Value']
@@ -197,7 +197,7 @@ class AuthHandler(WebHandler):
       return
 
     # Submit second auth flow through IdP
-    result = self.server.getIdPAuthorization(idP, self.get_argument('state')) # session)
+    result = yield self.threadTask(self.server.getIdPAuthorization, idP, self.get_argument('state'))
     if not result['OK']:
       raise WErr(503, result['Message'])
     self.log.notice('Redirect to', result['Value'])
@@ -224,8 +224,7 @@ class AuthHandler(WebHandler):
 
     # Added group
     choosedScope = self.get_arguments('chooseScope', None)
-    print('======== chooseScope')
-    pprint(self.get_arguments('chooseScope'))
+
     if not choosedScope:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
@@ -236,7 +235,7 @@ class AuthHandler(WebHandler):
       session = result['Value']
 
     # Main session metadata
-    sessionDict = self.server.getSession(session)
+    sessionDict = yield self.threadTask(self.server.getSession, session)
     username = sessionDict['username']
     request = sessionDict['request']    
     userID = sessionDict['userID']
@@ -252,7 +251,7 @@ class AuthHandler(WebHandler):
     print('GROUPS: %s' % groups)
 
     # Researche Group
-    result = gProxyManager.getGroupsStatusByUsername(username, groups)
+    result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, username, groups)
     if not result['OK']:
       self.server.updateSession(session, Status='failed', Comment=result['Message'])
       self.finish(result['Message'])
@@ -294,7 +293,7 @@ class AuthHandler(WebHandler):
       if status == 'needToAuth':
         # Submit second auth flow through IdP
         idP = action[1][0]
-        result = self.server.getIdPAuthorization(idP, session)
+        result = yield self.threadTask(self.server.getIdPAuthorization, idP, session)
         if not result['OK']:
           raise WErr(503, result['Message'])
         self.log.notice('Redirect to', result['Value'])
@@ -307,11 +306,13 @@ class AuthHandler(WebHandler):
     # self.server.updateSession(session, Status='authed')
 
     ###### RESPONSE
-    self.__finish(*self.server.create_authorization_response(request, username))
+    r = yield self.threadTask(self.server.create_authorization_response, request, username)
+    self.__finish(*r)
 
   @asyncGen
   def web_token(self):
-    self.__finish(*self.server.create_token_response(self.request))
+    r = yield self.threadTask(self.server.create_token_response, self.request)
+    self.__finish(*r)
   
   def __finish(self, data, code, headers):
     self.set_status(code)
@@ -350,18 +351,13 @@ class AuthHandler(WebHandler):
     username = result['Value']
 
     # Check group
-    print('============ implicit')
-    print(self.get_arguments('scope'))
-    print(self.get_argument('scope'))
     group = [s.split(':')[1] for s in self.get_arguments('scope') if s.startswith('g:')][0]
-    print(group)
 
     # Researche Group
     result = gProxyManager.getGroupsStatusByUsername(username, [group])
     if not result['OK']:
       return result
     groupStatuses = result['Value']
-    pprint(groupStatuses)
 
     status = groupStatuses[group]['Status']
     if status not in ['ready', 'unknown']:
