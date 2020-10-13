@@ -75,7 +75,7 @@ class notebookAuth(object):
 
     # Get REST endpoints from ConfigurationService
     try:
-      r = sess.get(url, headers={'Authorization': 'Bearer ' + token}, verify=False)
+      r = requests.get(url, headers={'Authorization': 'Bearer ' + token}, verify=False)
       r.raise_for_status()
       print(r.text)
       proxy = decode(r.text)[0]
