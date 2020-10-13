@@ -72,12 +72,10 @@ class notebookAuth(object):
     voms = self.voms or Registry.getGroupOption(self.group, "AutoAddVOMS", False)
     if voms:
       url += '&voms=%s' % voms
-    
-    accessToken = token['access_token']
 
     # Get REST endpoints from ConfigurationService
     try:
-      r = sess.get(url, headers={'Authorization': 'Bearer ' + accessToken}, verify=False)
+      r = sess.get(url, headers={'Authorization': 'Bearer ' + token}, verify=False)
       r.raise_for_status()
       print(r.text)
       proxy = decode(r.text)[0]
