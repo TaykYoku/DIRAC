@@ -72,10 +72,22 @@ class notebookAuth(object):
     voms = self.voms or Registry.getGroupOption(self.group, "AutoAddVOMS", False)
     if voms:
       url += '&voms=%s' % voms
-    with OAuth2Session(clientID, token=token) as sess:
-      r = sess.get(url, verify=False)
+    
+    accessToken = token['access_token']
+
+    # Get REST endpoints from ConfigurationService
+    try:
+      r = sess.get(url, headers={'Authorization': 'Bearer ' + accessToken}, verify=False)
       r.raise_for_status()
-    proxy = decode(r.text)[0]
+      print(r.text)
+      proxy = decode(r.text)[0]
+    except requests.exceptions.Timeout:
+      return S_ERROR('Time out')
+    except requests.exceptions.RequestException as e:
+      return S_ERROR(str(e))
+    except Exception as e:
+      return S_ERROR('Cannot read response: %s' % e)
+
     if not proxy:
       return S_ERROR("Result is empty.")
     
