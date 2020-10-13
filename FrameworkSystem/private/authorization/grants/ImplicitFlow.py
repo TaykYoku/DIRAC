@@ -12,8 +12,10 @@ from DIRAC import gLogger
 log = gLogger.getSubLogger(__name__)
 
 
-# class ImplicitGrant(_ImplicitGrant):
-
+class NotebookImplicitGrant(_ImplicitGrant):
+  def create_authorization_response(self, redirect_uri, grant_user):
+    c, p, h = super(NotebookImplicitGrant, self).create_authorization_response(redirect_uri, grant_user)
+    return 200, h[0][1]
 
 
 class OpenIDImplicitGrant(_OpenIDImplicitGrant):

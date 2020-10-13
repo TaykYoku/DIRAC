@@ -18,7 +18,8 @@ from .grants import (
   OpenIDCode,
   AuthorizationCodeGrant,
   RefreshTokenGrant,
-  OpenIDImplicitGrant
+  OpenIDImplicitGrant,
+  NotebookImplicitGrant
 )
 from .utils import (
   Client,
@@ -78,7 +79,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
       deprecate('Define "get_jwt_config" in OpenID Connect grants', '1.0')
       self.init_jwt_config(self.metadata)
 
-    self.register_grant(ImplicitGrant) #OpenIDImplicitGrant)
+    self.register_grant(NotebookImplicitGrant) #OpenIDImplicitGrant)
     self.register_grant(RefreshTokenGrant)
     self.register_grant(DeviceCodeGrant)
     self.register_grant(AuthorizationCodeGrant,
