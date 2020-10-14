@@ -17,10 +17,10 @@ gCacheSession = ThreadSafe.Synchronizer()
 class Session(dict):
   """A dict instance to represent a Session object."""
   def __init__(self, sessionID, data, exp=0, created=None):
-    print('-- Session: %s' % sessionID)
+    print('-- Session: %s \nexp: %s' % (sessionID, exp))
     pprint(data)
-    print('exp: %s' % exp)
-    super(Session, self).__init__(id=sessionID, expires_at=int(time()) + exp, **data)
+    data['expires_at'] = int(time()) + exp
+    super(Session, self).__init__(id=sessionID, **data)
     self.id = sessionID
     self.created = created or int(time())
 
