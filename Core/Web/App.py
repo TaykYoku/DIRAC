@@ -216,20 +216,23 @@ class App(object):
     # Configure tornado app
     self.__app = Application(routes, **kw)
 
+    # Add authorization server
     if self.__handlerMgr.isAuthServer():
       setattr(self.__app, '_authServer', AuthServer())
     
+    # Add WebClient
     if self.__handlerMgr.isPortal():
       result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
       if not result['OK']:
         raise Exception("Can't load web portal settings.")
       clientSettings = result['Value']
-      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
       result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
       if not result['OK']:
-        raise("Can't load authorization server settings.")
+        raise Exception("Can't load authorization server settings.")
       serverMetadata = result['Value']
-      setattr(self.__app._authClient, 'metadata', serverMetadata)
+      clientSettings.update(serverMetadata)
+      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
+      # setattr(self.__app._authClient, 'metadata', serverMetadata)
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers

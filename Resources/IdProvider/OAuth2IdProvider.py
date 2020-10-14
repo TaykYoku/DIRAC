@@ -14,6 +14,7 @@ from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
+from DIRAC.FrameworkSystem.private.authorization.utils import Session
 
 __RCSID__ = "$Id$"
 
@@ -49,17 +50,18 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
+    self.metadata_class(self.metadata).validate()
     print('========= %s ===========' % self.name)
     print(self.client_id)
     print(self.client_secret)
     print(self.token)
 
-  def _storeToken(self, token, session):
+  def _storeToken(self, token, session=None):
     return self.sessionManager.storeToken(dict(self.token))
 
   def _updateToken(self, token, refresh_token):
     # Here "t" is `OAuth2Token` type
-    self.sessionManager.updateToken(dict(t), refresh_token)
+    self.sessionManager.updateToken(dict(token), refresh_token)
 
   def checkResponse(func):
     def function_wrapper(*args, **kwargs):
@@ -112,7 +114,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         if result['OK']:
           _, profile = result['Value']
           metadata[token['user_id']] = profile
-    
+
     return S_OK(metadata)
 
   def submitNewSession(self, session):
@@ -135,16 +137,19 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           - Groups(New DIRAC groups that need created)
 
         :param object response: response on request to get user profile
-        :param str session: session
+        :param object session: session
 
         :return: S_OK(dict)/S_ERROR()
     """
     print('====>> IDP parseAuthResponse')
     print(response.uri)
-    session = session or response.args['state']
+    if not session:
+      session = Session(response.args['state'])
+
     print('--> METADATA:')
     pprint.pprint(self.metadata)
-    self.fetch_access_token(authorization_response=response.uri)
+    self.fetch_access_token(authorization_response=response.uri,
+                            verify_code=session.get('verify_code'))
     print('---->> IDP __getUserInfo')
     # Get user info
     result = self._fillUserProfile()
@@ -159,7 +164,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['provider'] = self.name
     self.token['user_id'] = userProfile['ID']
     print(dict(self.token))
-    result = self._storeToken(self.token, session)
+    result = self._storeToken(self.token, session.id)
     if not result['OK']:
       return result
 
@@ -178,8 +183,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def __getUserInfo(self, useToken=None):
     r = None
     try:
-      r = self.request('GET', #'https://marosvn32.in2p3.fr/DIRAC/auth/redirect',
-                       self.metadata['userinfo_endpoint'],
+      r = self.request('GET', self.metadata['userinfo_endpoint'],
                        withhold_token=useToken)
       r.raise_for_status()
       return S_OK(r.json())

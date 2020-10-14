@@ -86,14 +86,25 @@ class TornadoServer(object):
       # Initialize server and load services
       serverToLaunch = TornadoServer()
 
+      # Load custom                     OR  # Load all
+      serverToLaunch.loadServices()         serverToLaunch.load()
+      serverToLaunch.loadAPIs()
+      serverToLaunch.loadWebPortal()
+
       # Start listening when ready
       serverToLaunch.startTornado()
 
     Example 2:We want to debug service1 and service2 only, and use another port for that ::
 
-      services = ['component/service1', 'component/service2']
-      endpoints = ['component/endpoint1', 'component/endpoint2']
+      services = ['component/service1:port1', 'component/service2']
+      endpoints = ['component/endpoint1:port1', 'component/endpoint2']
       serverToLaunch = TornadoServer(services=services, endpoints=endpoints, port=1234)
+
+      # Load custom                     OR  # Load all
+      serverToLaunch.loadServices()         serverToLaunch.load()
+      serverToLaunch.loadAPIs()
+      serverToLaunch.loadWebPortal()
+
       serverToLaunch.startTornado()
 
   """
@@ -105,6 +116,7 @@ class TornadoServer(object):
     :param int port: Port to listen to. If None, the port is resolved following the logic
        described in the class documentation
     """
+    self.configData = {}
 
     if port is None:
       port = gConfig.getValue("/Systems/Tornado/%s/Port" % PathFinder.getSystemInstance('Tornado'), 8443)
@@ -141,6 +153,9 @@ class TornadoServer(object):
     for item in handlerDict.items():
       # handlerDict[key].initializeService(key)
       self.urls.append(url(item[0], item[1]))
+    
+    self.configData[self.port] = self.urls
+
       
   def addRoutes(self, routes):
     """ Add routes to server
@@ -152,6 +167,9 @@ class TornadoServer(object):
     for item in routes:
       # handlerDict[key].initializeService(key)
       self.urls.append(url(item[0], item[1]))
+  
+  def loadAPIs(self):
+    pass
 
   def startTornado(self):
     """
@@ -159,15 +177,16 @@ class TornadoServer(object):
       This method never returns.
     """
     # If there is no services loaded:
-    if not self.urls:
+    # if not self.urls:
+    if not self.configData:
       raise ImportError("There is no services loaded, please check your configuration")
 
     sLog.debug("Starting Tornado")
     self._initMonitoring()
 
-    router = Application(self.urls,
-                         debug=False,
-                         compress_response=True)
+    # router = Application(self.urls,
+    #                      debug=False,
+    #                      compress_response=True)
 
     certs = Locations.getHostCertificateAndKeyLocation()
     if certs is False:
@@ -189,16 +208,30 @@ class TornadoServer(object):
     # Starting monitoring, IOLoop waiting time in ms, __monitoringLoopDelay is defined in seconds
     tornado.ioloop.PeriodicCallback(self.__reportToMonitoring, self.__monitoringLoopDelay * 1000).start()
 
-    # Start server
-    server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True)
-    try:
-      server.listen(self.port)
-    except Exception as e:  # pylint: disable=broad-except
-      sLog.exception("Exception starting HTTPServer", e)
-      raise
-    sLog.always("Listening on port %s" % self.port)
-    for service in self.urls:
-      sLog.debug("Available service: %s" % service)
+    # URLS:
+    # {<port>: self.urls}
+    for port, urls in self.configData.items():
+      router = Application(urls, debug=False, compress_response=True)
+      server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True)
+      try:
+        server.listen(port or self.port)
+      except Exception as e:  # pylint: disable=broad-except
+        sLog.exception("Exception starting HTTPServer", e)
+        raise
+      sLog.always("Listening on port %s" % self.port)
+      for service in self.urls:
+        sLog.debug("Available service: %s" % service)
+
+    # # Start server
+    # server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True)
+    # try:
+    #   server.listen(self.port)
+    # except Exception as e:  # pylint: disable=broad-except
+    #   sLog.exception("Exception starting HTTPServer", e)
+    #   raise
+    # sLog.always("Listening on port %s" % self.port)
+    # for service in self.urls:
+    #   sLog.debug("Available service: %s" % service)
 
     IOLoop.current().start()
 

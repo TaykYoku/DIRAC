@@ -96,7 +96,22 @@ class AuthManagerClient(Client):
     except Exception as ex:
       return S_ERROR('Cannot read response: %s' % ex)
 
-  def parseAuthResponse(self, providerName, username, userProfile):
+  def getIdPAuthorization(self, providerName, session):
+    """ Submit subsession and return dict with authorization url and session number
+
+        :param str providerName: provider name
+        :param str mainSession: main session identificator
+
+        :return: S_OK(dict)/S_ERROR() -- dictionary contain next keys:
+                 Status -- session status
+                 UserName -- user name, returned if status is 'ready'
+                 Session -- session id, returned if status is 'needToAuth'
+    """
+    session = session or generate_token(10)
+    result = self.idps.getIdProvider(providerName)  #, sessionManager=self.__db)
+    return result['Value'].submitNewSession(session) if result['OK'] else result
+
+  def parseAuthResponse(self, providerName, session):  #, username, userProfile):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existing DIRAC user and store the session
@@ -107,9 +122,9 @@ class AuthManagerClient(Client):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    result = self._getRPC().parseAuthResponse(providerName, username, userProfile)
+    result = self._getRPC().parseAuthResponse(providerName, session)  #, username, userProfile)
     if result['OK']:
-      _, profile = result['Value']
+      username, profile = result['Value']
       if username and profile:
         gAuthManagerData.updateProfiles(profile['ID'], profile)
     return result

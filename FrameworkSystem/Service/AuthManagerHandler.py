@@ -243,9 +243,9 @@ class AuthManagerHandler(RequestHandler):
     pprint.pprint(data)
     return S_OK(data)
 
-  types_parseAuthResponse = [six.string_types, six.string_types, dict]
+  types_parseAuthResponse = [six.string_types]  #, six.string_types, dict]
 
-  def export_parseAuthResponse(self, providerName, username, userProfile):
+  def export_parseAuthResponse(self, providerName, sessionDict):  #, username, userProfile):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existing DIRAC user and store the session
@@ -255,6 +255,15 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    # Parse response
+    result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
+    if result['OK']:
+      result = result['Value'].parseAuthResponse(response, sessionDict)
+    if not result['OK']:
+      return result
+    # FINISHING with IdP auth result
+    username, userProfile = result['Value']
+
     # Is ID registred?
     result = getUsernameForID(userProfile['ID'])
     if not result['OK']:

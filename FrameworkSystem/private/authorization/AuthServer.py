@@ -38,7 +38,7 @@ from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urls
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+# from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 # from DIRAC.Core.Web.SessionData import SessionStorage
 
@@ -55,7 +55,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
   def __init__(self):
     self.__db = AuthDB2()
-    self.idps = IdProviderFactory()
+    # self.idps = IdProviderFactory()
     ClientManager.__init__(self, self.__db)
     SessionManager.__init__(self)
     _AuthorizationServer.__init__(self, query_client=self.getClient,
@@ -105,12 +105,16 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     session = generate_token(10)
     self.addSession(session, mainSession=mainSession, Provider=providerName)
 
-    result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
+    result = gSessionManager.getIdPAuthorization(providerName, session)
     if result['OK']:
-      result = result['Value'].submitNewSession(session)
-      if result['OK']:
-        authURL, sessionParams = result['Value']
-        self.updateSession(session, **sessionParams)
+      authURL, sessionParams = result['Value']
+      self.updateSession(session, **sessionParams)
+    # result = self.idps.getIdProvider(providerName)  #, sessionManager=self.__db)
+    # if result['OK']:
+    #   result = result['Value'].submitNewSession(session)
+    #   if result['OK']:
+    #     authURL, sessionParams = result['Value']
+    #     self.updateSession(session, **sessionParams)
     return S_OK(authURL) if result['OK'] else result
 
   def parseIdPAuthorizationResponse(self, response, session):
@@ -135,19 +139,21 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     mainSession = sessionDict['mainSession']
     providerName = sessionDict['Provider']
 
-    # Parse response
-    result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
-    if result['OK']:
-      result = result['Value'].parseAuthResponse(response, sessionDict)
-      if result['OK']:
-        self.removeSession(session)
-        # FINISHING with IdP auth result
-        username, userProfile = result['Value']
-        result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
-        print('-- IdP finishing --')
+    result = gSessionManager.parseAuthResponse(providerName, session)
+    # # Parse response
+    # result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
+    # if result['OK']:
+    #   result = result['Value'].parseAuthResponse(response, sessionDict)
+    #   if result['OK']:
+    #     # FINISHING with IdP auth result
+    #     username, userProfile = result['Value']
+    #     result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
+    #     self.removeSession(session)
+    #     print('-- IdP finishing --')
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
+    self.removeSession(session)
     print('=== AUTHSERV: Sessions ===')
     pprint(self.getSessions())
     print('----------------')
