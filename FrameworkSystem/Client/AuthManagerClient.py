@@ -122,6 +122,9 @@ class AuthManagerClient(Client):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    print('=== CLI parseAuthResponse')
+    print(session)
+    print(type(session))
     result = self._getRPC().parseAuthResponse(providerName, response, session)  #, username, userProfile)
     if result['OK']:
       username, profile = result['Value']
