@@ -14,7 +14,7 @@ from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
-from DIRAC.FrameworkSystem.private.authorization.utils import Session
+from DIRAC.FrameworkSystem.private.authorization.utils import Session, createOAuth2Request
 
 __RCSID__ = "$Id$"
 
