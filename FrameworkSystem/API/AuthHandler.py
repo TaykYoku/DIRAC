@@ -228,6 +228,7 @@ class AuthHandler(WebHandler):
     error = self.get_argument('error', None)
     if error:
       description = self.get_argument('error_description', '')
+      self.server.updateSession(session, Status='failed', Comment=': '.join([error, description]))
       self.finish('%s session crashed with error:\n%s\n%s' % (session, error, description))
       return
 
@@ -243,6 +244,7 @@ class AuthHandler(WebHandler):
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
       result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
       if not result['OK']:
+        self.server.updateSession(session, Status='failed', Comment=result['Message'])
         raise WErr(503, result['Message'])
       # Return main session flow
       session = result['Value']
@@ -308,6 +310,7 @@ class AuthHandler(WebHandler):
         idP = action[1][0]
         result = yield self.threadTask(self.server.getIdPAuthorization, idP, session)
         if not result['OK']:
+          self.server.updateSession(session, Status='failed', Comment=result['Message'])
           raise WErr(503, result['Message'])
         self.log.notice('Redirect to', result['Value'])
         self.redirect(result['Value'])

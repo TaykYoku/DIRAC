@@ -159,8 +159,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    response = createOAuth2Request(response)
     print('====>> IDP parseAuthResponse')
+    pprint.pprint(response)
+    response = createOAuth2Request(response)
     print(response.uri)
     if not session:
       session = Session(response.args['state'])
