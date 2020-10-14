@@ -245,7 +245,7 @@ class AuthManagerHandler(RequestHandler):
 
   types_parseAuthResponse = [six.string_types]  #, six.string_types, dict]
 
-  def export_parseAuthResponse(self, providerName, sessionDict):  #, username, userProfile):
+  def export_parseAuthResponse(self, providerName, response, sessionDict):  #, username, userProfile):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existing DIRAC user and store the session

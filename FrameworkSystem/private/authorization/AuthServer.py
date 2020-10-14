@@ -7,7 +7,7 @@ from authlib.deprecate import deprecate
 from authlib.jose import jwt
 from authlib.oauth2 import (
     OAuth2Error,
-    OAuth2Request,
+    # OAuth2Request,
     HttpRequest,
     AuthorizationServer as _AuthorizationServer,
 )
@@ -25,7 +25,9 @@ from .utils import (
   Client,
   ClientRegistrationEndpoint,
   SessionManager,
-  ClientManager
+  ClientManager,
+  OAuth2Request,
+  createOAuth2Request
 )
 from authlib.oidc.core import UserInfo
 
@@ -139,7 +141,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     mainSession = sessionDict['mainSession']
     providerName = sessionDict['Provider']
 
-    result = gSessionManager.parseAuthResponse(providerName, session)
+    result = gSessionManager.parseAuthResponse(providerName, createOAuth2Request(response).toDict(), session)
     # # Parse response
     # result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
     # if result['OK']:
@@ -217,32 +219,33 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
     print('==== create_oauth2_request === USE JSON: %s' % use_json)
-    if isinstance(request, method_cls):
-      return request
-    print('URL: %s' % request.uri)
-    print('BODY args: %s' % request.body_arguments)
-    print('ARGS: %s' % request.arguments)
-    print('BODY %s: %s' % (type(request.body), request.body))
-    # print(json_decode(request.body))
-    print('Headers:')
-    print(request.headers)
-    print('---------------')
+    return createOAuth2Request(request, method_cls, use_json)
+    # if isinstance(request, method_cls):
+    #   return request
+    # print('URL: %s' % request.uri)
+    # print('BODY args: %s' % request.body_arguments)
+    # print('ARGS: %s' % request.arguments)
+    # print('BODY %s: %s' % (type(request.body), request.body))
+    # # print(json_decode(request.body))
+    # print('Headers:')
+    # print(request.headers)
+    # print('---------------')
 
-    if use_json:
-      body = json_decode(request.body)
-    else:
-      body = {}
-      # body = request.body_arguments
-      # if request.method == 'POST':
-      for k, v in request.body_arguments.items():
-        body[k] = ' '.join(v)
-    print('After render:')
-    print(body)
-    m = method_cls(request.method, request.uri, body, request.headers)
-    print(m.data)
-    print(type(m.data))
-    print('----------------')
-    return method_cls(request.method, request.uri, body, request.headers)
+    # if use_json:
+    #   body = json_decode(request.body)
+    # else:
+    #   body = {}
+    #   # body = request.body_arguments
+    #   # if request.method == 'POST':
+    #   for k, v in request.body_arguments.items():
+    #     body[k] = ' '.join(v)
+    # print('After render:')
+    # print(body)
+    # m = method_cls(request.method, request.uri, body, request.headers)
+    # print(m.data)
+    # print(type(m.data))
+    # print('----------------')
+    # return method_cls(request.method, request.uri, body, request.headers)
 
   def create_json_request(self, request):
     return self.create_oauth2_request(request, HttpRequest, True)

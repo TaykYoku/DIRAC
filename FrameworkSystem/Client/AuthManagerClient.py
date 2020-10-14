@@ -111,7 +111,7 @@ class AuthManagerClient(Client):
     result = self.idps.getIdProvider(providerName)  #, sessionManager=self.__db)
     return result['Value'].submitNewSession(session) if result['OK'] else result
 
-  def parseAuthResponse(self, providerName, session):  #, username, userProfile):
+  def parseAuthResponse(self, providerName, response, session):  #, username, userProfile):
     """ Fill session by user profile, tokens, comment, OIDC authorize status, etc.
         Prepare dict with user parameters, if DN is absent there try to get it.
         Create new or modify existing DIRAC user and store the session
@@ -122,7 +122,7 @@ class AuthManagerClient(Client):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    result = self._getRPC().parseAuthResponse(providerName, session)  #, username, userProfile)
+    result = self._getRPC().parseAuthResponse(providerName, response, session)  #, username, userProfile)
     if result['OK']:
       username, profile = result['Value']
       if username and profile:
