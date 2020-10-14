@@ -7,6 +7,14 @@ from authlib.oauth2 import OAuth2Request as _OAuth2Request
 __RCSID__ = "$Id$"
 
 
+class OAuth2Request(_OAuth2Request):
+  def toDict(self):
+    return {'method': self.method,
+            'uri': self.uri,
+            'body': self.body,
+            'headers': self.headers}
+
+
 def createOAuth2Request(self, request, method_cls=OAuth2Request, use_json=False):
   if isinstance(request, method_cls):
     return request
@@ -21,11 +29,3 @@ def createOAuth2Request(self, request, method_cls=OAuth2Request, use_json=False)
       body[k] = ' '.join(v)
   m = method_cls(request.method, request.uri, body, request.headers)
   return method_cls(request.method, request.uri, body, request.headers)
-
-
-class OAuth2Request(_OAuth2Request):
-  def toDict(self):
-    return {'method': self.method,
-            'uri': self.uri,
-            'body': self.body,
-            'headers': self.headers}
