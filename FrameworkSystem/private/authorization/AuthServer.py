@@ -40,7 +40,7 @@ from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urls
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-# from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 # from DIRAC.Core.Web.SessionData import SessionStorage
 
