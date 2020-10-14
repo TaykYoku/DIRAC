@@ -57,7 +57,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
   def __init__(self):
     self.__db = AuthDB2()
-    # self.idps = IdProviderFactory()
+    self.idps = IdProviderFactory()
     ClientManager.__init__(self, self.__db)
     SessionManager.__init__(self)
     _AuthorizationServer.__init__(self, query_client=self.getClient,

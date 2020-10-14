@@ -17,7 +17,7 @@ class notebookAuth(object):
     self.voms = voms
     self.accessToken = aToken or '/var/run/secrets/egi.eu/access_token'
     # Load meta
-    result = gConfig.getOptionsDictRecursively("/LocalInstallation/AuthorizationClient")
+    result = gConfig.getOptionsDict("/LocalInstallation/AuthorizationClient")
     if not result['OK']:
       raise Exception("Can't load web portal settings.")
     self.metadata = result['Value']
@@ -27,8 +27,9 @@ class notebookAuth(object):
     if self.accessToken.startswith('/'):
       with open(self.accessToken, 'rb') as f:
         self.accessToken = f.read()
-    
-    url = 'https://marosvn32.in2p3.fr/DIRAC/auth/authorization?client_id=%s' % self.metadata['client_id']
+
+    url = '%s/authorization' % self.metadata['issuer']
+    url += '?client_id=%s' % self.metadata['client_id']
     url += '&redirect_uri=%s' % self.metadata['redirect_uri']
     url += '&response_type=%s' % self.metadata['response_type']
     if self.group:
@@ -50,7 +51,7 @@ class notebookAuth(object):
     confUrl = gConfig.getValue("/LocalInstallation/ConfigurationServerAPI")
     if not confUrl:
       return S_ERROR('Could not get configuration server API URL.')
-    setup = gConfig.getValue("/LocalInstallation/Setup")
+    setup = gConfig.getValue("/DIRAC/Setup")
     if not setup:
       return S_ERROR('Could not get setup name.')
 
