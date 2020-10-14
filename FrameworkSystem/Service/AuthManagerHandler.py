@@ -260,7 +260,7 @@ class AuthManagerHandler(RequestHandler):
     # Parse response
     result = self.__idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
-      session = Session(sessionDict['id'], **sessionDict)
+      session = Session(sessionDict['id'], sessionDict)
       result = result['Value'].parseAuthResponse(response, session)
     if not result['OK']:
       return result
