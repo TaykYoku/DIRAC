@@ -12,7 +12,7 @@ class OAuth2Request(_OAuth2Request):
     return {'method': self.method,
             'uri': self.uri,
             'body': self.body,
-            'headers': self.headers}
+            'headers': dict(self.headers)}
 
 
 def createOAuth2Request(request, method_cls=OAuth2Request, use_json=False):
