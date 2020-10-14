@@ -125,7 +125,7 @@ class AuthManagerClient(Client):
     print('=== CLI parseAuthResponse')
     print(session)
     print(type(session))
-    result = self._getRPC().parseAuthResponse(providerName, response, session)  #, username, userProfile)
+    result = self._getRPC().parseAuthResponse(providerName, response, dict(session))  #, username, userProfile)
     if result['OK']:
       username, profile = result['Value']
       if username and profile:
