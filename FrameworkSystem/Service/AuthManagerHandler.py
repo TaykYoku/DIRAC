@@ -20,6 +20,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo, 
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, getIDsForUsername, getEmailsForGroup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
+from DIRAC.FrameworkSystem.private.authorization.utils import Session
 
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 
@@ -258,7 +259,8 @@ class AuthManagerHandler(RequestHandler):
     # Parse response
     result = self.__idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
-      result = result['Value'].parseAuthResponse(response, sessionDict)
+      session = Session(sessionDict['id'], **sessionDict)
+      result = result['Value'].parseAuthResponse(response, session)
     if not result['OK']:
       return result
     # FINISHING with IdP auth result
