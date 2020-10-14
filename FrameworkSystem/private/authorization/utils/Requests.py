@@ -15,7 +15,7 @@ class OAuth2Request(_OAuth2Request):
             'headers': self.headers}
 
 
-def createOAuth2Request(self, request, method_cls=OAuth2Request, use_json=False):
+def createOAuth2Request(request, method_cls=OAuth2Request, use_json=False):
   print(method_cls)
   print(type(method_cls))
   if isinstance(request, method_cls):
