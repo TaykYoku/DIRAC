@@ -238,6 +238,8 @@ class App(object):
       config.update(serverMetadata)
       pprint(config)
       config = dict((k, v.replace(', ', ',').split(',') if ',' in v else v) for k, v in config.items())
+      pprint('----')
+      pprint(config)
       setattr(self.__app, '_authClient', OAuth2IdProvider(**config))
       setattr(self.__app, '_idps', IdProviderFactory())
     
