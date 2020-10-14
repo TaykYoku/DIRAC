@@ -19,8 +19,9 @@ class Session(dict):
   def __init__(self, sessionID, data, exp=0, created=None):
     print('-- Session: %s \nexp: %s' % (sessionID, exp))
     pprint(data)
+    data['id'] = sessionID
     data['expires_at'] = int(time()) + exp
-    super(Session, self).__init__(id=sessionID, **data)
+    super(Session, self).__init__(**data)
     self.id = sessionID
     self.created = created or int(time())
 
