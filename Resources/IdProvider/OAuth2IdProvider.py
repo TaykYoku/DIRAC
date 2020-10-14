@@ -20,19 +20,23 @@ __RCSID__ = "$Id$"
 
 
 class OAuth2IdProvider(IdProvider, OAuth2Session):
-  def __init__(self, name=None, issuer=None, client_id=None,
-               client_secret=None, token_endpoint_auth_method=None,
+  def __init__(self, name=None,
+               #issuer=None, client_id=None, client_secret=None,
+               token_endpoint_auth_method=None,
                revocation_endpoint_auth_method=None,
-               scope=None, redirect_uri=None,
+               scope=None,
+               #redirect_uri=None,
                token=None, token_placement='header',
                update_token=None, **parameters):
     """ OIDCClient constructor
     """
     IdProvider.__init__(self, **parameters)
-    OAuth2Session.__init__(self, client_id=client_id, client_secret=client_secret,
+    OAuth2Session.__init__(self,
+                           # client_id=client_id, client_secret=client_secret,
                            token_endpoint_auth_method=token_endpoint_auth_method,
                            revocation_endpoint_auth_method=revocation_endpoint_auth_method,
-                           scope=scope, redirect_uri=redirect_uri,
+                           scope=scope,
+                           #  redirect_uri=redirect_uri,
                            token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
     # Convert scope to list
@@ -41,16 +45,18 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.parameters = parameters
     self.exceptions = exceptions
     self.name = name or parameters.get('ProviderName')
-    self.issuer = issuer
-    self.redirect_uri = redirect_uri or 'https://marosvn32.in2p3.fr/DIRAC/auth/redirect'
-    self.client_id = client_id
-    self.client_secret = client_secret
-    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.issuer, True))
+    # self.issuer = parameters.get(issuer, None)
+    # self.redirect_uri = redirect_uri or 'https://marosvn32.in2p3.fr/DIRAC/auth/redirect'
+    # self.client_id = client_id
+    # self.client_secret = client_secret
+
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
     self.metadata_class(self.metadata).validate()
+    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
+
     print('========= %s ===========' % self.name)
     print(self.client_id)
     print(self.client_secret)
