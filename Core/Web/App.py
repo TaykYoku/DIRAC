@@ -27,6 +27,7 @@ from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization import AuthServer
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 # from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
 # require_oauth = ResourceProtector()
 # require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
@@ -238,7 +239,7 @@ class App(object):
       pprint(config)
       config = dict((k, v.replace(', ', ',').split(',') if ',' in v else v) for k, v in config.items())
       setattr(self.__app, '_authClient', OAuth2IdProvider(**config))
-      # setattr(self.__app._authClient, 'metadata', serverMetadata)
+      setattr(self.__app, '_idps', IdProviderFactory())
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
