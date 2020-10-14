@@ -140,7 +140,10 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     
     mainSession = sessionDict['mainSession']
     providerName = sessionDict['Provider']
-
+    print('--00--')
+    print(createOAuth2Request(response).toDict())
+    print(type(createOAuth2Request(response).toDict()))
+    print('--00--')
     result = gSessionManager.parseAuthResponse(providerName, createOAuth2Request(response).toDict(), session)
     # # Parse response
     # result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
