@@ -225,18 +225,19 @@ class App(object):
       result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
       if not result['OK']:
         raise Exception("Can't load web portal settings.")
-      clientSettings = result['Value']
-      print('clientSettings: ')
-      pprint(clientSettings)
+      config = result['Value']
+      print('config: ')
+      pprint(config)
       result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
       if not result['OK']:
         raise Exception("Can't load authorization server settings.")
       serverMetadata = result['Value']
       print('serverMetadata: ')
       pprint(serverMetadata)
-      clientSettings.update(serverMetadata)
-      pprint(clientSettings)
-      setattr(self.__app, '_authClient', OAuth2IdProvider(**clientSettings))
+      config.update(serverMetadata)
+      pprint(config)
+      config = dict((k, v.replace(', ', ',').split(',') if ',' in v else v) for k, v in config.items())
+      setattr(self.__app, '_authClient', OAuth2IdProvider(**config))
       # setattr(self.__app._authClient, 'metadata', serverMetadata)
     
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
