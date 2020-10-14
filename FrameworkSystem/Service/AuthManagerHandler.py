@@ -256,6 +256,7 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    print('==== export_parseAuthResponse')
     # Parse response
     result = self.__idps.getIdProvider(providerName, sessionManager=self.__db)
     if result['OK']:
