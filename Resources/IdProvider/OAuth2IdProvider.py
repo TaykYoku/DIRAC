@@ -54,7 +54,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
-    
+    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
     try:
       self.metadata_class(self.metadata).validate()
     except ValueError:
@@ -65,8 +65,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         if k not in self.metadata:
           self.metadata[k] = v
       self.metadata_class(self.metadata).validate()
-    
-    self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
 
     print('========= %s ===========' % self.name)
     print(self.client_id)
