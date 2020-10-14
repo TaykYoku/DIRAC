@@ -75,11 +75,12 @@ class IdProviderFactory(object):
       if meta:
         pDict.update(meta)
       provider = pClass(**pDict)
-      if not meta:
-        result = provider.loadMetadata()
-        if not result['OK']:
-          return result
-        self.addMetadata(idProvider, result['Value'])
+      if not meta and hasattr(provider, 'metadata'):
+        # result = provider.loadMetadata()
+        # if not result['OK']:
+        #   return result
+        # self.addMetadata(idProvider, result['Value'])
+        self.addMetadata(idProvider, provider.metadata)
       # provider.setParameters(pDict)
       # provider.setManager(sessionManager)
     except Exception as x:

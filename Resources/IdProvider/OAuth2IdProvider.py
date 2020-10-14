@@ -54,7 +54,18 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
-    self.metadata_class(self.metadata).validate()
+    
+    try:
+      self.metadata_class(self.metadata).validate()
+    except ValueError:
+      r = self.request('GET', self.server_metadata_url, withhold_token=True)
+      r.raise_for_status()
+      metadata = self.metadata_class(r.json())
+      for k, v in metadata.items():
+        if k not in self.metadata:
+          self.metadata[k] = v
+      self.metadata_class(self.metadata).validate()
+    
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
 
     print('========= %s ===========' % self.name)
@@ -66,7 +77,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     return self.sessionManager.storeToken(dict(self.token))
 
   def _updateToken(self, token, refresh_token):
-    # Here "t" is `OAuth2Token` type
+    # Here "token" is `OAuth2Token` type
     self.sessionManager.updateToken(dict(token), refresh_token)
 
   def checkResponse(func):
@@ -79,19 +90,22 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         return S_ERROR(str(ex))
     return function_wrapper
 
-  @checkResponse
-  def loadMetadata(self):
-    r = None
-    try:
-      r = self.request('GET', self.server_metadata_url, withhold_token=True)
-      metadata = self.metadata_class(r.json())
-      metadata.validate()
-      for k, v in metadata.items():
-        if k not in self.metadata:
-          self.metadata[k] = v
-    except ValueError as e:
-      return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
-    return S_OK(self.metadata)
+  # @checkResponse
+  # def loadMetadata(self):
+  #   try:
+  #     self.metadata_class(self.metadata).validate()
+  #   except ValueError:
+  #     r = None
+  #     try:
+  #       r = self.request('GET', self.server_metadata_url, withhold_token=True)
+  #       metadata = self.metadata_class(r.json())
+  #       metadata.validate()
+  #       for k, v in metadata.items():
+  #         if k not in self.metadata:
+  #           self.metadata[k] = v
+  #     except ValueError as e:
+  #       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
+  #   return S_OK(self.metadata)
 
   def request(self, *args, **kwargs):
     self.token_endpoint_auth_methods_supported = self.metadata.get('token_endpoint_auth_methods_supported')
