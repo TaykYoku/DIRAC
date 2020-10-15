@@ -1,7 +1,6 @@
 import json
 from time import time
 from pprint import pprint
-from tornado.escape import json_decode
 
 from authlib.deprecate import deprecate
 from authlib.jose import jwt
@@ -111,12 +110,6 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     if result['OK']:
       authURL, sessionParams = result['Value']
       self.updateSession(session, **sessionParams)
-    # result = self.idps.getIdProvider(providerName)  #, sessionManager=self.__db)
-    # if result['OK']:
-    #   result = result['Value'].submitNewSession(session)
-    #   if result['OK']:
-    #     authURL, sessionParams = result['Value']
-    #     self.updateSession(session, **sessionParams)
     return S_OK(authURL) if result['OK'] else result
 
   def parseIdPAuthorizationResponse(self, response, session):
@@ -140,36 +133,16 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     
     mainSession = sessionDict['mainSession']
     providerName = sessionDict['Provider']
-    print('--00--')
-    print(createOAuth2Request(response).toDict())
-    print(type(createOAuth2Request(response).toDict()))
-    print('--00--')
     result = gSessionManager.parseAuthResponse(providerName,
                                                createOAuth2Request(response).toDict(),
                                                sessionDict)
-    # # Parse response
-    # result = self.idps.getIdProvider(providerName, sessionManager=self.__db)
-    # if result['OK']:
-    #   result = result['Value'].parseAuthResponse(response, sessionDict)
-    #   if result['OK']:
-    #     # FINISHING with IdP auth result
-    #     username, userProfile = result['Value']
-    #     result = gSessionManager.parseAuthResponse(providerName, username, userProfile)
-    #     self.removeSession(session)
-    #     print('-- IdP finishing --')
     if not result['OK']:
       self.updateSession(mainSession, Status='failed', Comment=result['Message'])
       return result
     self.removeSession(session)
-    print('=== AUTHSERV: Sessions ===')
-    pprint(self.getSessions())
-    print('----------------')
     username, profile = result['Value']
     if username and profile:
       self.updateSession(mainSession, username=username, profile=profile, userID=profile['ID'])
-    print('=== AUTHSERV: Sessions ===')
-    pprint(self.getSessions())
-    print('----------------')
     return S_OK(mainSession)
 
   def access_token_generator(self, client, grant_type, user, scope):
@@ -225,33 +198,6 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
     print('==== create_oauth2_request === USE JSON: %s' % use_json)
     return createOAuth2Request(request, method_cls, use_json)
-    # if isinstance(request, method_cls):
-    #   return request
-    # print('URL: %s' % request.uri)
-    # print('BODY args: %s' % request.body_arguments)
-    # print('ARGS: %s' % request.arguments)
-    # print('BODY %s: %s' % (type(request.body), request.body))
-    # # print(json_decode(request.body))
-    # print('Headers:')
-    # print(request.headers)
-    # print('---------------')
-
-    # if use_json:
-    #   body = json_decode(request.body)
-    # else:
-    #   body = {}
-    #   # body = request.body_arguments
-    #   # if request.method == 'POST':
-    #   for k, v in request.body_arguments.items():
-    #     body[k] = ' '.join(v)
-    # print('After render:')
-    # print(body)
-    # m = method_cls(request.method, request.uri, body, request.headers)
-    # print(m.data)
-    # print(type(m.data))
-    # print('----------------')
-    # return method_cls(request.method, request.uri, body, request.headers)
-
   def create_json_request(self, request):
     return self.create_oauth2_request(request, HttpRequest, True)
 

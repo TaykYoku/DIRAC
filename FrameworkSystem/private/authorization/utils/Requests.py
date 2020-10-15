@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from authlib.oauth2 import OAuth2Request as _OAuth2Request
+from tornado.escape import json_decode
 
 __RCSID__ = "$Id$"
 
