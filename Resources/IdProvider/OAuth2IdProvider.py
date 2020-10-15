@@ -133,11 +133,13 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """
     print('====>> IDP parseAuthResponse')
     pprint.pprint(response)
+    
     response = createOAuth2Request(response)
     print(response.uri)
     if not session:
       session = Session(response.args['state'], {})
-
+    print('Session:')
+    pprint.pprint(dict(session))
     print('--> METADATA:')
     pprint.pprint(self.metadata)
     self.fetch_access_token(authorization_response=response.uri,
