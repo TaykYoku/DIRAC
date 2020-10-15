@@ -70,6 +70,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     print(self.client_id)
     print(self.client_secret)
     print(self.token)
+    pprint.pprint(self.metadata)
 
   def _storeToken(self, token, session=None):
     return self.sessionManager.storeToken(dict(self.token))
@@ -165,11 +166,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     print(response.uri)
     if not session:
       session = Session(response.args['state'], {})
-    # if not isinstance(session, Session):
-    #   if not session or not isinstance(session, dict):
-    #     session = Session(session or response.args['state'], {})
-    #   else:
-    #     session = Session(session['id'], **session)
 
     print('--> METADATA:')
     pprint.pprint(self.metadata)
