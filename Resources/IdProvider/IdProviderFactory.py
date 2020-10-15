@@ -53,7 +53,7 @@ class IdProviderFactory(object):
     else:
       result = getProviderInfo(idProvider)
       if not result['OK']:
-        self.log.error('Failed to read configuration', '%s: %s' % (subClassName, result['Message']))
+        self.log.error('Failed to read configuration', '%s: %s' % (idProvider, result['Message']))
         return result
       pDict = result['Value']
       pDict['ProviderName'] = idProvider
