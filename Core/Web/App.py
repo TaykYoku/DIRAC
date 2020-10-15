@@ -28,6 +28,8 @@ from DIRAC.FrameworkSystem.private.authorization import AuthServer
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+from DIRAC.FrameworkSystem.private.authorization.utils import ResourceProtector
+
 # from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
 # require_oauth = ResourceProtector()
 # require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
@@ -53,6 +55,7 @@ class Application(_Application, SessionManager):
     # self.metadata = result['Value']  #self.loadMetadata()
     # print('--APP META:')
     # pprint(self.metadata)
+    self._resourceProtector = ResourceProtector()
   
   def _updateToken(self, token, refresh_token):
     session, _ = self.getSessionByOption('refresh_token', refresh_token)

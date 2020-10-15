@@ -10,52 +10,53 @@ from authlib.oauth2.rfc6749 import (
     MissingAuthorizationError,
     HttpRequest,
 )
+from authlib.oauth2.rfc6750 import BearerTokenValidator
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 
+# class TokenManager(object):
+#   def __init__(self, addTime=300, maxAge=3600 * 12):
+#     self.__tokens = DictCache()
+#     self.__addTime = addTime
+#     self.__maxAge = maxAge
 
-class TokenManager(object):
-  def __init__(self, addTime=300, maxAge=3600 * 12):
-    self.__tokens = DictCache()
-    self.__addTime = addTime
-    self.__maxAge = maxAge
+#   @gCacheSession
+#   def addSession(self, session, exp=None, **kwargs):
+#     exp = exp or self.__addTime
+#     if not isinstance(session, Session):
+#       session = Session(session, kwargs, exp)
+#     if session.age > self.__maxAge:
+#       return self.__sessions.delete(session.id)
+#     self.__sessions.add(session.id, min(exp, self.__maxAge), session)
 
-  @gCacheSession
-  def addSession(self, session, exp=None, **kwargs):
-    exp = exp or self.__addTime
-    if not isinstance(session, Session):
-      session = Session(session, kwargs, exp)
-    if session.age > self.__maxAge:
-      return self.__sessions.delete(session.id)
-    self.__sessions.add(session.id, min(exp, self.__maxAge), session)
+#   @gCacheSession
+#   def getSession(self, session):
+#     return self.__sessions.get(session.id if isinstance(session, Session) else session)
 
-  @gCacheSession
-  def getSession(self, session):
-    return self.__sessions.get(session.id if isinstance(session, Session) else session)
-
-  @gCacheSession
-  def getSessions(self):
-    return self.__sessions.getDict()
+#   @gCacheSession
+#   def getSessions(self):
+#     return self.__sessions.getDict()
   
-  @gCacheSession
-  def removeSession(self, session):
-    self.__sessions.delete(session.id if isinstance(session, Session) else session)
+#   @gCacheSession
+#   def removeSession(self, session):
+#     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
-  def updateSession(self, session, exp=None, **kwargs):
-    exp = exp or self.__addTime
-    sObj = self.getSession(session.id if isinstance(session, Session) else session)
-    if sObj and sObj.age < self.__maxAge:
-      if (sObj.age + exp) > self.__maxAge:
-        exp = self.__maxAge - sObj.age
-      for k, v in kwargs.items() or {}:
-        sObj[k] = v
-      self.addSession(sObj, exp)
+#   def updateSession(self, session, exp=None, **kwargs):
+#     exp = exp or self.__addTime
+#     sObj = self.getSession(session.id if isinstance(session, Session) else session)
+#     if sObj and sObj.age < self.__maxAge:
+#       if (sObj.age + exp) > self.__maxAge:
+#         exp = self.__maxAge - sObj.age
+#       for k, v in kwargs.items() or {}:
+#         sObj[k] = v
+#       self.addSession(sObj, exp)
   
-  def getSessionByOption(self, key, value):
-    if key and value:
-      sessions = self.getSessions()
-      for session, data in sessions.items():
-        if data.get(key) == value:
-          return session, data
-    return None, None
+#   def getSessionByOption(self, key, value):
+#     if key and value:
+#       sessions = self.getSessions()
+#       for session, data in sessions.items():
+#         if data.get(key) == value:
+#           return session, data
+#     return None, None
 
 
 class ResourceProtector(_ResourceProtector):
@@ -93,6 +94,10 @@ class ResourceProtector(_ResourceProtector):
                   self.finish(jsonify(user.to_dict()))
 
   """
+  def __init__(self):
+    validator = BearerTokenValidator(OAuth2Token)
+    self._token_validators = {validator.TOKEN_TYPE: validator}
+
   def raise_error_response(self, error):
     """ Raise HTTPException for OAuth2Error. Developers can re-implement
         this method to customize the error response.
@@ -155,6 +160,41 @@ class ResourceProtector(_ResourceProtector):
         return f(request, *args, **kwargs)
       return decorated
     return wrapper
+
+
+class BearerTokenValidator(_BearerTokenValidator):
+  def __init__(self, token_model, realm=None):
+    self.token_model = token_model
+    super(BearerTokenValidator, self).__init__(realm)
+
+  def authenticate_token(self, aToken):
+    """ A method to query token from database with the given token string.
+        Developers MUST re-implement this method. For instance::
+
+            def authenticate_token(self, token_string):
+                return get_token_from_database(token_string)
+
+        :param token_string: A string to represent the access_token.
+        
+        :return: token
+    """
+    # Read public key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      key = f.read()
+    # Get claims and verify signature
+    claims = jwt.decode(aToken, key)
+    
+    # Verify token
+    claims.validate()
+
+    OAuth2Token({'access_token': aToken,)...
+
+  def request_invalid(self, request):
+    return False
+
+  def token_revoked(self, token):
+    return token.revoked
+
 
 # require_oauth = ResourceProtector()
 # require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))

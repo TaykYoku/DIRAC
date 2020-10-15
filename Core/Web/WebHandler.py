@@ -119,7 +119,7 @@ class WebHandler(tornado.web.RequestHandler):
     self.__parseURI()
 
     # Authorization type
-    self.__session = self.application.getSession(self.get_cookie('session_id'))
+    self.__session = self.application.getSession(self.get_secure_cookie('session_id'))
     self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
@@ -202,9 +202,6 @@ class WebHandler(tornado.web.RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    # auth = self.request.headers.get("Authorization")
-    # if not auth:
-    #   return S_ERROR("Invalid authorization header.")
     if not self.__session.token:
       return S_ERROR('Session expired.')
 
@@ -242,6 +239,9 @@ class WebHandler(tornado.web.RequestHandler):
     return S_OK()
 
   def __readToken(self, old=False):
+    
+    # self.application._resourceProtector.acquire_token()
+
     # If present "Authorization" header it means that need to use another then certificate authZ
     authParts = self.__jwtAuth.split()
     authType = authParts[0]
