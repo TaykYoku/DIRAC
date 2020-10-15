@@ -55,6 +55,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
+    pprint.pprint(self.metadata)
     try:
       self.metadata_class(self.metadata).validate()
     except ValueError:
