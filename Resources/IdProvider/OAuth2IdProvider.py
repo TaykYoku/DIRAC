@@ -143,7 +143,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     print('--> METADATA:')
     pprint.pprint(self.metadata)
     self.fetch_access_token(authorization_response=response.uri,
-                            verify_code=session.get('verify_code'))
+                            code_verifier=session.get('code_verifier'))
     print('---->> IDP __getUserInfo')
     # Get user info
     result = self._fillUserProfile()
