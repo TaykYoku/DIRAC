@@ -59,8 +59,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     self.idps = IdProviderFactory()
     ClientManager.__init__(self, self.__db)
     SessionManager.__init__(self)
-    _AuthorizationServer.__init__(self, query_client=self.getClient,
-                                        save_token=self.saveToken()) #lambda t, r: pprint('Token: %s' % t))
+    _AuthorizationServer.__init__(self, query_client=self.getClient, save_token=self.saveToken)
     self.generate_token = BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
     self.metadata = {}
