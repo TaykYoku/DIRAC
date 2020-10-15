@@ -89,7 +89,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
   
   def saveToken(self, token, request):
     if 'refresh_token' in token:
-      self.addSession(token['refresh_token'], token)
+      self.addSession(token['refresh_token'], **token)
     return None
 
   def getIdPAuthorization(self, providerName, mainSession):
