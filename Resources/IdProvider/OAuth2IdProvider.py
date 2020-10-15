@@ -20,24 +20,16 @@ __RCSID__ = "$Id$"
 
 
 class OAuth2IdProvider(IdProvider, OAuth2Session):
-  def __init__(self, name=None,
-               #issuer=None, client_id=None, client_secret=None,
-               token_endpoint_auth_method=None,
+  def __init__(self, name=None, token_endpoint_auth_method=None,
                revocation_endpoint_auth_method=None,
-               scope=None,
-               #redirect_uri=None,
-               token=None, token_placement='header',
+               scope=None, token=None, token_placement='header',
                update_token=None, **parameters):
     """ OIDCClient constructor
     """
     IdProvider.__init__(self, **parameters)
-    OAuth2Session.__init__(self,
-                           # client_id=client_id, client_secret=client_secret,
-                           token_endpoint_auth_method=token_endpoint_auth_method,
+    OAuth2Session.__init__(self, token_endpoint_auth_method=token_endpoint_auth_method,
                            revocation_endpoint_auth_method=revocation_endpoint_auth_method,
-                           scope=scope,
-                           #  redirect_uri=redirect_uri,
-                           token=token, token_placement=token_placement,
+                           scope=scope, token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
     # Convert scope to list
     scope = scope or ''
@@ -45,17 +37,12 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.parameters = parameters
     self.exceptions = exceptions
     self.name = name or parameters.get('ProviderName')
-    # self.issuer = parameters.get(issuer, None)
-    # self.redirect_uri = redirect_uri or 'https://marosvn32.in2p3.fr/DIRAC/auth/redirect'
-    # self.client_id = client_id
-    # self.client_secret = client_secret
 
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
     self.metadata_class = AuthorizationServerMetadata
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
-    pprint.pprint(self.metadata)
     try:
       self.metadata_class(self.metadata).validate()
     except ValueError:
@@ -89,23 +76,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       except exceptions.RequestException as ex:
         return S_ERROR(str(ex))
     return function_wrapper
-
-  # @checkResponse
-  # def loadMetadata(self):
-  #   try:
-  #     self.metadata_class(self.metadata).validate()
-  #   except ValueError:
-  #     r = None
-  #     try:
-  #       r = self.request('GET', self.server_metadata_url, withhold_token=True)
-  #       metadata = self.metadata_class(r.json())
-  #       metadata.validate()
-  #       for k, v in metadata.items():
-  #         if k not in self.metadata:
-  #           self.metadata[k] = v
-  #     except ValueError as e:
-  #       return S_ERROR("Cannot update %s server. %s: %s" % (self.name, e.message, r.text if r else ''))
-  #   return S_OK(self.metadata)
 
   def request(self, *args, **kwargs):
     self.token_endpoint_auth_methods_supported = self.metadata.get('token_endpoint_auth_methods_supported')
@@ -192,11 +162,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
     return S_OK((username, userProfile))
-  
-  # def getTokenByUserID(self, uid):
-  #   result = self.sessionManager.getTokenByUserIDAndProvider(uid, self.name)
-  #   if not result['OK']:
-  #     return result
   
   def _fillUserProfile(self, useToken=None):
     result = self.__getUserInfo(useToken)

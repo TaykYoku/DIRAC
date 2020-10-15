@@ -227,19 +227,12 @@ class App(object):
       if not result['OK']:
         raise Exception("Can't load web portal settings.")
       config = result['Value']
-      print('config: ')
-      pprint(config)
       result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
       if not result['OK']:
         raise Exception("Can't load authorization server settings.")
       serverMetadata = result['Value']
-      print('serverMetadata: ')
-      pprint(serverMetadata)
       config.update(serverMetadata)
-      pprint(config)
       config = dict((k, v.replace(', ', ',').split(',') if ',' in v else v) for k, v in config.items())
-      pprint('----')
-      pprint(config)
       setattr(self.__app, '_authClient', OAuth2IdProvider(**config))
       setattr(self.__app, '_idps', IdProviderFactory())
     
