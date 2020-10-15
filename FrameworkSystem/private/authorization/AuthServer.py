@@ -60,8 +60,8 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     ClientManager.__init__(self, self.__db)
     SessionManager.__init__(self)
     _AuthorizationServer.__init__(self, query_client=self.getClient,
-                                        save_token=lambda t, r: pprint('Token: %s' % t))
-    self.generate_token = BearerToken(self.access_token_generator)
+                                        save_token=self.saveToken()) #lambda t, r: pprint('Token: %s' % t))
+    self.generate_token = BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
     self.metadata = {}
     result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
@@ -89,6 +89,8 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     self.register_endpoint(DeviceAuthorizationEndpoint)
   
   def saveToken(self, token, request):
+    if 'refresh_token' in token:
+      self.addSession(token['refresh_token'], token)
     return None
 
   def getIdPAuthorization(self, providerName, mainSession):
@@ -155,6 +157,23 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
                'exp': int(time()) + (12 * 3600),
                'scopes': scope.split(),
                'setup': getSetup()}
+    # Read private key of DIRAC auth service
+    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
+      key = f.read()
+    # Need to use enum==0.3.1 for python 2.7
+    return jwt.encode(header, payload, key)
+  
+  def refresh_token_generator(self, client, grant_type, user, scope):
+    print('GENERATE REFRESH TOKEN')
+    print('scope: %s' % scope)
+    header = {'alg': 'RS256'}
+    payload = {'sub': user,
+               'iss': self.metadata['issuer'],
+               'iat': int(time()),
+               'exp': int(time()) + (30 * 24 * 3600),
+               'scopes': scope.split(),
+               'setup': getSetup(),
+               'client': client.client_id}
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
