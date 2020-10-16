@@ -38,7 +38,7 @@ class Session(dict):
         data['created'] = int(time())
       super(Session, self).__init__(**data)
       self.id = data['id']
-      self.created = self.['created']
+      self.created = self['created']
 
   @property
   def status(self):
