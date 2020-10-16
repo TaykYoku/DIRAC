@@ -152,6 +152,7 @@ class SessionManager(object):
     print('-- updateSession')
     pprint(session)
     session = self.getSession(session)
+    pprint(session)
     if session and session.age < self.__maxAge:      
       exp = exp or self.__addTime
       if (session.age + exp) > self.__maxAge:
