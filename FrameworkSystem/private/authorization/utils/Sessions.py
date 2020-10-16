@@ -148,6 +148,7 @@ class SessionManager(object):
       if (session.age + exp) > self.__maxAge:
         exp = self.__maxAge - session.age
       print('UPDATE SESSION: %s' % session.id)
+      print(session.update(kwargs))
       self.addSession(session.update(kwargs), exp)
   
   def getSessionByOption(self, key, value):
