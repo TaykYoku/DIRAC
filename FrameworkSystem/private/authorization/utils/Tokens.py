@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 from time import time
+import functools
+from contextlib import contextmanager
 from authlib.oauth2 import OAuth2Error, ResourceProtector as _ResourceProtector
 from authlib.oauth2.rfc6749 import MissingAuthorizationError, HttpRequest
 from authlib.oauth2.rfc6750 import BearerTokenValidator
