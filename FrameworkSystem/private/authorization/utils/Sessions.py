@@ -138,6 +138,8 @@ class SessionManager(object):
         :param session: session
         :type session: str, Session object
     """
+    print('-- removeSession')
+    pprint(session)
     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
   def updateSession(self, session, exp=None, **kwargs):
