@@ -252,8 +252,5 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     print('==== Request:')
     pprint(req.data)
     print('============')
-    if not self.getSession(req.state):
-      self.addSession(req.state, request=req)
-    else:
-      self.updateSession(req.state, request=req)
+    self.addUpdateSession(req.state, request=req)
     return grant, req.state

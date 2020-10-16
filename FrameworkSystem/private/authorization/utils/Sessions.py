@@ -140,7 +140,7 @@ class SessionManager(object):
     pprint(session)
     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
-  def updateSession(self, session, exp=None, **kwargs):
+  def updateSession(self, session, exp=None, createIfNotExist=None, **kwargs):
     """ Update session in cache
 
         :param session: session
@@ -149,16 +149,20 @@ class SessionManager(object):
     """
     print('-- updateSession')
     pprint(session)
-    session = self.getSession(session)
+    sessionID = session.id if isinstance(session, Session) else session
+    session = self.getSession(sessionID)
     pprint(session)
-    if session and session.age < self.__maxAge:      
-      exp = exp or self.__addTime
+    exp = exp or self.__addTime
+    if session and session.age < self.__maxAge:
       if (session.age + exp) > self.__maxAge:
         exp = self.__maxAge - session.age
       if exp:
         print('UPDATE SESSION: %s' % session.id)
         self.addSession(session.update(kwargs), exp)
-  
+    if createIfNotExist:
+      print('UPDATE hard SESSION: %s' % sessionID)
+      self.addSession(sessionID, kwargs, exp)
+
   def getSessionByOption(self, key, value):
     """ Search session by the option
 
