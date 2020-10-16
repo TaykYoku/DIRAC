@@ -94,6 +94,8 @@ class SessionManager(object):
         :type session: str, dict or Session object
         :param int exp: expired time
     """
+    print('-- addSession')
+    pprint(session)
     exp = min(exp or self.__addTime, self.__maxAge)
     session = Session(session, data=kwargs, exp=exp)
     if session.age > self.__maxAge:
@@ -110,6 +112,8 @@ class SessionManager(object):
 
         :return: Session object
     """
+    print('-- getSession')
+    pprint(session)
     return self.__sessions.get(session.id if isinstance(session, Session) else session)
 
   @gCacheSession
@@ -136,6 +140,8 @@ class SessionManager(object):
         :type session: str, Session object
         :param int exp: expiration time
     """
+    print('-- updateSession')
+    pprint(session)
     session = self.getSession(session)
     if session and session.age < self.__maxAge:      
       exp = exp or self.__addTime
