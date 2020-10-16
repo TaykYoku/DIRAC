@@ -90,7 +90,7 @@ class ResourceProtector(_ResourceProtector):
 
   """
   def __init__(self):
-    validator = BearerTokenValidator(OAuth2Token)
+    validator = BearerTokenValidator()
     self._token_validators = {validator.TOKEN_TYPE: validator}
 
   def raise_error_response(self, error):
@@ -113,14 +113,11 @@ class ResourceProtector(_ResourceProtector):
         :param operator: value of "AND" or "OR"
         :return: token object
     """
-    # headers = parse_request_headers(request)
     req = HttpRequest(request.method, request.uri, request.body, request.headers)
     if not callable(operator):
         operator = operator.upper()
-    token = self.validate_request(scope, req, operator)
-    # token_authenticated.send(sender=self.__class__, token=token)
-    return token
-
+    return self.validate_request(scope, req, operator)
+    
   @contextmanager
   def acquire(self, scope=None, operator='AND'):
     """ The with statement of ``require_oauth``. Instead of using a
@@ -176,12 +173,13 @@ class BearerTokenValidator(_BearerTokenValidator):
     # Read public key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
+
     # Get claims and verify signature
     claims = jwt.decode(aToken, key)
-    print(aToken)
+    
     # Verify token
     claims.validate()
-    print(' == authenticate_token OK')
+    
     return OAuth2Token(claims, access_token=aToken)
 
   def request_invalid(self, request):
@@ -200,5 +198,4 @@ class BearerTokenValidator(_BearerTokenValidator):
 
         :return: bool
     """
-    print('Token revoked: %s' % token.revoked)
     return token.revoked
