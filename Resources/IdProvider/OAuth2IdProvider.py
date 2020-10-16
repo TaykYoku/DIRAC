@@ -41,6 +41,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # Add hooks to raise HTTP errors
     self.hooks['response'] = lambda r, *args, **kwargs: r.raise_for_status()
     self.update_token = update_token or self._updateToken
+    self.store_token = self._storeToken
     self.metadata_class = AuthorizationServerMetadata
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
     try:
@@ -126,7 +127,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
           - Tokens(Contain refreshed tokens, type and etc.)
           - Groups(New DIRAC groups that need created)
 
-        :param object response: response on request to get user profile
+        :param dict response: response on request to get user profile
         :param object session: session
 
         :return: S_OK(dict)/S_ERROR()
@@ -135,9 +136,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     pprint.pprint(response)
     
     response = createOAuth2Request(response)
-    print(response.uri)
     if not session:
-      session = Session(response.args['state'], {})
+      session = Session(response.args['state'])
     print('Session:')
     pprint.pprint(dict(session))
     print('--> METADATA:')
@@ -158,12 +158,14 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['provider'] = self.name
     self.token['user_id'] = userProfile['ID']
     print(dict(self.token))
-    result = self._storeToken(self.token, session.id)
-    if not result['OK']:
-      return result
+
+    if self.store_token:
+      result = self.store_token(self.token, session.id)
+      if not result['OK']:
+        return result
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
-    return S_OK((username, userProfile))
+    return S_OK((username, userProfile, session.update(tokens=self.token, **self.token)))
   
   def _fillUserProfile(self, useToken=None):
     result = self.__getUserInfo(useToken)

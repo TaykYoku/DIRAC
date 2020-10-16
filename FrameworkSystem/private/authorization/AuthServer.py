@@ -127,24 +127,23 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     print('=== AUTHSERV: parseIdPAuthorizationResponse ===')
     pprint(self.getSessions())
     print('----------------')
-    # Check session
-    sessionDict = self.getSession(session)
-    if not sessionDict:
+    # Get IdP authorization flows session
+    session = self.getSession(session)
+    if not session:
       return S_ERROR("Session expired.")
-    
-    mainSession = sessionDict['mainSession']
-    providerName = sessionDict['Provider']
-    result = gSessionManager.parseAuthResponse(providerName,
-                                               createOAuth2Request(response).toDict(),
-                                               sessionDict)
-    if not result['OK']:
-      self.updateSession(mainSession, Status='failed', Comment=result['Message'])
-      return result
+    # And remove it, the credentionals will be stored to the database.
     self.removeSession(session)
-    username, profile = result['Value']
+
+    result = gSessionManager.parseAuthResponse(session['Provider'], createOAuth2Request(response).toDict(),
+                                               session)
+    if not result['OK']:
+      self.updateSession(session['mainSession'], Status='failed', Comment=result['Message'])
+      return result
+    username, profile, _ = result['Value']
+
     if username and profile:
-      self.updateSession(mainSession, username=username, profile=profile, userID=profile['ID'])
-    return S_OK(mainSession)
+      self.updateSession(session['mainSession'], username=username, profile=profile, userID=profile['ID'])
+    return S_OK(session['mainSession'])
 
   def access_token_generator(self, client, grant_type, user, scope):
     print('GENERATE ACCESS TOKEN')

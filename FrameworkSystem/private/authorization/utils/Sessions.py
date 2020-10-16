@@ -15,15 +15,28 @@ gCacheSession = ThreadSafe.Synchronizer()
 
 
 class Session(dict):
-  """A dict instance to represent a Session object."""
-  def __init__(self, sessionID, data, exp=0, created=None):
-    print('-- Session: %s \nexp: %s' % (sessionID, exp))
-    pprint(data)
-    data['id'] = sessionID
-    data['expires_at'] = int(time()) + exp
-    super(Session, self).__init__(**data)
-    self.id = sessionID
-    self.created = created or int(time())
+  """ A dict instance to represent a Session object.
+  
+      :param session:
+      :type session: str or dict
+  """
+  def __init__(self, session, data=None, exp=300, created=None):
+    if isinstance(session, Session):
+      self = session
+    else:
+      data = data or {}
+      if isinstance(session, dict):
+        session.update(data)
+        data = session
+      else:
+        data['id'] = session
+      if not data.get('id'):
+        raise KeyError('Missing "id" for a session.')
+      if not data.get('expires_at'):
+        data['expires_at'] = int(time()) + exp
+      super(Session, self).__init__(**data)
+      self.id = data['id']
+      self.created = created or int(time())
 
   @property
   def status(self):
@@ -45,54 +58,100 @@ class Session(dict):
   def token(self):
     """ Tokens
     
-      :return: object
+        :return: object
     """
     return self.get('tokens')
+  
+  def update(self, data=None, **kwargs):
+    """ Update session
+
+        :param dict data: dictionary with new values
+
+        :return: object
+    """
+    kwargs.update(data or {})
+    self.update(kwargs)
+    return self
 
 
 class SessionManager(object):
+  """ Sessions cache """
   def __init__(self, addTime=300, maxAge=3600 * 12):
+    """ Con'r
+
+        :param int addTime: additional time added to session life
+        :param int maxAge: max session age
+    """
     self.__sessions = DictCache()
     self.__addTime = addTime
     self.__maxAge = maxAge
 
   @gCacheSession
   def addSession(self, session, exp=None, **kwargs):
-    exp = exp or self.__addTime
-    if not isinstance(session, Session):
-      session = Session(session, kwargs, exp)
+    """ Add session to cache
+
+        :param session: session
+        :type session: str, dict or Session object
+        :param int exp: expired time
+    """
+    exp = min(exp or self.__addTime, self.__maxAge)
+    session = Session(session, data=kwargs, exp=exp)
     if session.age > self.__maxAge:
       return self.__sessions.delete(session.id)
     print('ADD SESSION: %s' % session.id)
-    self.__sessions.add(session.id, min(exp, self.__maxAge), session)
+    return self.__sessions.add(session.id, exp, session)
 
   @gCacheSession
   def getSession(self, session):
+    """ Get session from cache
+
+        :param session: session
+        :type session: str, Session object
+
+        :return: Session object
+    """
     return self.__sessions.get(session.id if isinstance(session, Session) else session)
 
   @gCacheSession
   def getSessions(self):
+    """ Get all sessions from cache
+
+        :return: dict
+    """
     return self.__sessions.getDict()
   
   @gCacheSession
   def removeSession(self, session):
+    """ Remove session from cache
+
+        :param session: session
+        :type session: str, Session object
+    """
     self.__sessions.delete(session.id if isinstance(session, Session) else session)
 
   def updateSession(self, session, exp=None, **kwargs):
-    print('UPDATE SESSION: %s' % (session.id if isinstance(session, Session) else session))
-    exp = exp or self.__addTime
-    sID = session.id if isinstance(session, Session) else session
-    sObj = self.getSession(sID)
-    if not sObj:
-      return self.addSession(sID, exp, **kwargs)
-    if sObj.age < self.__maxAge:
-      if (sObj.age + exp) > self.__maxAge:
-        exp = self.__maxAge - sObj.age
-      for k, v in kwargs.items() or {}:
-        sObj[k] = v
-      self.addSession(sObj, exp)
+    """ Update session in cache
+
+        :param session: session
+        :type session: str, Session object
+        :param int exp: expiration time
+    """
+    session = self.getSession(session)
+    if session and session.age < self.__maxAge:      
+      exp = exp or self.__addTime
+      if (session.age + exp) > self.__maxAge:
+        exp = self.__maxAge - session.age
+      print('UPDATE SESSION: %s' % session.id)
+      self.addSession(session.update(kwargs), exp)
   
   def getSessionByOption(self, key, value):
+    """ Search session by the option
+
+        :param str key: option name
+        :param str value: option value
+
+        :return: str, Session
+    """
     if key and value:
       sessions = self.getSessions()
       for session, data in sessions.items():

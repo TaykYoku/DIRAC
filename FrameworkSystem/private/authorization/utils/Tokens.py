@@ -2,62 +2,47 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from authlib.oauth2 import (
-    OAuth2Error,
-    ResourceProtector as _ResourceProtector
-)
-from authlib.oauth2.rfc6749 import (
-    MissingAuthorizationError,
-    HttpRequest,
-)
+from time import time
+from authlib.oauth2 import OAuth2Error, ResourceProtector as _ResourceProtector
+from authlib.oauth2.rfc6749 import MissingAuthorizationError, HttpRequest
 from authlib.oauth2.rfc6750 import BearerTokenValidator
-from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token as _OAuth2Token
 
-# class TokenManager(object):
-#   def __init__(self, addTime=300, maxAge=3600 * 12):
-#     self.__tokens = DictCache()
-#     self.__addTime = addTime
-#     self.__maxAge = maxAge
 
-#   @gCacheSession
-#   def addSession(self, session, exp=None, **kwargs):
-#     exp = exp or self.__addTime
-#     if not isinstance(session, Session):
-#       session = Session(session, kwargs, exp)
-#     if session.age > self.__maxAge:
-#       return self.__sessions.delete(session.id)
-#     self.__sessions.add(session.id, min(exp, self.__maxAge), session)
-
-#   @gCacheSession
-#   def getSession(self, session):
-#     return self.__sessions.get(session.id if isinstance(session, Session) else session)
-
-#   @gCacheSession
-#   def getSessions(self):
-#     return self.__sessions.getDict()
+class OAuth2Token(_OAuth2Token):
+  def __init__(self, params=None, **kwargs):
+    kwargs.update(params or {})
+    self.sub = kwargs.get('sub')
+    self.isser = kwargs.get('iss')
+    self.client_id = kwargs.get('client_id', kwargs.get('aud'))
+    self.token_type = kwargs.get('token_type')
+    self.access_token = kwargs.get('access_token')
+    self.refresh_token = kwargs.get('refresh_token')
+    self.scope = kwargs.get('scope')
+    self.revoked = kwargs.get('revoked')
+    self.issued_at = int(kwargs.get('issued_at', kwargs.get('iat', 0)))
+    self.expires_in = int(kwargs.get('expires_in', 0))
+    self.expires_at = int(kwargs.get('expires_at', kwargs.get('exp', 0)))
+    if not self.expires_at and self.expires_in and self.issued_at:
+      self.expires_at = self.issued_at + self.expires_in
+    kwargs.update{'client_id': self.client_id
+                  'token_type': self.token_type
+                  'access_token': self.access_token
+                  'refresh_token': self.refresh_token
+                  'scope': self.scope
+                  'revoked': self.revoked
+                  'issued_at': self.issued_at
+                  'expires_in': self.expires_in
+                  'expires_at': self.expires_at}
+    super(OAuth2Token, self).__init__(kwargs)
   
-#   @gCacheSession
-#   def removeSession(self, session):
-#     self.__sessions.delete(session.id if isinstance(session, Session) else session)
-
-#   def updateSession(self, session, exp=None, **kwargs):
-#     exp = exp or self.__addTime
-#     sObj = self.getSession(session.id if isinstance(session, Session) else session)
-#     if sObj and sObj.age < self.__maxAge:
-#       if (sObj.age + exp) > self.__maxAge:
-#         exp = self.__maxAge - sObj.age
-#       for k, v in kwargs.items() or {}:
-#         sObj[k] = v
-#       self.addSession(sObj, exp)
+  @property
+  def scopes(self):
+    return self.scope.split(' ')
   
-#   def getSessionByOption(self, key, value):
-#     if key and value:
-#       sessions = self.getSessions()
-#       for session, data in sessions.items():
-#         if data.get(key) == value:
-#           return session, data
-#     return None, None
-
+  @property
+  def groups(self):
+    return [s.split(':')[1] for s in self.scopes if s.startswith('g:')]
 
 class ResourceProtector(_ResourceProtector):
   """ A protecting method for resource servers. Creating a ``require_oauth``
@@ -163,16 +148,17 @@ class ResourceProtector(_ResourceProtector):
 
 
 class BearerTokenValidator(_BearerTokenValidator):
-  def __init__(self, token_model, realm=None):
-    self.token_model = token_model
+  """ Token validator
+      
+      Use:
+      require_oauth = ResourceProtector()
+      require_oauth.register_token_validator(BearerTokenValidator())
+  """
+  def __init__(self, realm=None):
     super(BearerTokenValidator, self).__init__(realm)
 
   def authenticate_token(self, aToken):
     """ A method to query token from database with the given token string.
-        Developers MUST re-implement this method. For instance::
-
-            def authenticate_token(self, token_string):
-                return get_token_from_database(token_string)
 
         :param token_string: A string to represent the access_token.
         
@@ -187,14 +173,22 @@ class BearerTokenValidator(_BearerTokenValidator):
     # Verify token
     claims.validate()
 
-    OAuth2Token({'access_token': aToken,)...
+    return OAuth2Token(claims, access_token=aToken)
 
   def request_invalid(self, request):
+    """ Request validation
+
+        :param object request: request
+
+        :return: bool
+    """
     return False
 
   def token_revoked(self, token):
+    """ If token can be revoked
+
+        :param object token: token
+
+        :return: bool
+    """
     return token.revoked
-
-
-# require_oauth = ResourceProtector()
-# require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))

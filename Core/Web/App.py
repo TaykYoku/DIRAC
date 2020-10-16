@@ -30,10 +30,6 @@ from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.FrameworkSystem.private.authorization.utils import ResourceProtector
 
-# from authlib.integrations.django_oauth2 import ResourceProtector, BearerTokenValidator
-# require_oauth = ResourceProtector()
-# require_oauth.register_token_validator(BearerTokenValidator(OAuth2Token))
-
 __RCSID__ = "$Id$"
 
 

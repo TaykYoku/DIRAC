@@ -18,6 +18,7 @@ from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
+from DIRAC.FrameworkSystem.private.authorization.utils import Session
 
 __RCSID__ = "$Id$"
 
@@ -118,18 +119,16 @@ class AuthManagerClient(Client):
 
         :param str providerName: identity provider name
         :param dict response: authorization response
-        :param dict session: session data dictionary
+        :param object session: session data dictionary
 
         :return: S_OK(dict)/S_ERROR()
     """
     print('=== CLI parseAuthResponse')
-    print(session)
-    print(type(session))
     result = self._getRPC().parseAuthResponse(providerName, response, dict(session))  #, username, userProfile)
     if result['OK']:
-      username, profile = result['Value']
+      username, profile, sessionDict = result['Value']
       if username and profile:
         gAuthManagerData.updateProfiles(profile['ID'], profile)
-    return result
+    return S_OK(username, profile, Session(sessionDict))
 
 gSessionManager = AuthManagerClient()

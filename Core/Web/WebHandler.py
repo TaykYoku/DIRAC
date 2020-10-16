@@ -206,17 +206,19 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     if self.__jwtAuth:
+      token = self.application._resourceProtector.acquire_token()
+      authToken = token.access_token
       # If present "Authorization" header it means that need to use another then certificate authZ
-      authParts = self.__jwtAuth.split()
-      authType = authParts[0]
-      authToken = authParts[1]
-      if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-        return S_ERROR("Invalid authorization header.")
+      # authParts = self.__jwtAuth.split()
+      # authType = authParts[0]
+      # authToken = authParts[1]
+      # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+      #   return S_ERROR("Invalid authorization header.")
       
       # Is session active?
       if self.__session.token.get('access_token') != authToken:
         return S_ERROR('Session expired.')
-
+    
     # Read public key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
@@ -238,28 +240,29 @@ class WebHandler(tornado.web.RequestHandler):
     self.application.updateSession(self.__session)
     return S_OK()
 
-  def __readToken(self, old=False):
+  def __readToken(self):
     
-    # self.application._resourceProtector.acquire_token()
+    token = self.application._resourceProtector.acquire_token()
 
-    # If present "Authorization" header it means that need to use another then certificate authZ
-    authParts = self.__jwtAuth.split()
-    authType = authParts[0]
-    authToken = authParts[1]
-    if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-      return S_ERROR("Invalid authorization header.")
+    # # If present "Authorization" header it means that need to use another then certificate authZ
+    # authParts = self.__jwtAuth.split()
+    # authType = authParts[0]
+    # authToken = authParts[1]
+    # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
+    #   return S_ERROR("Invalid authorization header.")
 
-    # Read public key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-      key = f.read()
-    # Get claims and verify signature
-    claims = jwt.decode(authToken, key)
+    # # Read public key of DIRAC auth service
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+    #   key = f.read()
+    # # Get claims and verify signature
+    # claims = jwt.decode(authToken, key)
     
-    # Verify token
-    if not old:
-      claims.validate()
+    # # Verify token
+    # claims.validate()
 
-    groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
+    # groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
+
+    groups = token.groups
     if not self.__group:
       self.__group = groups[0]
       self.__credDict['group'] = self.__group
@@ -267,8 +270,11 @@ class WebHandler(tornado.web.RequestHandler):
     if self.__group not in groups:
       return S_ERROR('Token not support %s group.' % self.__group)
     
-    self.__credDict['ID'] = claims.sub
-    self.__credDict['issuer'] = claims.iss
+    # self.__credDict['ID'] = claims.sub
+    # self.__credDict['issuer'] = claims.iss
+    self.__credDict['ID'] = token.sub
+    self.__credDict['issuer'] = token.iss
+
     return S_OK()
 
   def __readCertificate(self):
