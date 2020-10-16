@@ -189,7 +189,10 @@ class BearerTokenValidator(_BearerTokenValidator):
 
   def token_expired(self, token):
     expires_at = token.get_expires_at()
-    print('token_expired: %s' % expires_at)
+    import time
+    print('token_expired:')
+    print(expires_at)
+    print(time.time())
     if not expires_at:
       return False
     return expires_at < time.time()
