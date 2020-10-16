@@ -118,7 +118,7 @@ class ResourceProtector(_ResourceProtector):
     if not callable(operator):
         operator = operator.upper()
     token = self.validate_request(scope, req, operator)
-    token_authenticated.send(sender=self.__class__, token=token)
+    # token_authenticated.send(sender=self.__class__, token=token)
     return token
 
   @contextmanager
@@ -192,16 +192,6 @@ class BearerTokenValidator(_BearerTokenValidator):
         :return: bool
     """
     return False
-
-  def token_expired(self, token):
-    expires_at = token.get_expires_at()
-    import time
-    print('token_expired:')
-    print(expires_at)
-    print(time.time())
-    if not expires_at:
-      return False
-    return expires_at < time.time()
 
   def token_revoked(self, token):
     """ If token can be revoked
