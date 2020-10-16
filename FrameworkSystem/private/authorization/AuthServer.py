@@ -252,5 +252,5 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     print('==== Request:')
     pprint(req.data)
     print('============')
-    self.addUpdateSession(req.state, request=req)
+    self.updateSession(req.state, request=req, createIfNotExist=True)
     return grant, req.state
