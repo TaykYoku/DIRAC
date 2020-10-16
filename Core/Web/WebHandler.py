@@ -273,7 +273,7 @@ class WebHandler(tornado.web.RequestHandler):
     # self.__credDict['ID'] = claims.sub
     # self.__credDict['issuer'] = claims.iss
     self.__credDict['ID'] = token.sub
-    self.__credDict['issuer'] = token.iss
+    self.__credDict['issuer'] = token.issuer
 
     return S_OK()
 
