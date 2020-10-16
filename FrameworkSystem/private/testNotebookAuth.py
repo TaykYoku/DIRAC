@@ -38,7 +38,6 @@ class notebookAuth(object):
     try:
       r = requests.get(url, verify=False)
       r.raise_for_status()
-      print(r.text)
       return S_OK(r.json())
     except requests.exceptions.Timeout:
       return S_ERROR('Authentication server is not answer.')
@@ -77,7 +76,6 @@ class notebookAuth(object):
     try:
       r = requests.get(url, headers={'Authorization': 'Bearer ' + token}, verify=False)
       r.raise_for_status()
-      print(r.text)
       proxy = decode(r.text)[0]
     except requests.exceptions.Timeout:
       return S_ERROR('Time out')
