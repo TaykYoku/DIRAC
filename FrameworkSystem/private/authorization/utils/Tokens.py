@@ -187,6 +187,13 @@ class BearerTokenValidator(_BearerTokenValidator):
     """
     return False
 
+  def token_expired(self, token):
+    expires_at = token.get_expires_at()
+    print('token_expired: %s' % expires_at)
+    if not expires_at:
+      return False
+    return expires_at < time.time()
+
   def token_revoked(self, token):
     """ If token can be revoked
 
