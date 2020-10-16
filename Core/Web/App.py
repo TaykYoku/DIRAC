@@ -53,13 +53,13 @@ class Application(_Application, SessionManager):
     # pprint(self.metadata)
     self._resourceProtector = ResourceProtector()
   
-  def _updateToken(self, token, refresh_token):
-    session, _ = self.getSessionByOption('refresh_token', refresh_token)
-    self.updateSession(session, token=token)
+  # def _updateToken(self, token, refresh_token):
+  #   session, _ = self.getSessionByOption('refresh_token', refresh_token)
+  #   self.updateSession(session, token=token)
   
-  def _storeToken(self, token, session):
-    self.updateSession(session, token=token)
-    return S_OK()
+  # def _storeToken(self, token, session):
+  #   self.updateSession(session, token=token)
+  #   return S_OK()
 
 
 class App(object):

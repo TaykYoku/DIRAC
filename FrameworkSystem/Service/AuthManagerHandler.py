@@ -365,7 +365,8 @@ class AuthManagerHandler(RequestHandler):
 
         :return: S_OK(str)/S_ERROR()
     """
-    return self.__db.updateToken(token, refreshToken)
+    result = self.__db.updateToken(token, refreshToken)
+    return S_OK(dict(result['Value'])) if result['OK'] else result
 
   types_getTokenByUserIDAndProvider = [six.string_types, six.string_types]
   auth_getTokenByUserIDAndProvider = ["authenticated"]
