@@ -17,7 +17,7 @@ class OAuth2Token(_OAuth2Token, OAuth2TokenMixin):
   def __init__(self, params=None, **kwargs):
     kwargs.update(params or {})
     self.sub = kwargs.get('sub')
-    self.isser = kwargs.get('iss')
+    self.issuer = kwargs.get('iss')
     self.client_id = kwargs.get('client_id', kwargs.get('aud'))
     self.token_type = kwargs.get('token_type')
     self.access_token = kwargs.get('access_token')
