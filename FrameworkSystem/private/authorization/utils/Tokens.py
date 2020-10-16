@@ -172,10 +172,10 @@ class BearerTokenValidator(_BearerTokenValidator):
       key = f.read()
     # Get claims and verify signature
     claims = jwt.decode(aToken, key)
-    
+    print(aToken)
     # Verify token
     claims.validate()
-
+    print(' == authenticate_token OK')
     return OAuth2Token(claims, access_token=aToken)
 
   def request_invalid(self, request):
