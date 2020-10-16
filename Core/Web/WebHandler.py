@@ -218,7 +218,7 @@ class WebHandler(tornado.web.RequestHandler):
       # Is session active?
       if self.__session.token.get('access_token') != authToken:
         return S_ERROR('Session expired.')
-    
+
     # Read public key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
@@ -241,7 +241,7 @@ class WebHandler(tornado.web.RequestHandler):
     return S_OK()
 
   def __readToken(self):
-    
+    print('== READ TOKEN ==')
     token = self.application._resourceProtector.acquire_token()
 
     # # If present "Authorization" header it means that need to use another then certificate authZ
