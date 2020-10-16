@@ -153,7 +153,8 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
                'iss': self.metadata['issuer'],
                'iat': int(time()),
                'exp': int(time()) + (12 * 3600),
-               'scopes': scope.split(),
+               #'scopes': scope.split(),
+               'scope': scope,
                'setup': getSetup()}
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
@@ -169,7 +170,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
                'iss': self.metadata['issuer'],
                'iat': int(time()),
                'exp': int(time()) + (30 * 24 * 3600),
-               'scopes': scope.split(),
+               'scope': scope,
                'setup': getSetup(),
                'client': client.client_id}
     # Read private key of DIRAC auth service
