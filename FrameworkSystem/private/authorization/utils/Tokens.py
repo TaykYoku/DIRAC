@@ -24,11 +24,17 @@ class OAuth2Token(_OAuth2Token, OAuth2TokenMixin):
     self.refresh_token = kwargs.get('refresh_token')
     self.scope = kwargs.get('scope')
     self.revoked = kwargs.get('revoked')
-    self.issued_at = int(kwargs.get('issued_at', kwargs.get('iat', 0)))
+    self.issued_at = int(kwargs.get('issued_at', kwargs.get('iat', time())))
     self.expires_in = int(kwargs.get('expires_in', 0))
     self.expires_at = int(kwargs.get('expires_at', kwargs.get('exp', 0)))
-    if not self.expires_at and self.expires_in and self.issued_at:
+    if not self.issued_at:
+      raise Exception('Missing "iat" in token.')
+    if not self.expires_at:
+      if not self.expires_in:
+        raise Exception('Cannot calculate token "expires_at".')
       self.expires_at = self.issued_at + self.expires_in
+    if not self.expires_in:
+      self.expires_in = self.expires_at - self.issued_at
     kwargs.update({'client_id': self.client_id,
                    'token_type': self.token_type,
                    'access_token': self.access_token,
