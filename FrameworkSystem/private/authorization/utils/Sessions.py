@@ -161,7 +161,7 @@ class SessionManager(object):
         self.addSession(session.update(kwargs), exp)
     if createIfNotExist:
       print('UPDATE hard SESSION: %s' % sessionID)
-      self.addSession(sessionID, kwargs, exp)
+      self.addSession(sessionID, exp, **kwargs)
 
   def getSessionByOption(self, key, value):
     """ Search session by the option
