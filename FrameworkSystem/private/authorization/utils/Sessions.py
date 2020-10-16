@@ -22,13 +22,17 @@ class Session(dict):
   """
   def __init__(self, session, data=None, exp=300):
     if isinstance(session, Session):
+      print('---1')
       self = session
     else:
+      print('---2')
       data = data or {}
       if isinstance(session, dict):
+        print('---21')
         session.update(data)
         data = session
       else:
+        print('---22')
         data['id'] = session
       if not data.get('id'):
         raise KeyError('Missing "id" for a session.')
@@ -36,9 +40,12 @@ class Session(dict):
         data['expires_at'] = int(time()) + exp
       if not data.get('created'):
         data['created'] = int(time())
+      print('---23')
       super(Session, self).__init__(**data)
+      print('---4')
       self.id = data['id']
       self.created = self['created']
+      print('---5')
 
   @property
   def status(self):
