@@ -102,11 +102,9 @@ class SessionManager(object):
     exp = min(exp or self.__addTime, self.__maxAge)
     session = Session(session, data=kwargs, exp=exp)
     pprint(session)
-    print(type(session))
-    pprint(session.__dict__)
 
-    if session.age > self.__maxAge:
-      return self.__sessions.delete(session.id)
+    # if session.age > self.__maxAge:
+    #   return self.__sessions.delete(session.id)
     print('ADD SESSION: %s' % session.id)
     return self.__sessions.add(session.id, exp, session)
 
@@ -157,8 +155,9 @@ class SessionManager(object):
       exp = exp or self.__addTime
       if (session.age + exp) > self.__maxAge:
         exp = self.__maxAge - session.age
-      print('UPDATE SESSION: %s' % session.id)
-      self.addSession(session.update(kwargs), exp)
+      if exp:
+        print('UPDATE SESSION: %s' % session.id)
+        self.addSession(session.update(kwargs), exp)
   
   def getSessionByOption(self, key, value):
     """ Search session by the option
