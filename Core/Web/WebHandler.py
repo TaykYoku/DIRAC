@@ -206,7 +206,7 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     if self.__jwtAuth:
-      token = self.application._resourceProtector.acquire_token()
+      token = self.application._resourceProtector.acquire_token(self.request)
       authToken = token.access_token
       # If present "Authorization" header it means that need to use another then certificate authZ
       # authParts = self.__jwtAuth.split()
@@ -242,7 +242,7 @@ class WebHandler(tornado.web.RequestHandler):
 
   def __readToken(self):
     print('== READ TOKEN ==')
-    token = self.application._resourceProtector.acquire_token()
+    token = self.application._resourceProtector.acquire_token(self.request)
 
     # # If present "Authorization" header it means that need to use another then certificate authZ
     # authParts = self.__jwtAuth.split()

@@ -106,8 +106,7 @@ class ResourceProtector(_ResourceProtector):
         :return: token object
     """
     # headers = parse_request_headers(request)
-    url = request.uri
-    req = HttpRequest(request.method, url, request.body, request.headers)
+    req = HttpRequest(request.method, request.uri, request.body, request.headers)
     if not callable(operator):
         operator = operator.upper()
     token = self.validate_request(scope, req, operator)
