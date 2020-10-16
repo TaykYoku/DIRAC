@@ -20,7 +20,7 @@ class Session(dict):
       :param session:
       :type session: str or dict
   """
-  def __init__(self, session, data=None, exp=300, created=None):
+  def __init__(self, session, data=None, exp=300):
     if isinstance(session, Session):
       self = session
     else:
@@ -34,9 +34,11 @@ class Session(dict):
         raise KeyError('Missing "id" for a session.')
       if not data.get('expires_at'):
         data['expires_at'] = int(time()) + exp
+      if not data.get('created'):
+        data['created'] = int(time())
       super(Session, self).__init__(**data)
       self.id = data['id']
-      self.created = created or int(time())
+      self.created = self.['created']
 
   @property
   def status(self):
