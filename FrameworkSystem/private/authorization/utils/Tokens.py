@@ -11,9 +11,9 @@ from authlib.oauth2 import OAuth2Error, ResourceProtector as _ResourceProtector
 from authlib.oauth2.rfc6749 import MissingAuthorizationError, HttpRequest
 from authlib.oauth2.rfc6750 import BearerTokenValidator as _BearerTokenValidator
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token as _OAuth2Token
+from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
 
-
-class OAuth2Token(_OAuth2Token):
+class OAuth2Token(_OAuth2Token, OAuth2TokenMixin):
   def __init__(self, params=None, **kwargs):
     kwargs.update(params or {})
     self.sub = kwargs.get('sub')
