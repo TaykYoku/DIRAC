@@ -70,7 +70,7 @@ class Session(dict):
         :return: object
     """
     kwargs.update(data or {})
-    self.update(kwargs)
+    super(Session, self).update(kwargs)
     return self
 
 
