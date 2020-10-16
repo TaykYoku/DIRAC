@@ -48,7 +48,7 @@ class OAuth2Token(_OAuth2Token, OAuth2TokenMixin):
   
   @property
   def scopes(self):
-    return self.scope.split(' ')
+    return self.scope.split(' ') if self.scope else []
   
   @property
   def groups(self):
