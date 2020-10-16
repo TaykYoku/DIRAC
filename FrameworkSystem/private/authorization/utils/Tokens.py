@@ -25,15 +25,15 @@ class OAuth2Token(_OAuth2Token):
     self.expires_at = int(kwargs.get('expires_at', kwargs.get('exp', 0)))
     if not self.expires_at and self.expires_in and self.issued_at:
       self.expires_at = self.issued_at + self.expires_in
-    kwargs.update({'client_id': self.client_id
-                  'token_type': self.token_type
-                  'access_token': self.access_token
-                  'refresh_token': self.refresh_token
-                  'scope': self.scope
-                  'revoked': self.revoked
-                  'issued_at': self.issued_at
-                  'expires_in': self.expires_in
-                  'expires_at': self.expires_at})
+    kwargs.update({'client_id': self.client_id,
+                   'token_type': self.token_type,
+                   'access_token': self.access_token,
+                   'refresh_token': self.refresh_token,
+                   'scope': self.scope,
+                   'revoked': self.revoked,
+                   'issued_at': self.issued_at,
+                   'expires_in': self.expires_in,
+                   'expires_at': self.expires_at})
     super(OAuth2Token, self).__init__(kwargs)
   
   @property
