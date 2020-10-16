@@ -7,7 +7,7 @@ import functools
 from contextlib import contextmanager
 from authlib.oauth2 import OAuth2Error, ResourceProtector as _ResourceProtector
 from authlib.oauth2.rfc6749 import MissingAuthorizationError, HttpRequest
-from authlib.oauth2.rfc6750 import BearerTokenValidator
+from authlib.oauth2.rfc6750 import BearerTokenValidator as _BearerTokenValidator
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token as _OAuth2Token
 
 
