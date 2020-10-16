@@ -194,4 +194,5 @@ class BearerTokenValidator(_BearerTokenValidator):
 
         :return: bool
     """
+    print('Token revoked: %s' % token.revoked)
     return token.revoked
