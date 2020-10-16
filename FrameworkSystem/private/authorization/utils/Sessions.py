@@ -24,6 +24,7 @@ class Session(dict):
     if isinstance(session, Session):
       print('---1')
       self = session
+      print
     else:
       print('---2')
       data = data or {}
@@ -108,6 +109,10 @@ class SessionManager(object):
     pprint(session)
     exp = min(exp or self.__addTime, self.__maxAge)
     session = Session(session, data=kwargs, exp=exp)
+    pprint(session)
+    print(type(session))
+    pprint(session.__dict__)
+
     if session.age > self.__maxAge:
       return self.__sessions.delete(session.id)
     print('ADD SESSION: %s' % session.id)
