@@ -144,14 +144,6 @@ class WebHandler(tornado.web.RequestHandler):
     self.__route = groups[2]
     self.__args = groups[3:]
 
-  # def __readSession(self, group):
-  #   self.__session = self.application.getSession(self.get_cookie('session_id'))
-  #   if not self.__session:
-  #     state = generate_token(10)
-  #     url, _ = self.application.submitNewSession(state)
-  #     self.application.addSession(state, next=self.request.uri)
-  #     self.redirect(url)
-
   def __forceRefreshCS(self):
     """ Force refresh configuration from master configuration server
     """
@@ -175,8 +167,8 @@ class WebHandler(tornado.web.RequestHandler):
     self.__credDict = {'group': self.__group}
     if self.__session:
       result = self.__readSession()
-    elif self.__jwtAuth:
-      result = self.__readToken()
+    # elif self.__jwtAuth:
+    #   result = self.__readToken()
     else:  # Certificate
       result = self.__readCertificate()
     if not result['OK']:
@@ -206,8 +198,8 @@ class WebHandler(tornado.web.RequestHandler):
       return S_ERROR('Session expired.')
 
     if self.__jwtAuth:
-      token = self.application._resourceProtector.acquire_token(self.request)
-      authToken = token.access_token
+      token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
+
       # If present "Authorization" header it means that need to use another then certificate authZ
       # authParts = self.__jwtAuth.split()
       # authType = authParts[0]
@@ -216,22 +208,23 @@ class WebHandler(tornado.web.RequestHandler):
       #   return S_ERROR("Invalid authorization header.")
       
       # Is session active?
-      if self.__session.token.get('access_token') != authToken:
+      if self.__session.token.get('access_token') != token.access_token:
         return S_ERROR('Session expired.')
 
-    # Read public key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-      key = f.read()
-    # Get claims and verify signature
-    claims = jwt.decode(self.__session.token['refresh_token'], key)
+    token = self.application._resourceProtector.validator(self.__session.token['refresh_token'], 'changeGroup')
+    # # Read public key of DIRAC auth service
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+    #   key = f.read()
+    # # Get claims and verify signature
+    # claims = jwt.decode(self.__session.token['refresh_token'], key)
     
-    # Verify token
-    claims.validate()
+    # # Verify token
+    # claims.validate()
 
-    scopes = self.__session.token.scopes
-    groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
-    if self.__group and (self.__group not in groups or 'changeGroup' not in scopes):
-      return S_ERROR('Session not support %s group.' % self.__group)
+    # scopes = self.__session.token.scopes
+    # groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
+    # if self.__group and self.__group not in token.groups:
+    #   return S_ERROR('Session not support %s group.' % self.__group)
 
     self.__credDict['ID'] = self.__session['ID']
     self.__credDict['issuer'] = self.__session.get('issuer')
@@ -240,42 +233,24 @@ class WebHandler(tornado.web.RequestHandler):
     self.application.updateSession(self.__session)
     return S_OK()
 
-  def __readToken(self):
-    print('== READ TOKEN ==')
-    token = self.application._resourceProtector.acquire_token(self.request)
+  # def __readToken(self):
+  #   print('== READ TOKEN ==')
+  #   token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
 
-    # # If present "Authorization" header it means that need to use another then certificate authZ
-    # authParts = self.__jwtAuth.split()
-    # authType = authParts[0]
-    # authToken = authParts[1]
-    # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-    #   return S_ERROR("Invalid authorization header.")
+  #   if not token.groups:
+  #     return S_ERROR('Invalid token scope.')
 
-    # # Read public key of DIRAC auth service
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-    #   key = f.read()
-    # # Get claims and verify signature
-    # claims = jwt.decode(authToken, key)
-    
-    # # Verify token
-    # claims.validate()
+  #   if not self.__group:
+  #     self.__group = token.groups[0]
+  #     self.__credDict['group'] = self.__group
 
-    # groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
+  #   if self.__group not in token.groups:
+  #     return S_ERROR('Token not support %s group.' % self.__group)
 
-    groups = token.groups
-    if not self.__group:
-      self.__group = groups[0]
-      self.__credDict['group'] = self.__group
+  #   self.__credDict['ID'] = token.sub
+  #   self.__credDict['issuer'] = token.issuer
 
-    if self.__group not in groups:
-      return S_ERROR('Token not support %s group.' % self.__group)
-    
-    # self.__credDict['ID'] = claims.sub
-    # self.__credDict['issuer'] = claims.iss
-    self.__credDict['ID'] = token.sub
-    self.__credDict['issuer'] = token.issuer
-
-    return S_OK()
+  #   return S_OK()
 
   def __readCertificate(self):
     """ Fill credentional from certificate and check is registred
@@ -335,8 +310,8 @@ class WebHandler(tornado.web.RequestHandler):
   # def getIdP(self):
   #   return self.__idp
 
-  # def getSession(self):
-  #   return self.__session
+  def getCurrentSession(self):
+    return self.__session
 
   def getUserName(self):
     return self.__credDict.get('username', '')
