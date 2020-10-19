@@ -285,7 +285,7 @@ class WebHandler(tornado.web.RequestHandler):
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
 
-    match = cls.PATH_RE.match(cls.request.path)
+    match = self.PATH_RE.match(self.request.path)
     groups = match.groups()
     route = groups[2]
     self.method = "index" if route[-1] == "/" else route[route.rfind("/") + 1:]
