@@ -230,7 +230,7 @@ class WebHandler(tornado.web.RequestHandler):
       if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
     print('--3--')
-    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup', None)
+    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup', None, 'OR')
     print('--4--')
     # # Read public key of DIRAC auth service
     # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
