@@ -139,6 +139,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     if not result['OK']:
       self.updateSession(session['mainSession'], Status='failed', Comment=result['Message'])
       return result
+    print('gSessionManager.parseAuthResponse: %s' % result['Value'])
     username, profile, _ = result['Value']
 
     if username and profile:
