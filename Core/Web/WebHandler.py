@@ -434,20 +434,20 @@ class WebHandler(tornado.web.RequestHandler):
       self.log.error(result['Message'], 'Continue as Visitor.')
     return S_OK(self.credDict)
 
-  def _request_summary(self):
-    """ Return a string returning the summary of the request
+  # def _request_summary(self):
+  #   """ Return a string returning the summary of the request
 
-        :return: str
-    """
-    summ = super(WebHandler, self)._request_summary()
-    cl = []
-    if self.credDict.get('validDN', False):
-      cl.append(self.credDict['username'])
-      if self.credDict.get('validGroup', False):
-        cl.append("@%s" % self.credDict['group'])
-      cl.append(" (%s)" % self.credDict['DN'])
-    summ = "%s %s" % (summ, "".join(cl))
-    return summ
+  #       :return: str
+  #   """
+  #   summ = super(WebHandler, self)._request_summary()
+  #   cl = []
+  #   if self.credDict.get('validDN', False):
+  #     cl.append(self.credDict['username'])
+  #     if self.credDict.get('validGroup', False):
+  #       cl.append("@%s" % self.credDict['group'])
+  #     cl.append(" (%s)" % self.credDict['DN'])
+  #   summ = "%s %s" % (summ, "".join(cl))
+  #   return summ
 
   def __readSession(self):
     """ Fill credentionals from session
