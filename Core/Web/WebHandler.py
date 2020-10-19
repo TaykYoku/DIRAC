@@ -441,7 +441,7 @@ class WebHandler(tornado.web.RequestHandler):
     """
     summ = super(WebHandler, self)._request_summary()
     cl = []
-    if self.__credDict.get('validDN', False):
+    if self.credDict.get('validDN', False):
       cl.append(self.credDict['username'])
       if self.credDict.get('validGroup', False):
         cl.append("@%s" % self.credDict['group'])
