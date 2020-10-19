@@ -126,7 +126,6 @@ class AuthManagerClient(Client):
     print('=== CLI parseAuthResponse')
     result = self._getRPC().parseAuthResponse(providerName, response, dict(session))  #, username, userProfile)
     if result['OK']:
-      print('self._getRPC().parseAuthResponse: %s' % result['Value'])
       username, profile, sessionDict = result['Value']
       if username and profile:
         gAuthManagerData.updateProfiles(profile['ID'], profile)

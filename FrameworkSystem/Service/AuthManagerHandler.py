@@ -284,7 +284,6 @@ class AuthManagerHandler(RequestHandler):
     print('profile: %s' % userProfile)
     pprint.pprint(self.__getProfiles())
     print('==================  ==================')
-    pprint.pprint(dict(session))
     return S_OK((result['Value'], userProfile, dict(session)))
 
   def __registerNewUser(self, provider, parseDict):
