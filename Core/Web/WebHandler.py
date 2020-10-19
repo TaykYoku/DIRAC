@@ -16,15 +16,11 @@ from datetime import datetime
 from six.moves import http_client
 from tornado.web import RequestHandler, HTTPError
 from tornado import gen
-import tornado.ioloop
 from tornado.ioloop import IOLoop
 
 import DIRAC
 
-from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client import PathFinder
-from DIRAC.Core.DISET.AuthManager import AuthManager
-from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 #######
@@ -33,7 +29,6 @@ import ssl
 import json
 import functools
 import traceback
-from time import time
 
 from concurrent.futures import ThreadPoolExecutor
 from authlib.common.security import generate_token
