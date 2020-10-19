@@ -219,6 +219,7 @@ class WebHandler(tornado.web.RequestHandler):
       cls._authManager = AuthManager(Conf.getAuthSectionForHandler(handlerRoute))
 
       cls._initMonitoring(serviceName, absoluteUrl)
+      cls._serviceName = serviceName
 
       cls.__monitorLastStatsUpdate = time.time()
 
