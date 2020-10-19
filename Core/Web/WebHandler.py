@@ -200,7 +200,7 @@ class WebHandler(tornado.web.RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    if not self.__session.token:
+    if not self.__session or not self.__session.token:
       return S_ERROR('Session expired.')
 
     if self.__jwtAuth:
