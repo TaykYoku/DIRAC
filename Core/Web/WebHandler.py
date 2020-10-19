@@ -170,8 +170,8 @@ class WebHandler(tornado.web.RequestHandler):
     if self.__sessionID:
       print('Session FLOW --')
       result = self.__readSession()
-      if not result['OK']:
-        self.clear_cookie("session_id")
+      # if not result['OK']:
+      #   self.clear_cookie("session_id")
       #   self.log.error(result['Message'])
       #   self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
       # return
