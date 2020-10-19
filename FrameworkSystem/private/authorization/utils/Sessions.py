@@ -8,7 +8,7 @@ from pprint import pprint
 from DIRAC import gLogger
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
-from DIRAC.FrameworkSystem.private.authorization.utils import OAuth2Token
+from .Tokens import OAuth2Token
 
 __RCSID__ = "$Id$"
 
