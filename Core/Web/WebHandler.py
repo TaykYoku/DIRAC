@@ -246,8 +246,8 @@ class WebHandler(tornado.web.RequestHandler):
     # if self.__group and self.__group not in token.groups:
     #   return S_ERROR('Session not support %s group.' % self.__group)
 
-    self.__credDict['ID'] = self.__session['ID']
-    self.__credDict['issuer'] = self.__session.get('issuer')
+    self.__credDict['ID'] = token.sub#self.__session['ID']
+    self.__credDict['issuer'] = token.issuer#self.__session.get('issuer')
     print('--5--')
     # Update session expired time
     self.application.updateSession(self.__session)
