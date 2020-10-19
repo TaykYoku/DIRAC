@@ -115,6 +115,7 @@ class WebHandler(tornado.web.RequestHandler):
     if not WebHandler.__log:
       WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
 
+  def prepare(self):
     # Parse URI
     self.__parseURI()
 
@@ -124,7 +125,7 @@ class WebHandler(tornado.web.RequestHandler):
     self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
-    self.__processCredentials()
+    self.__processCredentials():
 
     # Setup diset
     self.__disetConfig.reset()
@@ -136,7 +137,7 @@ class WebHandler(tornado.web.RequestHandler):
     # self.overpath = pathItems[3:]  # and pathItems[3] or ''
     self.__sessionData = SessionData(self.__credDict, self.__setup)
     self.__forceRefreshCS()
-  
+
   def __parseURI(self):
     match = self.PATH_RE.match(self.request.path)
     groups = match.groups()
@@ -171,8 +172,7 @@ class WebHandler(tornado.web.RequestHandler):
       if not result['OK']:
         self.clear_cookie("session_id")
         self.log.error(result['Message'])
-        #self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
-        self.redirect('DIRAC/login')
+        self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
       return
     # elif self.__jwtAuth:
     #   result = self.__readToken()
