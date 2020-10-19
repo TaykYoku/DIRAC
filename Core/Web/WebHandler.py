@@ -172,9 +172,9 @@ class WebHandler(tornado.web.RequestHandler):
       result = self.__readSession()
       if not result['OK']:
         self.clear_cookie("session_id")
-        self.log.error(result['Message'])
-        self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
-      return
+      #   self.log.error(result['Message'])
+      #   self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
+      # return
     # elif self.__jwtAuth:
     #   result = self.__readToken()
     else:  # Certificate
