@@ -89,10 +89,10 @@ class ReqClientMix(ReqClientTestCase):
     # # summary
     ret = self.requestClient.getDBSummary()
     self.assertTrue(ret['OK'])
-    self.assertEqual(ret['Value'],
-                     {'Operation': {'ReplicateAndRegister': {'Waiting': 1}},
-                      'Request': {'Waiting': 1},
-                      'File': {'Waiting': 2}})
+    expectedDict = {'Operation': {'ReplicateAndRegister': {'Waiting': 1}},
+                    'Request': {'Waiting': 1},
+                    'File': {'Waiting': 2}}
+    self.assertTrue(bool(all([ret['Value'][k] == v for k, v in expectedDict.items()])), ret['Value'])
 
     get = self.requestClient.getRequest(reqID)
     self.assertTrue(get['OK'])
@@ -100,10 +100,8 @@ class ReqClientMix(ReqClientTestCase):
     # # summary - the request became "Assigned"
     res = self.requestClient.getDBSummary()
     self.assertTrue(res['OK'])
-    self.assertEqual(res['Value'],
-                     {'Operation': {'ReplicateAndRegister': {'Waiting': 1}},
-                      'Request': {'Assigned': 1},
-                      'File': {'Waiting': 2}})
+    expectedDict['Request'] = {'Assigned': 1}
+    self.assertTrue(bool(all([res['Value'][k] == v for k, v in expectedDict.items()])), res['Value'])
 
     res = self.requestClient.getRequestInfo(reqID)
     self.assertEqual(res['OK'], True, res['Message'] if 'Message' in res else 'OK')
@@ -138,10 +136,10 @@ class ReqClientMix(ReqClientTestCase):
     # # get summary again
     ret = self.requestClient.getDBSummary()
     self.assertTrue(ret['OK'])
-    self.assertEqual(ret['Value'],
-                     {'Operation': {'ReplicateAndRegister': {'Waiting': 2}},
-                      'Request': {'Waiting': 1, 'Assigned': 1},
-                      'File': {'Waiting': 4}})
+    expectedDict = {'Operation': {'ReplicateAndRegister': {'Waiting': 2}},
+                    'Request': {'Waiting': 1, 'Assigned': 1},
+                    'File': {'Waiting': 4}}
+    self.assertTrue(bool(all([ret['Value'][k] == v for k, v in expectedDict.items()])))
 
     delete = self.requestClient.deleteRequest(reqID)
     self.assertEqual(delete['OK'], True, delete['Message'] if 'Message' in delete else 'OK')
@@ -160,12 +158,13 @@ class ReqClientMix(ReqClientTestCase):
 
     request = Request({"RequestName": "unauthorized"})
     request.OwnerDN = 'NotMe'
-    request.OwnerDN = 'AnotherGroup'
+    request.OwnerGroup = 'AnotherGroup'
     op = Operation({"Type": "RemoveReplica", "TargetSE": "CERN-USER"})
     op += File({"LFN": "/lhcb/user/c/cibak/foo"})
     request += op
     res = self.requestClient.putRequest(request)
     credProperties = getProxyInfo()['Value']['groupProperties']
+    print('==> %s' % getProxyInfo()['Value'])
 
     # If the proxy with which we test has delegation, it should work
     if FULL_DELEGATION in credProperties or LIMITED_DELEGATION in credProperties:
