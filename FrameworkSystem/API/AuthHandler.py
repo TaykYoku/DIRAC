@@ -49,9 +49,7 @@ class AuthHandler(WebHandler):
     """
     print('------ web_.well-known --------')
     if self.request.method == "GET":
-      # self.set_header("Content-Type", "application/json")
-      self.write(dict(self.server.metadata))
-      self.finish()
+      self.finish(dict(self.server.metadata))
     print('-----> web_.well-known <-------')
 
   def web_jwk(self):

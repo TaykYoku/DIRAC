@@ -89,7 +89,7 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
   
   def saveToken(self, token, request):
     if 'refresh_token' in token:
-      self.addSession(token['refresh_token'], **token)
+      self.addSession(token['refresh_token'], exp=int(time()) + (30 * 24 * 3600), **token)
     return None
 
   def getIdPAuthorization(self, providerName, mainSession):
@@ -153,7 +153,6 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
                'iss': self.metadata['issuer'],
                'iat': int(time()),
                'exp': int(time()) + (12 * 3600),
-               #'scopes': scope.split(),
                'scope': scope,
                'setup': getSetup()}
     # Read private key of DIRAC auth service

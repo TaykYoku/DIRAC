@@ -119,7 +119,8 @@ class WebHandler(tornado.web.RequestHandler):
     self.__parseURI()
 
     # Authorization type
-    self.__session = self.application.getSession(self.get_secure_cookie('session_id'))
+    self.__sessionID = self.get_secure_cookie('session_id')
+    self.__session = self.application.getSession(self.__sessionID)
     self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
@@ -165,14 +166,19 @@ class WebHandler(tornado.web.RequestHandler):
       return S_OK()
 
     self.__credDict = {'group': self.__group}
-    if self.__session:
+    if self.__sessionID:
       result = self.__readSession()
+      if not result['OK']:
+        self.clear_cookie("session_id")
+        self.log.error(result['Message'])
+        self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
+      return
     # elif self.__jwtAuth:
     #   result = self.__readToken()
     else:  # Certificate
       result = self.__readCertificate()
-    if not result['OK']:
-      self.log.error(result['Message'], 'Continue as Visitor.')
+      if not result['OK']:
+        self.log.error(result['Message'], 'Continue as Visitor.')
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
