@@ -179,8 +179,8 @@ class WebHandler(tornado.web.RequestHandler):
     #   result = self.__readToken()
     else:  # Certificate
       result = self.__readCertificate()
-      if not result['OK']:
-        self.log.error(result['Message'], 'Continue as Visitor.')
+    if not result['OK']:
+      self.log.error(result['Message'], 'Continue as Visitor.')
 
   def _request_summary(self):
     """ Return a string returning the summary of the request
