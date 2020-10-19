@@ -99,6 +99,8 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     data = jws.deserialize_compact(code, key)
     try:
       item = OAuth2Code(json_loads(urlsafe_b64decode(data['payload'])))
+      pprint(dict(item))
+      print('get_scope: %s' % item.get_scope())
     except Exception as e:
       return None
     if not item.is_expired():
