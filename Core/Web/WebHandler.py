@@ -211,7 +211,7 @@ class WebHandler(tornado.web.RequestHandler):
         :return: S_OK()/S_ERROR()
     """
     print('--1--')
-    print('Session:')
+    print('Session: %s' % self.__sessionID)
     print(self.__session)
     if self.__session:
       print(self.__session.token)
