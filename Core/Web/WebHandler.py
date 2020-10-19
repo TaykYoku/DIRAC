@@ -125,7 +125,7 @@ class WebHandler(tornado.web.RequestHandler):
     self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
-    self.__processCredentials():
+    self.__processCredentials()
 
     # Setup diset
     self.__disetConfig.reset()
