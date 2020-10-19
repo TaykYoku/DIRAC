@@ -214,10 +214,10 @@ class WebHandler(tornado.web.RequestHandler):
       #   return S_ERROR("Invalid authorization header.")
       
       # Is session active?
-      if self.__session.token.get('access_token') != token.access_token:
+      if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
 
-    token = self.application._resourceProtector.validator(self.__session.token['refresh_token'], 'changeGroup')
+    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup')
     # # Read public key of DIRAC auth service
     # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
     #   key = f.read()

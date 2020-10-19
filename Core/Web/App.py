@@ -26,9 +26,8 @@ from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization import AuthServer
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
-from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager
+from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager, ResourceProtector
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.FrameworkSystem.private.authorization.utils import ResourceProtector
 
 __RCSID__ = "$Id$"
 

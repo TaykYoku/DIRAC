@@ -14,7 +14,7 @@ from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderByAlias
-from DIRAC.FrameworkSystem.private.authorization.utils import Session, createOAuth2Request
+from DIRAC.FrameworkSystem.private.authorization.utils import Session, createOAuth2Request, OAuth2Token
 
 __RCSID__ = "$Id$"
 
@@ -165,7 +165,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         return result
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
-    return S_OK((username, userProfile, session.update(**self.token)))
+    return S_OK((username, userProfile, session.update(token=OAuth2Token(token), **self.token)))
   
   def _fillUserProfile(self, useToken=None):
     result = self.__getUserInfo(useToken)

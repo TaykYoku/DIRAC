@@ -62,7 +62,7 @@ class Session(dict):
     
         :return: object
     """
-    return self.get('tokens')
+    return self.get('token')
   
   def update(self, data=None, **kwargs):
     """ Update session
