@@ -79,6 +79,7 @@ class AuthHandler(WebHandler):
         POST: /register?client_id=.. &scope=.. &redirect_uri=..
         
         requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={'grant_types': ['implicit'], 'response_types': ['token'], 'redirect_uris': ['https://dirac.egi.eu'], 'token_endpoint_auth_method': 'none'}, verify=False).text
+        requests.post('https://marosvn32.in2p3.fr/DIRAC/auth/register', json={"scope":"changeGroup","token_endpoint_auth_method":"client_secret_basic","grant_types":["authorization_code","refresh_token"],"redirect_uris":["https://marosvn32.in2p3.fr/DIRAC","https://marosvn32.in2p3.fr/DIRAC/loginComplete"],"response_types":["token","id_token token","code"]}, verify=False).text
     """
     print('------ web_register --------')
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
