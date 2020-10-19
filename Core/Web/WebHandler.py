@@ -403,11 +403,13 @@ class WebHandler(tornado.web.RequestHandler):
       :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
                 (not a DIRAC structure !)
     """
+    print('== _gatherPeerCredentials')
     # Parse URI
     self.__parseURI()
 
     # Authorization type
     self.__authGrant = self.get_cookie('authGrant', 'Certificate')
+    print('AUTH: %s' % self.__authGrant)
     self.__sessionID = self.get_secure_cookie('session_id')
     self.__session = self.application.getSession(self.__sessionID)
     # self.__jwtAuth = self.request.headers.get("Authorization")
@@ -425,12 +427,15 @@ class WebHandler(tornado.web.RequestHandler):
     self.credDict = {'group': self.__group}
 
     if self.__authGrant == 'Session':
+      print('READ SESSION')
       result = self.__readSession()
     elif self.__authGrant == 'Visitor':
+      print('READ VISITOR')
       result = S_OK()
     else:
+      print('READ CERT')
       result = self.__readCertificate()
-
+    print('self.credDict: %s' % self.credDict)
     if not result['OK']:
       self.log.error(result['Message'], 'Continue as Visitor.')
     return S_OK(self.credDict)
