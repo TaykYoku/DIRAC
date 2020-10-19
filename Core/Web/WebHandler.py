@@ -213,7 +213,8 @@ class WebHandler(tornado.web.RequestHandler):
     print('--1--')
     print('Session:')
     print(self.__session)
-    print(self.__session.token)
+    if self.__session:
+      print(self.__session.token)
     if not self.__session or not self.__session.token:
       return S_ERROR('Session expired.')
     print('--2--')
