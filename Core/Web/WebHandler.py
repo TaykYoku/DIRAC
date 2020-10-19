@@ -725,6 +725,28 @@ class WebHandler(tornado.web.RequestHandler):
       Return the URL
     """
     return self.request.path
+  
+  def srv_getFormattedRemoteCredentials(self):
+    """
+      Return the DN of user
+
+      Mostly copy paste from
+      :py:meth:`DIRAC.Core.DISET.private.Transports.BaseTransport.BaseTransport.getFormattedCredentials`
+
+      Note that the information will be complete only once the AuthManager was called
+    """
+    address = self.getRemoteAddress()
+    peerId = ""
+    # Depending on where this is call, it may be that credDict is not yet filled.
+    # (reminder: AuthQuery fills part of it..)
+    try:
+      peerId = "[%s:%s]" % (self.credDict['group'], self.credDict['username'])
+    except AttributeError:
+      pass
+
+    if address[0].find(":") > -1:
+      return "([%s]:%s)%s" % (address[0], address[1], peerId)
+    return "(%s:%s)%s" % (address[0], address[1], peerId)
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler, WebHandler):
 
