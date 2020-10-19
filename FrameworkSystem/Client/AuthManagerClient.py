@@ -130,6 +130,6 @@ class AuthManagerClient(Client):
       username, profile, sessionDict = result['Value']
       if username and profile:
         gAuthManagerData.updateProfiles(profile['ID'], profile)
-    return S_OK((username, profile, Session(sessionDict)))
+    return S_OK((username, profile, Session(sessionDict))) if result['OK'] else result
 
 gSessionManager = AuthManagerClient()
