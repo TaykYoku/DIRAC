@@ -120,9 +120,10 @@ class WebHandler(tornado.web.RequestHandler):
     self.__parseURI()
 
     # Authorization type
+    self.__authGrant = self.get_cookie('authGrant', 'Certificate')
     self.__sessionID = self.get_secure_cookie('session_id')
     self.__session = self.application.getSession(self.__sessionID)
-    self.__jwtAuth = self.request.headers.get("Authorization")
+    # self.__jwtAuth = self.request.headers.get("Authorization")
 
     # Fill credentials
     self.__processCredentials()
@@ -167,18 +168,25 @@ class WebHandler(tornado.web.RequestHandler):
       return S_OK()
 
     self.__credDict = {'group': self.__group}
-    if self.__sessionID:
-      print('Session FLOW --')
+
+    if self.__authGrant == 'Session':
       result = self.__readSession()
-      # if not result['OK']:
-      #   self.clear_cookie("session_id")
-      #   self.log.error(result['Message'])
-      #   self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
-      # return
-    # elif self.__jwtAuth:
-    #   result = self.__readToken()
-    else:  # Certificate
+    elif self.__authGrant == 'Visitor':
+      result = S_OK()
+    else:
       result = self.__readCertificate()
+    # if self.__sessionID:
+    #   print('Session FLOW --')
+    #   result = self.__readSession()
+    #   # if not result['OK']:
+    #   #   self.clear_cookie("session_id")
+    #   #   self.log.error(result['Message'])
+    #   #   self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
+    #   # return
+    # # elif self.__jwtAuth:
+    # #   result = self.__readToken()
+    # else:  # Certificate
+    #   result = self.__readCertificate()
     if not result['OK']:
       self.log.error(result['Message'], 'Continue as Visitor.')
 
@@ -202,10 +210,11 @@ class WebHandler(tornado.web.RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
+    print('--1--')
     if not self.__session or not self.__session.token:
       return S_ERROR('Session expired.')
-
-    if self.__jwtAuth:
+    print('--2--')
+    if self.request.headers.get("Authorization"):
       token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
 
       # If present "Authorization" header it means that need to use another then certificate authZ
@@ -218,8 +227,9 @@ class WebHandler(tornado.web.RequestHandler):
       # Is session active?
       if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
-
+    print('--3--')
     token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup')
+    print('--4--')
     # # Read public key of DIRAC auth service
     # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
     #   key = f.read()
@@ -236,7 +246,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     self.__credDict['ID'] = self.__session['ID']
     self.__credDict['issuer'] = self.__session.get('issuer')
-
+    print('--5--')
     # Update session expired time
     self.application.updateSession(self.__session)
     return S_OK()
