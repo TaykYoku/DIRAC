@@ -168,6 +168,7 @@ class WebHandler(tornado.web.RequestHandler):
 
     self.__credDict = {'group': self.__group}
     if self.__sessionID:
+      print('Session FLOW --')
       result = self.__readSession()
       if not result['OK']:
         self.clear_cookie("session_id")
