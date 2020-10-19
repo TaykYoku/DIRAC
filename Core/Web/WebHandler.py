@@ -418,7 +418,10 @@ class WebHandler(tornado.web.RequestHandler):
     self.__sessionID = self.get_secure_cookie('session_id')
     self.__session = self.application.getSession(self.__sessionID)
     # self.__jwtAuth = self.request.headers.get("Authorization")
-    return self.__processCredentials()
+    result = self.__processCredentials()
+    if not result['OK']:
+      raise Exception(res['Message'])
+    return result['Value']
 
   def __processCredentials(self):
     """ Extract the user credentials based on the certificate or what comes from the balancer
