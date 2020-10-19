@@ -146,7 +146,7 @@ class WebHandler(tornado.web.RequestHandler):
       # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
       # So the client will get a ``Connection aborted```
       try:
-        res = self.__initializeService()
+        res = self.__initializeService(self.srv_getURL(), self.request.full_url())
         if not res['OK']:
           raise Exception(res['Message'])
       except Exception as e:
@@ -189,7 +189,7 @@ class WebHandler(tornado.web.RequestHandler):
     return S_OK()
 
   @classmethod
-  def __initializeService(cls):
+  def __initializeService(cls, relativeUrl, absoluteUrl):
     """
       Initialize a service.
       The work is only perform once at the first request.
@@ -214,7 +214,7 @@ class WebHandler(tornado.web.RequestHandler):
 
       # Url starts with a "/", we just remove it
       serviceName = cls.__name__
-      match = cls.PATH_RE.match(cls.request.path)
+      match = cls.PATH_RE.match(relativeUrl)
       groups = match.groups()
       route = groups[2]
       handlerRoute = route if route[-1] == "/" else route[:route.rfind("/")]
@@ -223,7 +223,7 @@ class WebHandler(tornado.web.RequestHandler):
       sLog.info("First use of %s, initializing service..." % serviceName)
       cls._authManager = AuthManager(Conf.getAuthSectionForHandler(handlerRoute))
 
-      cls._initMonitoring(serviceName, self.request.path)
+      cls._initMonitoring(serviceName, absoluteUrl)
 
       cls.__monitorLastStatsUpdate = time.time()
 
@@ -724,6 +724,12 @@ class WebHandler(tornado.web.RequestHandler):
       Just for keeping same public interface
     """
     return self.srv_getRemoteAddress()
+  
+  def srv_getURL(self):
+    """
+      Return the URL
+    """
+    return self.request.path
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler, WebHandler):
 
