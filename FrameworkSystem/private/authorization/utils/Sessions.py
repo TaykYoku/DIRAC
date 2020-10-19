@@ -62,7 +62,7 @@ class Session(dict):
     
         :return: object
     """
-    return self.get('token')
+    return self.get('token') and OAuth2Token(self['token'])
   
   def update(self, data=None, **kwargs):
     """ Update session

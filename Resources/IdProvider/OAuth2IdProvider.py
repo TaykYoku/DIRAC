@@ -165,7 +165,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         return result
 
     self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
-    return S_OK((username, userProfile, session.update(token=OAuth2Token(self.token), **self.token)))
+    return S_OK((username, userProfile, session.update(token=dict(self.token))))
   
   def _fillUserProfile(self, useToken=None):
     result = self.__getUserInfo(useToken)
