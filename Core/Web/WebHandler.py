@@ -212,9 +212,7 @@ class WebHandler(tornado.web.RequestHandler):
     """
     print('--1--')
     print('Session: %s' % self.__sessionID)
-    print(self.__session)
-    if self.__session:
-      print(self.__session.token)
+
     if not self.__session or not self.__session.token:
       return S_ERROR('Session expired.')
     print('--2--')
@@ -232,7 +230,7 @@ class WebHandler(tornado.web.RequestHandler):
       if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
     print('--3--')
-    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup')
+    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup', None)
     print('--4--')
     # # Read public key of DIRAC auth service
     # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
