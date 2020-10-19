@@ -175,18 +175,7 @@ class WebHandler(tornado.web.RequestHandler):
       result = S_OK()
     else:
       result = self.__readCertificate()
-    # if self.__sessionID:
-    #   print('Session FLOW --')
-    #   result = self.__readSession()
-    #   # if not result['OK']:
-    #   #   self.clear_cookie("session_id")
-    #   #   self.log.error(result['Message'])
-    #   #   self.redirect("/DIRAC/s:%s/g:%s/login?next=%s" % (self.__setup, self.__group, self.request.uri))
-    #   # return
-    # # elif self.__jwtAuth:
-    # #   result = self.__readToken()
-    # else:  # Certificate
-    #   result = self.__readCertificate()
+
     if not result['OK']:
       self.log.error(result['Message'], 'Continue as Visitor.')
 
@@ -210,67 +199,23 @@ class WebHandler(tornado.web.RequestHandler):
 
         :return: S_OK()/S_ERROR()
     """
-    print('--1--')
-    print('Session: %s' % self.__sessionID)
-
     if not self.__session or not self.__session.token:
       return S_ERROR('Session expired.')
-    print('--2--')
+
     if self.request.headers.get("Authorization"):
       token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
 
-      # If present "Authorization" header it means that need to use another then certificate authZ
-      # authParts = self.__jwtAuth.split()
-      # authType = authParts[0]
-      # authToken = authParts[1]
-      # if len(authParts) != 2 or authType.lower() != "bearer" or not authParts[1]:
-      #   return S_ERROR("Invalid authorization header.")
-      
       # Is session active?
       if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
-    print('--3--')
     token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup', None, 'OR')
-    print('--4--')
-    # # Read public key of DIRAC auth service
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-    #   key = f.read()
-    # # Get claims and verify signature
-    # claims = jwt.decode(self.__session.token['refresh_token'], key)
-    
-    # # Verify token
-    # claims.validate()
 
-    # scopes = self.__session.token.scopes
-    # groups = [s.split(':')[1] for s in claims['scopes'] if s.startswith('g:')]
-    # if self.__group and self.__group not in token.groups:
-    #   return S_ERROR('Session not support %s group.' % self.__group)
+    self.__credDict['ID'] = token.sub
+    self.__credDict['issuer'] = token.issuer
 
-    self.__credDict['ID'] = token.sub#self.__session['ID']
-    self.__credDict['issuer'] = token.issuer#self.__session.get('issuer')
-    print('--5--')
     # Update session expired time
     self.application.updateSession(self.__session)
     return S_OK()
-
-  # def __readToken(self):
-  #   print('== READ TOKEN ==')
-  #   token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
-
-  #   if not token.groups:
-  #     return S_ERROR('Invalid token scope.')
-
-  #   if not self.__group:
-  #     self.__group = token.groups[0]
-  #     self.__credDict['group'] = self.__group
-
-  #   if self.__group not in token.groups:
-  #     return S_ERROR('Token not support %s group.' % self.__group)
-
-  #   self.__credDict['ID'] = token.sub
-  #   self.__credDict['issuer'] = token.issuer
-
-  #   return S_OK()
 
   def __readCertificate(self):
     """ Fill credentional from certificate and check is registred
