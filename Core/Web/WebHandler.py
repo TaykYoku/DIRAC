@@ -320,7 +320,12 @@ class WebHandler(tornado.web.RequestHandler):
 
     # Check whether we are authorized to perform the query
     # Note that performing the authQuery modifies the credDict...
+    print('AUTH HANDLER')
+    print('METHOD: %s' % self.method)
+    print('CREDS: %s' % self.credDict)
+    print('AUTHPROPS: %s' % hardcodedAuth)
     authorized = self._authManager.authQuery(self.method, self.credDict, hardcodedAuth)
+    print('RES CREDS: %s' % self.credDict)
     
     if self.credDict.get('DN') and self.isTrustedHost(self.credDict['DN']):
       self.log.info("Request is coming from Trusted host")
