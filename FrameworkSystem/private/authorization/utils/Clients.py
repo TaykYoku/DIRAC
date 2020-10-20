@@ -15,6 +15,23 @@ __RCSID__ = "$Id$"
 gCacheClient = ThreadSafe.Synchronizer()
 
 
+class Client(OAuth2ClientMixin):
+  def __init__(self, params):
+    super(OAuth2ClientMixin, self).__init__()
+    self.client_id = params['client_id']
+    self.client_secret = params['client_secret']
+    self.client_id_issued_at = params['client_id_issued_at']
+    self.client_secret_expires_at = params['client_secret_expires_at']
+    self.client_metadata = params['client_metadata']
+  
+  def get_allowed_scope(self, scope):
+    if not scope:
+      return ''
+    allowed = set(self.scope.split())
+    scopes = scope_to_list(scope)
+    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:')])
+
+
 class ClientManager(object):
   def __init__(self, database):
     self.__db = database
@@ -38,26 +55,11 @@ class ClientManager(object):
       print('getClient result: %s' % result)
       if result['OK']:
         client = Client(result['Value'])
+        print('getClient client: %s' % str(client))
         self.__clients.add(clientID, 24 * 3600, client)
+        print('getClient client added')
     print('finish: client: %s' % client)
     return client
-
-
-class Client(OAuth2ClientMixin):
-  def __init__(self, params):
-    super(OAuth2ClientMixin, self).__init__()
-    self.client_id = params['client_id']
-    self.client_secret = params['client_secret']
-    self.client_id_issued_at = params['client_id_issued_at']
-    self.client_secret_expires_at = params['client_secret_expires_at']
-    self.client_metadata = params['client_metadata']
-  
-  def get_allowed_scope(self, scope):
-    if not scope:
-      return ''
-    allowed = set(self.scope.split())
-    scopes = scope_to_list(scope)
-    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:')])
 
 
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
