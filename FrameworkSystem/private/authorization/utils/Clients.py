@@ -20,10 +20,15 @@ class Client(OAuth2ClientMixin):
     print('Client(OAuth2ClientMixin): init')
     super(OAuth2ClientMixin, self).__init__()
     print('super(OAuth2ClientMixin, self).__init__()')
+    print('set self.client_id: %s' % params['client_id'])
     self.client_id = params['client_id']
+    print('set self.client_secret: %s' % params['client_secret'])
     self.client_secret = params['client_secret']
+    print('set self.client_id_issued_at: %s' % params['client_id_issued_at'])
     self.client_id_issued_at = params['client_id_issued_at']
+    print('set self.client_secret_expires_at: %s' % params['client_secret_expires_at'])
     self.client_secret_expires_at = params['client_secret_expires_at']
+    print('set self.client_metadata: %s' % params['client_metadata'])
     self.client_metadata = params['client_metadata']
     print(' __INIT__ OK')
   
