@@ -25,6 +25,7 @@ class Client(OAuth2ClientMixin):
     self.client_id_issued_at = params['client_id_issued_at']
     self.client_secret_expires_at = params['client_secret_expires_at']
     self.client_metadata = params['client_metadata']
+    print(' __INIT__ OK')
   
   def get_allowed_scope(self, scope):
     if not scope:
