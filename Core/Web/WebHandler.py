@@ -228,7 +228,10 @@ class WebHandler(BaseRequestHandler):
     # Unsecure protocol only for visitors
     if self.request.protocol == "https":
       if self.__authGrant == 'Certificate':
-        credDict = super(WebHandler, self)._gatherPeerCredentials()
+        if Conf.balancer() == "nginx":
+          credDict = self.__readCertificateFromNginx()
+        else:
+          credDict = super(WebHandler, self)._gatherPeerCredentials()
       if self.__authGrant == 'Session':
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
     
@@ -306,46 +309,47 @@ class WebHandler(BaseRequestHandler):
     self.application.updateSession(session)
     return S_OK()
 
-  def __readCertificate(self):
+  def __readCertificateFromNginx(self):
     """ Fill credentional from certificate and check is registred
 
-        :return: S_OK()/S_ERROR()
+        :return: dict
     """
-    if Conf.balancer() == "nginx":
-      # NGINX
-      headers = self.request.headers
-      if not headers:
-        return S_ERROR('No headers found.')
-      if headers.get('X-Scheme') == "https" and headers.get('X-Ssl_client_verify') == 'SUCCESS':
-        DN = headers['X-Ssl_client_s_dn']
-        if not DN.startswith('/'):
-          items = DN.split(',')
-          items.reverse()
-          DN = '/' + '/'.join(items)
-        self.credDict['DN'] = DN
-        self.credDict['issuer'] = headers['X-Ssl_client_i_dn']
-      else:
-        return S_ERROR('No certificate upload to browser.')
+    # if Conf.balancer() == "nginx":
+    # NGINX
+    headers = self.request.headers
+    if not headers:
+      raise Exception('No headers found.')
+    if headers.get('X-Scheme') != "https":
+      raise Exception('Unsecure protocol.')
+    if headers.get('X-Ssl_client_verify') != 'SUCCESS':
+      raise Exception('No certificate upload to browser.')
 
-    else:
-      # TORNADO
-      derCert = self.request.get_ssl_certificate(binary_form=True)
-      if not derCert:
-        return S_ERROR('No certificate found.')
-      pemCert = ssl.DER_cert_to_PEM_cert(derCert)
-      chain = X509Chain()
-      chain.loadChainFromString(pemCert)
-      result = chain.getCredentials()
-      if not result['OK']:
-        return S_ERROR("Could not get client credentials %s" % result['Message'])
-      self.credDict = result['Value']
-      # Hack. Data coming from OSSL directly and DISET difer in DN/subject
-      try:
-        self.credDict['DN'] = self.credDict['subject']
-      except KeyError:
-        pass
+    DN = headers['X-Ssl_client_s_dn']
+    if not DN.startswith('/'):
+      items = DN.split(',')
+      items.reverse()
+      DN = '/' + '/'.join(items)
+    return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
 
-    return S_OK()
+    # else:
+    #   # TORNADO
+    #   derCert = self.request.get_ssl_certificate(binary_form=True)
+    #   if not derCert:
+    #     return S_ERROR('No certificate found.')
+    #   pemCert = ssl.DER_cert_to_PEM_cert(derCert)
+    #   chain = X509Chain()
+    #   chain.loadChainFromString(pemCert)
+    #   result = chain.getCredentials()
+    #   if not result['OK']:
+    #     return S_ERROR("Could not get client credentials %s" % result['Message'])
+    #   self.credDict = result['Value']
+    #   # Hack. Data coming from OSSL directly and DISET difer in DN/subject
+    #   try:
+    #     self.credDict['DN'] = self.credDict['subject']
+    #   except KeyError:
+    #     pass
+
+    # return S_OK()
 
   @property
   def log(self):
