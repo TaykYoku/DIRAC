@@ -24,7 +24,7 @@ from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
 from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Web import Conf
-from DIRAC.FrameworkSystem.private.authorization import AuthServer
+# from DIRAC.FrameworkSystem.private.authorization import AuthServer
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.private.authorization.utils import SessionManager, ResourceProtector
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
@@ -50,7 +50,7 @@ class Application(_Application, SessionManager):
     # self.metadata = result['Value']  #self.loadMetadata()
     # print('--APP META:')
     # pprint(self.metadata)
-    self._resourceProtector = ResourceProtector()
+    # self._resourceProtector = ResourceProtector()
   
   # def _updateToken(self, token, refresh_token):
   #   session, _ = self.getSessionByOption('refresh_token', refresh_token)
@@ -215,9 +215,9 @@ class App(object):
     # Configure tornado app
     self.__app = Application(routes, **kw)
 
-    # Add authorization server
-    if self.__handlerMgr.isAuthServer():
-      setattr(self.__app, '_authServer', AuthServer())
+    # # Add authorization server
+    # if self.__handlerMgr.isAuthServer():
+    #   setattr(self.__app, '_authServer', AuthServer())
     
     # Add WebClient
     if self.__handlerMgr.isPortal():

@@ -26,7 +26,7 @@ from DIRAC.FrameworkSystem.private.authorization.grants import DeviceAuthorizati
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
-
+from DIRAC.FrameworkSystem.private.authorization import AuthServer
 
 __RCSID__ = "$Id$"
 
@@ -34,11 +34,19 @@ __RCSID__ = "$Id$"
 class AuthHandler(WebHandler):
   AUTH_PROPS = 'all'
   LOCATION = "/auth"
-  METHOD_PREFIX = "web_"
 
-  def initialize(self):
-    super(AuthHandler, self).initialize()
-    self.server = self.application._authServer
+  @classmethod
+  def initializeHandler(cls, serviceInfo):
+    """
+      This may be overwritten when you write a DIRAC service handler
+      And it must be a class method. This method is called only one time,
+      at the first request
+
+      :param dict ServiceInfoDict: infos about services, it contains
+                                    'serviceName', 'serviceSectionPath',
+                                    'csPaths' and 'URL'
+    """
+    self.server = AuthServer()
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
   def web_index(self, instance):

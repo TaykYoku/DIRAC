@@ -31,6 +31,7 @@ from DIRAC.Core.Utilities.JEncode import encode
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 # from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
+from DIRAC.FrameworkSystem.private.authorization.utils import ResourceProtector
 
 global gThreadPool
 gThreadPool = ThreadPoolExecutor(100)
@@ -281,12 +282,12 @@ class WebHandler(BaseRequestHandler):
       return S_ERROR('Session expired.')
 
     if self.request.headers.get("Authorization"):
-      token = self.application._resourceProtector.acquire_token(self.request, 'changeGroup')
+      token = ResourceProtector().acquire_token(self.request, 'changeGroup')
 
       # Is session active?
       if self.__session.token.access_token != token.access_token:
         return S_ERROR('Session expired.')
-    token = self.application._resourceProtector.validator(self.__session.token.refresh_token, 'changeGroup', None, 'OR')
+    token = ResourceProtector().validator(self.__session.token.refresh_token, 'changeGroup', None, 'OR')
 
     self.credDict['ID'] = token.sub
     self.credDict['issuer'] = token.issuer
@@ -415,19 +416,19 @@ class WebHandler(BaseRequestHandler):
   #     return True
   #   return ok
 
-  def isTrustedHost(self, dn):
-    """ Check if the request coming from a TrustedHost
+  # def isTrustedHost(self, dn):
+  #   """ Check if the request coming from a TrustedHost
 
-        :param str dn: certificate DN
+  #       :param str dn: certificate DN
 
-        :return: bool if the host is Trusrted it return true otherwise false
-    """
-    retVal = Registry.getHostnameForDN(dn)
-    if retVal['OK']:
-      hostname = retVal['Value']
-      if Properties.TRUSTED_HOST in Registry.getPropertiesForHost(hostname, []):
-        return True
-    return False
+  #       :return: bool if the host is Trusrted it return true otherwise false
+  #   """
+  #   retVal = Registry.getHostnameForDN(dn)
+  #   if retVal['OK']:
+  #     hostname = retVal['Value']
+  #     if Properties.TRUSTED_HOST in Registry.getPropertiesForHost(hostname, []):
+  #       return True
+  #   return False
 
   def get(self, *args, **kwargs):
     method = self._getMethod()
