@@ -161,7 +161,7 @@ class HandlerManager(object):
       Use :py:class:`DIRAC.Core.Base.private.ModuleLoader`
     """
     if self.__services == True:
-      self.__services = self.discoverHandlers(instance='Services')
+      self.__services = self.discoverHandlers('Services')
 
     if self.__services:
       self.loader = ModuleLoader("Service", PathFinder.getServiceSection, RequestHandler, moduleSuffix="Handler")
@@ -203,7 +203,7 @@ class HandlerManager(object):
       Use :py:class:`DIRAC.Core.Base.private.ModuleLoader`
     """
     if self.__endpoints == True:
-      self.__endpoints = self.discoverHandlers(instance='APIs')
+      self.__endpoints = self.discoverHandlers('APIs')
     
     if self.__endpoints:
       # Extract ports
