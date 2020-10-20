@@ -15,7 +15,7 @@ from authlib.oauth2 import (
     AuthorizationServer as _AuthorizationServer,
 )
 from authlib.oauth2.rfc6749.grants import ImplicitGrant
-from .grants import (
+from DIRAC.FrameworkSystem.private.authorization.grants import (
   DeviceAuthorizationEndpoint,
   DeviceCodeGrant,
   OpenIDCode,
