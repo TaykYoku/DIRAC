@@ -87,17 +87,21 @@ class WebHandler(BaseRequestHandler):
   METHOD_PREFIX = "web_"
 
   @classmethod
-  def _getServiceName(cls, request=None):
+  def _getServiceName(cls, request):
     """ Search service name in request
 
         :param object request: tornado Request
 
         :return: str
     """
-    serviceName = cls.__name__
+    match = cls.PATH_RE.match(request.path)
+    groups = match.groups()
+    route = groups[2]
+    return route if route[-1] == "/" else route[:route.rfind("/")]
+    # return serviceName = cls.__name__
   
   @classmethod
-  def _getServiceAuthSection(cls, serviceName=None):
+  def _getServiceAuthSection(cls, serviceName):
     """ Search service auth section. Developers MUST
         implement it in subclass.
 
@@ -105,7 +109,7 @@ class WebHandler(BaseRequestHandler):
 
         :return: str
     """
-    return Conf.getAuthSectionForHandler(handlerRoute)
+    return Conf.getAuthSectionForHandler(serviceName)
 
   def _getMethodName(self):
     """ Parse method name.
