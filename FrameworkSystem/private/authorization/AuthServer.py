@@ -230,6 +230,10 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
 
   def create_oauth2_request(self, request, method_cls=OAuth2Request, use_json=False):
     print('==== create_oauth2_request === USE JSON: %s' % use_json)
+    try:
+      print('REQUEST URI: %s' % str(request.uri))
+    except Exception:
+      print('REQUEST --- ')
     return createOAuth2Request(request, method_cls, use_json)
   def create_json_request(self, request):
     return self.create_oauth2_request(request, HttpRequest, True)
