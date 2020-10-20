@@ -4,26 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-#######
 __RCSID__ = "$Id$"
-
-from io import open
-
-import os
-import time
-import threading
-from datetime import datetime
-from six.moves import http_client
-from tornado.web import RequestHandler, HTTPError
-from tornado import gen
-from tornado.ioloop import IOLoop
-
-import DIRAC
-
-from DIRAC.ConfigurationSystem.Client import PathFinder
-from DIRAC.Core.Utilities.JEncode import decode, encode
-from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
-#######
 
 import ssl
 import json
@@ -31,34 +12,28 @@ import functools
 import traceback
 
 from concurrent.futures import ThreadPoolExecutor
+
+from authlib.jose import jwt
 from authlib.common.security import generate_token
 
 import tornado.web
-import tornado.gen
-import tornado.ioloop
 import tornado.websocket
-import tornado.stack_context
 
-from authlib.jose import jwt
-
-from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Web import Conf
 from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Security import Properties
-from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
-from DIRAC.Core.DISET.AuthManager import AuthManager
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.Core.Utilities.JEncode import encode
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 # from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
-
+from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
 
 global gThreadPool
 gThreadPool = ThreadPoolExecutor(100)
 sLog = gLogger.getSubLogger(__name__)
 
 
-class WErr(tornado.web.HTTPError):
+class WErr(HTTPError):
 
   def __init__(self, code, msg="", **kwargs):
     super(WErr, self).__init__(code, str(msg) or None)
@@ -91,21 +66,11 @@ def asyncWithCallback(method):
 
 
 def asyncGen(method):
-  return tornado.gen.coroutine(method)
+  return gen.coroutine(method)
 
 
-class WebHandler(tornado.web.RequestHandler):
-  # Because we initialize at first request, we use a flag to know if it's already done
-  __init_done = False
-  # Lock to make sure that two threads are not initializing at the same time
-  __init_lock = threading.RLock()
-  
-  # MonitoringClient, we don't use gMonitor which is not thread-safe
-  # We also need to add specific attributes for each service
-  _monitor = None
-
+class WebHandler(BaseRequestHandler):
   __disetConfig = ThreadConfig()
-  __log = False
 
   # Auth requirements
   AUTH_PROPS = None
@@ -115,138 +80,58 @@ class WebHandler(tornado.web.RequestHandler):
   URLSCHEMA = ""
   # RE to extract group and setup
   PATH_RE = None
-  # If need to use request path for declare some value/option
-  OVERPATH = False
   # Prefix of methods names
   METHOD_PREFIX = "web_"
 
-  # This is a Tornado magic method
-  def initialize(self):  # pylint: disable=arguments-differ
+  def _getServiceName(self, request=None):
+    """ Search service name in request
+
+        :param object request: tornado Request
+
+        :return: str
     """
-      Initialize the handler, called at every request.
-
-      It just calls :py:meth:`.__initializeService`
-
-      If anything goes wrong, the client will get ``Connection aborted``
-      error. See details inside the method.
-
-      ..warning::
-        DO NOT REWRITE THIS FUNCTION IN YOUR HANDLER
-        ==> initialize in DISET became initializeRequest in HTTPS !
-    """
-    # Only initialized once
-    if not self.__init_done:
-      # Ideally, if something goes wrong, we would like to return a Server Error 500
-      # but this method cannot write back to the client as per the
-      # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
-      # So the client will get a ``Connection aborted```
-      try:
-        res = self.__initializeService(self.srv_getURL(), self.request.full_url())
-        if not res['OK']:
-          raise Exception(res['Message'])
-      except Exception as e:
-        sLog.error("Error in initialization", repr(e))
-        raise
+    serviceName = cls.__name__
   
-  @classmethod
-  def _initMonitoring(cls, serviceName, fullUrl):
+  def _getServiceAuthSection(self, serviceName=None):
+    """ Search service auth section. Developers MUST
+        implement it in subclass.
+
+        :param str serviceName: service name
+
+        :return: str
     """
-      Initialize the monitoring specific to this handler
-      This has to be called only by :py:meth:`.__initializeService`
-      to ensure thread safety and unicity of the call.
+    return Conf.getAuthSectionForHandler(handlerRoute)
 
-      :param serviceName: relative URL ``/<System>/<Component>``
-      :param fullUrl: full URl like ``https://<host>:<port>/<System>/<Component>``
+  def _getMethodName(self):
+    """ Parse method name.
+
+        :return: str
     """
+    match = self.PATH_RE.match(self.request.path)
+    groups = match.groups()
+    route = groups[2]
+    return "index" if route[-1] == "/" else route[route.rfind("/") + 1:]
 
-    # Init extra bits of monitoring
+  def _getMethodArgs(self):
+    """ Parse method argiments.
 
-    cls._monitor = MonitoringClient()
-    cls._monitor.setComponentType(MonitoringClient.COMPONENT_WEB)
-
-    cls._monitor.initialize()
-
-    if tornado.process.task_id() is None:  # Single process mode
-      cls._monitor.setComponentName('Tornado/%s' % serviceName)
-    else:
-      cls._monitor.setComponentName('Tornado/CPU%d/%s' % (tornado.process.task_id(), serviceName))
-
-    cls._monitor.setComponentLocation(fullUrl)
-
-    cls._monitor.registerActivity("Queries", "Queries served", "Framework", "queries", MonitoringClient.OP_RATE)
-
-    cls._monitor.setComponentExtraParam('DIRACVersion', DIRAC.version)
-    cls._monitor.setComponentExtraParam('platform', DIRAC.getPlatform())
-    cls._monitor.setComponentExtraParam('startTime', datetime.utcnow())
-
-    cls._stats = {'requests': 0, 'monitorLastStatsUpdate': time.time()}
-
-    return S_OK()
-
-  @classmethod
-  def __initializeService(cls, relativeUrl, absoluteUrl):
+        :return: list
     """
-      Initialize a service.
-      The work is only perform once at the first request.
-
-      :param relativeUrl: relative URL, e.g. ``/<System>/<Component>``
-      :param absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
-
-      :returns: S_OK
-    """
-    # If the initialization was already done successfuly,
-    # we can just return
-    if cls.__init_done:
-      return S_OK()
-
-    # Otherwise, do the work but with a lock
-    with cls.__init_lock:
-
-      # Check again that the initialization was not done by another thread
-      # while we were waiting for the lock
-      if cls.__init_done:
-        return S_OK()
-
-      # Url starts with a "/", we just remove it
-      serviceName = cls.__name__
-      match = cls.PATH_RE.match(relativeUrl)
-      groups = match.groups()
-      route = groups[2]
-      handlerRoute = route if route[-1] == "/" else route[:route.rfind("/")]
-
-      cls._startTime = datetime.utcnow()
-      sLog.info("First use of %s, initializing service..." % serviceName)
-      cls._authManager = AuthManager(Conf.getAuthSectionForHandler(handlerRoute))
-
-      cls._initMonitoring(serviceName, absoluteUrl)
-      cls._serviceName = serviceName
-
-      cls.__monitorLastStatsUpdate = time.time()
-
-      cls.initializeHandler()
-
-      cls.__init_done = True
-
-      return S_OK()
+    match = self.PATH_RE.match(self.request.path)
+    groups = match.groups()
+    return groups[3:]
   
-  @classmethod
-  def initializeHandler(cls):
-    """
-      This may be overwritten when you write a DIRAC service handler
-      And it must be a class method. This method is called only one time,
-      at the first request
+  def _getMethodAuthProps(self):
+    """ Resolves the hard coded authorization requirements for method.
 
-      :param dict ServiceInfoDict: infos about services, it contains
-                                    'serviceName', 'serviceSectionPath',
-                                    'csPaths' and 'URL'
+        :return: object
     """
-    pass
-
-  def initializeRequest(self):
-    """
-      Called at every request, may be overwritten in your handler.
-    """
-    pass
+    hardcodedAuth = super(WebHandler, self)._getMethodAuthProps()
+    if not hardcodedAuth and hasattr(self, 'AUTH_PROPS'):
+      if not isinstance(self.AUTH_PROPS, (list, tuple)):
+        self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
+      hardcodedAuth = self.AUTH_PROPS
+    return hardcodedAuth
 
   def threadTask(self, method, *args, **kwargs):
     def threadJob(*targs, **tkwargs):
@@ -257,21 +142,12 @@ class WebHandler(tornado.web.RequestHandler):
       return method(*args, **tkwargs)
 
     targs = (args, self.__disetDump)
-    return tornado.ioloop.IOLoop.current().run_in_executor(gThreadPool,
-                                                           functools.partial(threadJob, *targs, **kwargs))
+    return IOLoop.current().run_in_executor(gThreadPool, functools.partial(threadJob, *targs, **kwargs))
 
   def __disetBlockDecor(self, func):
     def wrapper(*args, **kwargs):
       raise RuntimeError("All DISET calls must be made from inside a Threaded Task!")
-
     return wrapper
-
-  # def __init__(self, *args, **kwargs):
-  #   """ Initialize the handler
-  #   """
-  #   super(WebHandler, self).__init__(*args, **kwargs)
-  #   if not WebHandler.__log:
-  #     WebHandler.__log = gLogger.getSubLogger(self.__class__.__name__)
 
   def prepare(self):
     """
@@ -284,69 +160,19 @@ class WebHandler(tornado.web.RequestHandler):
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
-
-    match = self.PATH_RE.match(self.request.path)
-    groups = match.groups()
-    route = groups[2]
-    self.method = "index" if route[-1] == "/" else route[route.rfind("/") + 1:]
-
-    self._stats['requests'] += 1
-    self._monitor.setComponentExtraParam('queries', self._stats['requests'])
-    self._monitor.addMark("Queries")
-
-    try:
-      self.credDict = self._gatherPeerCredentials()
-    except Exception:  # pylint: disable=broad-except
-      # If an error occur when reading certificates we close connection
-      # It can be strange but the RFC, for HTTP, say's that when error happend
-      # before authentication we return 401 UNAUTHORIZED instead of 403 FORBIDDEN
-      sLog.error(
-          "Error gathering credentials", "%s; path %s" %
-          (self.getRemoteAddress(), self.request.path))
-      raise HTTPError(status_code=http_client.UNAUTHORIZED)
-
-    # Resolves the hard coded authorization requirements
-    try:
-      hardcodedAuth = getattr(self, 'auth_' + self.method)
-    except AttributeError:
-      hardcodedAuth = None
-    
-    if not hardcodedAuth and hasattr(self, 'AUTH_PROPS'):
-      if not isinstance(self.AUTH_PROPS, (list, tuple)):
-        self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
-      hardcodedAuth = self.AUTH_PROPS
-
     self.credDict['validGroup'] = False
 
-    # Check whether we are authorized to perform the query
-    # Note that performing the authQuery modifies the credDict...
-    print('AUTH HANDLER')
-    print('METHOD: %s' % self.method)
-    print('CREDS: %s' % self.credDict)
-    print('AUTHPROPS: %s' % hardcodedAuth)
-    authorized = self._authManager.authQuery(self.method, self.credDict, hardcodedAuth)
-    print('RES CREDS: %s' % self.credDict)
-    
-    if self.credDict.get('DN') and self.isTrustedHost(self.credDict['DN']):
-      self.log.info("Request is coming from Trusted host")
-      authorized = True
-    
-    if not authorized:
-      sLog.error(
-          "Unauthorized access", "Identity %s; path %s; DN %s" %
-          (self.srv_getFormattedRemoteCredentials,
-           self.request.path,
-           self.credDict['DN'],
-           ))
-      raise HTTPError(status_code=http_client.UNAUTHORIZED)
-    
-    DN = self.getDN()
-    if DN:
-      self.__disetConfig.setDN(DN)
-    ID = self.getID()
-    if ID:
-      self.__disetConfig.setID(ID)
+    super(WebHandler, self).prepare()
 
+    # TODO:
+    # if self.credDict.get('DN') and self.isTrustedHost(self.credDict['DN']):
+    #   self.log.info("Request is coming from Trusted host")
+    #   authorized = True
+
+    if self.getDN():
+      self.__disetConfig.setDN(self.getDN())
+    if self.getID():
+      self.__disetConfig.setID(self.getID())
     # pylint: disable=no-value-for-parameter
     if self.getUserGroup():  # pylint: disable=no-value-for-parameter
       self.__disetConfig.setGroup(self.getUserGroup())  # pylint: disable=no-value-for-parameter
@@ -355,29 +181,6 @@ class WebHandler(tornado.web.RequestHandler):
     
     self.__sessionData = SessionData(self.credDict, self.__setup)
     self.__forceRefreshCS()
-
-  def on_finish(self):
-    """
-      Called after the end of HTTP request.
-      Log the request duration
-    """
-    elapsedTime = 1000.0 * self.request.request_time()
-
-    try:
-      if self.result['OK']:
-        argsString = "OK"
-      else:
-        argsString = "ERROR: %s" % self.result['Message']
-    except (AttributeError, KeyError):  # In case it is not a DIRAC structure
-      if self._reason == 'OK':
-        argsString = 'OK'
-      else:
-        argsString = 'ERROR %s' % self._reason
-
-      argsString = "ERROR: %s" % self._reason
-    sLog.notice("Returning response", "%s %s (%.2f ms) %s" % (self.srv_getFormattedRemoteCredentials(),
-                                                              self._serviceName,
-                                                              elapsedTime, argsString))
 
   def __parseURI(self):
     match = self.PATH_RE.match(self.request.path)
@@ -408,10 +211,6 @@ class WebHandler(tornado.web.RequestHandler):
       :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
                 (not a DIRAC structure !)
     """
-    print('== _gatherPeerCredentials')
-    # Parse URI
-    self.__parseURI()
-
     # Authorization type
     self.__authGrant = self.get_cookie('authGrant', 'Certificate')
     print('AUTH: %s' % self.__authGrant)
@@ -535,32 +334,11 @@ class WebHandler(tornado.web.RequestHandler):
   def getLog(cls):
     return cls.__log
 
-  def getDN(self):
-    return self.credDict.get('DN', '')
-
-  def getID(self):
-    return self.credDict.get('ID', '')
-
-  # def getIdP(self):
-  #   return self.__idp
-
   def getCurrentSession(self):
     return self.__session
 
-  def getUserName(self):
-    return self.credDict.get('username', '')
-
-  def getUserGroup(self):
-    return self.credDict.get('group', '')
-
   def getUserSetup(self):
     return self.__setup
-
-  def getProperties(self):
-    return self.credDict.get('properties', [])
-
-  def isRegisteredUser(self):
-    return self.credDict.get('username', 'anonymous') != 'anonymous' and self.credDict.get('group')
 
   def getSessionData(self):
     return self.__sessionData.getData()
@@ -641,45 +419,9 @@ class WebHandler(tornado.web.RequestHandler):
         return True
     return False
 
-  # def __checkPath(self):
-  #   """ Check the request, auth, credentials and DISET config
-
-  #       :return: WOK()/WErr()
-  #   """
-  #   if self.__route[-1] == "/":
-  #     methodName = "index"
-  #     handlerRoute = self.__route
-  #   else:
-  #     iP = self.__route.rfind("/")
-  #     methodName = self.__route[iP + 1:]
-  #     handlerRoute = self.__route[:iP]
-
-  #   if not self.__auth(handlerRoute, self.__group, methodName):
-  #     return WErr(401, "Unauthorized. %s" % methodName)
-
-  #   DN = self.getDN()
-  #   if DN:
-  #     self.__disetConfig.setDN(DN)
-  #   ID = self.getID()
-  #   if ID:
-  #     self.__disetConfig.setID(ID)
-
-  #   # pylint: disable=no-value-for-parameter
-  #   if self.getUserGroup():  # pylint: disable=no-value-for-parameter
-  #     self.__disetConfig.setGroup(self.getUserGroup())  # pylint: disable=no-value-for-parameter
-  #   self.__disetConfig.setSetup(self.__setup)
-  #   self.__disetDump = self.__disetConfig.dump()
-
-  #   return WOK(methodName)
-
-  def get(self, setup, group, route, *pathArgs):
-    methodName = "web_%s" % self.method
-    try:
-      mObj = getattr(self, methodName)
-    except AttributeError as e:
-      self.log.fatal("This should not happen!! %s" % e)
-      raise tornado.web.HTTPError(404)
-    return mObj(*pathArgs)
+  def get(self, *args, **kwargs):
+    method = self._getMethod()
+    return method(*self._getMethodArgs())
 
   def post(self, *args, **kwargs):
     return self.get(*args, **kwargs)
@@ -711,56 +453,6 @@ class WebHandler(tornado.web.RequestHandler):
     """
     self.finish(encode(o))
 
-  def srv_getRemoteAddress(self):
-    """
-    Get the address of the remote peer.
-
-    :return: Address of remote peer.
-    """
-
-    remote_ip = self.request.remote_ip
-    # Although it would be trivial to add this attribute in _HTTPRequestContext,
-    # Tornado won't release anymore 5.1 series, so go the hacky way
-    try:
-      remote_port = self.request.connection.stream.socket.getpeername()[1]
-    except Exception:  # pylint: disable=broad-except
-      remote_port = 0
-
-    return (remote_ip, remote_port)
-
-  def getRemoteAddress(self):
-    """
-      Just for keeping same public interface
-    """
-    return self.srv_getRemoteAddress()
-  
-  def srv_getURL(self):
-    """
-      Return the URL
-    """
-    return self.request.path
-  
-  def srv_getFormattedRemoteCredentials(self):
-    """
-      Return the DN of user
-
-      Mostly copy paste from
-      :py:meth:`DIRAC.Core.DISET.private.Transports.BaseTransport.BaseTransport.getFormattedCredentials`
-
-      Note that the information will be complete only once the AuthManager was called
-    """
-    address = self.getRemoteAddress()
-    peerId = ""
-    # Depending on where this is call, it may be that credDict is not yet filled.
-    # (reminder: AuthQuery fills part of it..)
-    try:
-      peerId = "[%s:%s]" % (self.credDict['group'], self.credDict['username'])
-    except AttributeError:
-      pass
-
-    if address[0].find(":") > -1:
-      return "([%s]:%s)%s" % (address[0], address[1], peerId)
-    return "(%s:%s)%s" % (address[0], address[1], peerId)
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler, WebHandler):
 
