@@ -15,20 +15,30 @@ from authlib.oauth2 import (
     AuthorizationServer as _AuthorizationServer,
 )
 from authlib.oauth2.rfc6749.grants import ImplicitGrant
-from DIRAC.FrameworkSystem.private.authorization.grants import (
+from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (
   DeviceAuthorizationEndpoint,
-  DeviceCodeGrant,
+  DeviceCodeGrant
+)
+from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (
   OpenIDCode,
-  AuthorizationCodeGrant,
-  RefreshTokenGrant,
+  AuthorizationCodeGrant
+)
+from DIRAC.FrameworkSystem.private.authorization.grants.RefreshToken import (
+  RefreshTokenGrant
+)
+from DIRAC.FrameworkSystem.private.authorization.grants.ImplicitFlow import (
   OpenIDImplicitGrant,
   NotebookImplicitGrant
 )
-from DIRAC.FrameworkSystem.private.authorization.utils import (
+from DIRAC.FrameworkSystem.private.authorization.utils.Clients import (
   Client,
   ClientRegistrationEndpoint,
-  SessionManager,
-  ClientManager,
+  ClientManager
+)
+from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import (
+  SessionManager
+)
+from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (
   OAuth2Request,
   createOAuth2Request
 )
