@@ -229,6 +229,7 @@ class WebHandler(BaseRequestHandler):
     if self.request.protocol == "https":
       if self.__authGrant == 'Certificate':
         try:
+          # try read certificate
           if Conf.balancer() == "nginx":
             credDict = self.__readCertificateFromNginx()
           else:
@@ -236,10 +237,13 @@ class WebHandler(BaseRequestHandler):
         except Exception as e:
           sLog.warn(str(e))
       if self.__authGrant == 'Session':
+        # try read session
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
-    
-      credDict['validGroup'] = False
-      credDict['group'] = self.__group
+      
+      # Add a group if it present in the request path
+      if self.__group:
+        credDict['validGroup'] = False
+        credDict['group'] = self.__group
     print('=== _gatherPeerCredentials: %s' % str(credDict))
     return result['Value']
 

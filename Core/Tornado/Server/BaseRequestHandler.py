@@ -267,10 +267,11 @@ class BaseRequestHandler(RequestHandler):
 
     try:
       self.credDict = self._gatherPeerCredentials()
-    except Exception:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
       # If an error occur when reading certificates we close connection
       # It can be strange but the RFC, for HTTP, say's that when error happend
       # before authentication we return 401 UNAUTHORIZED instead of 403 FORBIDDEN
+      sLog.debug(str(e))
       sLog.error(
           "Error gathering credentials ", "%s; path %s" %
           (self.getRemoteAddress(), self.request.path))
