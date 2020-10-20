@@ -35,6 +35,7 @@ class ClientManager(object):
     print(client)
     if not client:
       result = self.__db.getClient(clientID)
+      print('getClient result: %s' % result)
       if result['OK']:
         client = Client(result['Value'])
         self.__clients.add(clientID, 24 * 3600, client)
