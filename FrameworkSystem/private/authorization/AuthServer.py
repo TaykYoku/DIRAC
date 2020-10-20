@@ -24,7 +24,7 @@ from .grants import (
   OpenIDImplicitGrant,
   NotebookImplicitGrant
 )
-from .utils import (
+from DIRAC.FrameworkSystem.private.authorization.utils import (
   Client,
   ClientRegistrationEndpoint,
   SessionManager,

@@ -5,7 +5,7 @@ from __future__ import print_function
 from authlib.oauth2.rfc6749.util import scope_to_list
 from authlib.oauth2.rfc6749.grants import RefreshTokenGrant as _RefreshTokenGrant
 
-from DIRAC.FrameworkSystem.private.authorization.utils import BearerTokenValidator
+from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import BearerTokenValidator
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 
 

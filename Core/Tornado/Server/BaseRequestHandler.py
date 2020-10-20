@@ -27,8 +27,6 @@ from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-er
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
-from DIRAC.FrameworkSystem.private.authorization.utils import createOAuth2Request
-
 sLog = gLogger.getSubLogger(__name__)
 
 

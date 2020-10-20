@@ -20,7 +20,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo, 
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, getIDsForUsername, getEmailsForGroup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
-from DIRAC.FrameworkSystem.private.authorization.utils import Session
+from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import Session
 
 from DIRAC.FrameworkSystem.DB.AuthDB2 import AuthDB2
 

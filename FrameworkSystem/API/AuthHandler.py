@@ -21,12 +21,12 @@ from authlib.common.security import generate_token
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 # from DIRAC.Core.Tornado.Server.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
-from DIRAC.FrameworkSystem.private.authorization.utils import ClientRegistrationEndpoint
-from DIRAC.FrameworkSystem.private.authorization.grants import DeviceAuthorizationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.utils.Clients import ClientRegistrationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
-from DIRAC.FrameworkSystem.private.authorization import AuthServer
+from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
 
 __RCSID__ = "$Id$"
 

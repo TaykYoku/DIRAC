@@ -4,6 +4,6 @@ from __future__ import print_function
 # $HeadURL$
 __RCSID__ = "$Id$"
 
-from .AuthServer import AuthServer
+# from .AuthServer import AuthServer
 
-__all__ = ['AuthServer']
+# __all__ = ['AuthServer']

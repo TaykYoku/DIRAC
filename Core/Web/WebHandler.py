@@ -31,7 +31,7 @@ from DIRAC.Core.Utilities.JEncode import encode
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 # from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
-from DIRAC.FrameworkSystem.private.authorization.utils import ResourceProtector
+from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 
 global gThreadPool
 gThreadPool = ThreadPoolExecutor(100)
