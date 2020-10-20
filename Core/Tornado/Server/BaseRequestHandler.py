@@ -26,6 +26,8 @@ from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-er
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
+from DIRAC.FrameworkSystem.private.authorization.utils import createOAuth2Request
+
 sLog = gLogger.getSubLogger(__name__)
 
 
@@ -81,7 +83,7 @@ class BaseRequestHandler(RequestHandler):
     """ Search service name in request. Developers MUST
         implement it in subclass.
 
-        :param object request: tornado Request
+        :param object request: OAuth2Request
 
         :return: str
     """
@@ -195,7 +197,7 @@ class BaseRequestHandler(RequestHandler):
       # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
       # So the client will get a ``Connection aborted```
       try:
-        res = self.__initializeService(self.request)
+        res = self.__initializeService(createOAuth2Request(self.request))
         if not res['OK']:
           raise Exception(res['Message'])
       except Exception as e:
