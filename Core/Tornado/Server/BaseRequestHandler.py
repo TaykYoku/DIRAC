@@ -16,6 +16,7 @@ from datetime import datetime
 from six.moves import http_client
 from tornado.web import RequestHandler, HTTPError
 from tornado import gen
+import tornado
 from tornado.ioloop import IOLoop
 
 import DIRAC
