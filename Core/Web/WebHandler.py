@@ -100,7 +100,6 @@ class WebHandler(BaseRequestHandler):
     groups = match.groups()
     route = groups[2]
     return route if route[-1] == "/" else route[:route.rfind("/")]
-    # return serviceName = cls.__name__
   
   @classmethod
   def _getServiceAuthSection(cls, serviceName):
@@ -223,12 +222,19 @@ class WebHandler(BaseRequestHandler):
 
     # Authorization type
     self.__authGrant = self.get_cookie('authGrant', 'Certificate')
-    print('AUTH: %s' % self.__authGrant)
 
     # Unsecure protocol only for visitors
     if self.request.protocol == "https":
 
-      if self.__authGrant == 'Certificate':
+      if self.__authGrant == 'Session':
+        # read session
+        credDict = self.__readSession(self.get_secure_cookie('session_id'))
+
+      elif self.request.headers.get("Authorization"):
+        # read token
+        credDict = self.__readToken()
+
+      elif self.__authGrant == 'Certificate':
         try:
           # try read certificate
           if Conf.balancer() == "nginx":
@@ -242,41 +248,7 @@ class WebHandler(BaseRequestHandler):
         except Exception as e:
           sLog.warn(str(e))
 
-      if self.__authGrant == 'Session':
-        # read session
-        credDict = self.__readSession(self.get_secure_cookie('session_id'))
-
-      if self.request.headers.get("Authorization"):
-        # read token
-        credDict = self.__readToken()
-
-    print('=== _gatherPeerCredentials: %s' % str(credDict))
     return credDict
-
-  # def __processCredentials(self):
-  #   """ Extract the user credentials based on the certificate or what comes from the balancer
-
-  #       :return: S_OK()/S_ERROR()
-  #   """
-  #   # Unsecure protocol only for visitors
-  #   if self.request.protocol != "https":  # or self.__idp == "Visitor":
-  #     return S_OK()
-
-  #   self.credDict = {'group': self.__group}
-
-  #   if self.__authGrant == 'Session':
-  #     print('READ SESSION')
-  #     result = self.__readSession()
-  #   elif self.__authGrant == 'Visitor':
-  #     print('READ VISITOR')
-  #     result = S_OK()
-  #   else:
-  #     print('READ CERT')
-  #     result = self.__readCertificate()
-  #   print('self.credDict: %s' % self.credDict)
-  #   if not result['OK']:
-  #     self.log.error(result['Message'], 'Continue as Visitor.')
-  #   return S_OK(self.credDict)
 
   # def _request_summary(self):
   #   """ Return a string returning the summary of the request
@@ -326,16 +298,14 @@ class WebHandler(BaseRequestHandler):
 
         :return: dict
     """
-    token = ResourceProtector().acquire_token(self.request, 'g:%s' if self.__group else '')
+    token = ResourceProtector().acquire_token(self.request, self.__group and ('g:%s' % self.__group))
     return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group or token.groups[0]}
 
   def __readCertificateFromNginx(self):
-    """ Fill credentional from certificate and check is registred
+    """ Fill credentional from certificate and check is registred from nginx.
 
         :return: dict
     """
-    # if Conf.balancer() == "nginx":
-    # NGINX
     headers = self.request.headers
     if not headers:
       raise Exception('No headers found.')
@@ -350,26 +320,6 @@ class WebHandler(BaseRequestHandler):
       items.reverse()
       DN = '/' + '/'.join(items)
     return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
-
-    # else:
-    #   # TORNADO
-    #   derCert = self.request.get_ssl_certificate(binary_form=True)
-    #   if not derCert:
-    #     return S_ERROR('No certificate found.')
-    #   pemCert = ssl.DER_cert_to_PEM_cert(derCert)
-    #   chain = X509Chain()
-    #   chain.loadChainFromString(pemCert)
-    #   result = chain.getCredentials()
-    #   if not result['OK']:
-    #     return S_ERROR("Could not get client credentials %s" % result['Message'])
-    #   self.credDict = result['Value']
-    #   # Hack. Data coming from OSSL directly and DISET difer in DN/subject
-    #   try:
-    #     self.credDict['DN'] = self.credDict['subject']
-    #   except KeyError:
-    #     pass
-
-    # return S_OK()
 
   @property
   def log(self):
@@ -411,44 +361,6 @@ class WebHandler(BaseRequestHandler):
       location = "/%s" % location
     ats = dict(action=action, group=group, setup=setup, location=location)
     return self.URLSCHEMA % ats
-
-  # def __auth(self, handlerRoute, group, method):
-  #   """ Authenticate request
-
-  #       :param str handlerRoute: the name of the handler
-  #       :param str group: DIRAC group
-  #       :param str method: the name of the method
-
-  #       :return: bool
-  #   """
-  #   if not isinstance(self.AUTH_PROPS, (list, tuple)):
-  #     self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
-  #   self.__credDict['validGroup'] = False
-  #   # self.__credDict['group'] = group
-  #   auth = AuthManager(Conf.getAuthSectionForHandler(handlerRoute))
-  #   ok = auth.authQuery(method, self.__credDict, self.AUTH_PROPS)
-  #   if ok:
-  #     self.__credDict['validGroup'] = True
-  #     # WARN: __credDict['properties'] already defined in AuthManager in the last version of DIRAC
-  #     # self.__credDict['properties'] = Registry.getPropertiesForGroup(self.__credDict['group'], [])
-  #     msg = ' - '
-  #     if self.__credDict.get('DN'):
-  #       msg = '%s' % self.__credDict['DN']
-  #     elif self.__credDict.get('ID'):
-  #       result = gAuthManagerData.getIdPForID(self.__credDict['ID'])  # pylint: disable=no-member
-  #       if not result['OK']:
-  #         self.log.error(result['Message'])
-  #         return False
-  #       msg = 'IdP: %s, ID: %s' % (result['Value'], self.__credDict['ID'])
-  #     self.log.info("AUTH OK: %s by %s@%s (%s)" % (handlerRoute, self.__credDict['username'],
-  #                                                  self.__credDict['group'], msg))
-  #   else:
-  #     self.log.info("AUTH KO: %s by %s@%s" % (handlerRoute, self.__credDict['username'], self.__credDict['group']))
-
-  #   if self.__credDict.get('DN') and self.isTrustedHost(self.__credDict['DN']):
-  #     self.log.info("Request is coming from Trusted host")
-  #     return True
-  #   return ok
 
   # def isTrustedHost(self, dn):
   #   """ Check if the request coming from a TrustedHost

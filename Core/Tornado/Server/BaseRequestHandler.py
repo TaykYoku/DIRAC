@@ -300,18 +300,14 @@ class BaseRequestHandler(RequestHandler):
     """
     elapsedTime = 1000.0 * self.request.request_time()
 
+    argsString = "OK"
     try:
-      if self.result['OK']:
-        argsString = "OK"
-      else:
+      if not self.result['OK']:
         argsString = "ERROR: %s" % self.result['Message']
     except (AttributeError, KeyError):  # In case it is not a DIRAC structure
-      if self._reason == 'OK':
-        argsString = 'OK'
-      else:
+      if self._reason != 'OK':
         argsString = 'ERROR %s' % self._reason
 
-      argsString = "ERROR: %s" % self._reason
     sLog.notice("Returning response", "%s %s (%.2f ms) %s" % (self.srv_getFormattedRemoteCredentials(),
                                                               self._serviceName,
                                                               elapsedTime, argsString))
