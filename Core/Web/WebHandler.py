@@ -19,6 +19,7 @@ from authlib.common.security import generate_token
 import tornado.web
 import tornado.websocket
 
+from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.Core.Web import Conf
 from DIRAC.Core.Web.SessionData import SessionData
 from DIRAC.Core.Security import Properties
