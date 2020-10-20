@@ -83,7 +83,7 @@ class BaseRequestHandler(RequestHandler):
     """ Search service name in request. Developers MUST
         implement it in subclass.
 
-        :param object request: OAuth2Request
+        :param dict request: tornado Request as dictionary
 
         :return: str
     """
@@ -104,7 +104,7 @@ class BaseRequestHandler(RequestHandler):
         implement it in subclass.
 
         :param str serviceName: service name
-        :param object request: tornado Request
+        :param dict request: tornado Request as dictionary
 
         :return: dict
     """
@@ -134,7 +134,7 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      absoluteUrl = request.path
+      absoluteUrl = request['path']
       serviceName = cls._getServiceName(request)
 
       cls._startTime = datetime.utcnow()
@@ -197,7 +197,9 @@ class BaseRequestHandler(RequestHandler):
       # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
       # So the client will get a ``Connection aborted```
       try:
-        res = self.__initializeService(createOAuth2Request(self.request))
+        reqDict = self.request.__dict__
+        reqDict['fullUrl'] = self.request.full_url()
+        res = self.__initializeService(reqDict)
         if not res['OK']:
           raise Exception(res['Message'])
       except Exception as e:
