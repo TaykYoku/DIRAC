@@ -146,7 +146,7 @@ class HandlerManager(object):
                 if isHTTPS and isHTTPS.lower() == 'https':
                   urls.append(newInst)
               else:
-                port = gConfig.getValue('/Systems/%s/%s/Services/%s/Protocol' % (system, sysInstance, inst))
+                port = gConfig.getValue('/Systems/%s/%s/Services/%s/Port' % (system, sysInstance, inst))
                 if port:
                   newInst += ':%s' % port
                 urls.append(newInst)
