@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import json
+
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from authlib.oauth2.rfc7591 import ClientRegistrationEndpoint as _ClientRegistrationEndpoint
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
@@ -29,7 +31,11 @@ class Client(OAuth2ClientMixin):
     print('set self.client_secret_expires_at: %s' % params['client_secret_expires_at'])
     self.client_secret_expires_at = params['client_secret_expires_at']
     print('set self.client_metadata: %s' % params['client_metadata'])
-    self._client_metadata = params['client_metadata']
+    if isinstance(params['client_metadata'], dict):
+      self._client_metadata = json.dumps(params['client_metadata'])
+    else:
+      self._client_metadata = params['client_metadata']
+      
     print(' __INIT__ OK')
   
   def get_allowed_scope(self, scope):
