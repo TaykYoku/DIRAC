@@ -122,8 +122,8 @@ class HandlerMgr(object):
       # Set properly the LOCATION after calculating where it is with helpers to add group and setup later
       handler.LOCATION = handlerRoute
       handler.PATH_RE = re.compile("%s(%s/[A-z]+|.)" % (baseRoute, handlerRoute))
-      if handler.OVERPATH:
-        handler.PATH_RE = re.compile(handler.PATH_RE.pattern + '(/[A-z0-9=-_/|]+)?')
+      # if handler.OVERPATH:
+      #   handler.PATH_RE = re.compile(handler.PATH_RE.pattern + '(/[A-z0-9=-_/|]+)?')
       handler.URLSCHEMA = "/%s%%(setup)s%%(group)s%%(location)s/%%(action)s" % (self.__baseURL)
       if issubclass(handler, WebSocketHandler):
         handler.PATH_RE = re.compile("%s(%s)" % (baseRoute, handlerRoute))
