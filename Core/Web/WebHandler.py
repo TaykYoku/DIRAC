@@ -89,7 +89,7 @@ class WebHandler(BaseRequestHandler):
   def _getServiceName(self, request=None):
     """ Search service name in request
 
-        :param dict request: tornado Request as dictionary
+        :param object request: tornado Request
 
         :return: str
     """

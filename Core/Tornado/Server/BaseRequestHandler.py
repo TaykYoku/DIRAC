@@ -79,17 +79,19 @@ class BaseRequestHandler(RequestHandler):
 
     return S_OK()
 
-  def _getServiceName(self, request=None):
+  @classmethod
+  def _getServiceName(cls, request=None):
     """ Search service name in request. Developers MUST
         implement it in subclass.
 
-        :param dict request: tornado Request as dictionary
+        :param object request: tornado Request
 
         :return: str
     """
     raise NotImplementedError()
   
-  def _getServiceAuthSection(self, serviceName=None):
+  @classmethod
+  def _getServiceAuthSection(cls, serviceName=None):
     """ Search service auth section. Developers MUST
         implement it in subclass.
 
@@ -99,12 +101,13 @@ class BaseRequestHandler(RequestHandler):
     """
     raise NotImplementedError()
   
-  def _getServiceInfo(self, serviceName, request):
+  @classmethod
+  def _getServiceInfo(cls, serviceName, request):
     """ Fill service information. Developers CAN
         implement it in subclass.
 
         :param str serviceName: service name
-        :param dict request: tornado Request as dictionary
+        :param object request: tornado Request
 
         :return: dict
     """
@@ -116,8 +119,7 @@ class BaseRequestHandler(RequestHandler):
       Initialize a service.
       The work is only perform once at the first request.
 
-      :param relativeUrl: relative URL, e.g. ``/<System>/<Component>``
-      :param absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
+      :param object request: tornado Request
 
       :returns: S_OK
     """
@@ -134,7 +136,8 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      absoluteUrl = request['path']
+      # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
+      absoluteUrl = request.path
       serviceName = cls._getServiceName(request)
 
       cls._startTime = datetime.utcnow()
@@ -197,9 +200,7 @@ class BaseRequestHandler(RequestHandler):
       # `tornado doc <https://www.tornadoweb.org/en/stable/guide/structure.html#overriding-requesthandler-methods>`_.
       # So the client will get a ``Connection aborted```
       try:
-        reqDict = self.request.__dict__
-        reqDict['fullUrl'] = self.request.full_url()
-        res = self.__initializeService(reqDict)
+        res = self.__initializeService(self.request)
         if not res['OK']:
           raise Exception(res['Message'])
       except Exception as e:

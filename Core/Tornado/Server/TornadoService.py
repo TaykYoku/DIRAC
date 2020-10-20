@@ -103,11 +103,12 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
   def _getServiceName(self, request):
     """ Search service name in request.
 
-        :param dict request: tornado Request as dictionary
+        :param object request: tornado Request
 
         :return: str
     """
-    return request['path'][1:]
+    # Expected path: ``/<System>/<Component>``
+    return request.path[1:]
   
   def _getServiceAuthSection(self, serviceName):
     """ Search service auth section.
@@ -122,14 +123,14 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
     """ Fill service information.
 
         :param str serviceName: service name
-        :param dict request: tornado Request as dictionary
+        :param object request: tornado Request
 
         :return: dict
     """
     return {'serviceName': serviceName,
             'serviceSectionPath': PathFinder.getServiceSection(serviceName),
             'csPaths': [PathFinder.getServiceSection(serviceName)],
-            'URL': request['fullUrl']}
+            'URL': request.full_url()}
 
   def _getMethodName(self):
     """ Parse method name.
