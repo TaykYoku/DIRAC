@@ -169,7 +169,6 @@ class WebHandler(BaseRequestHandler):
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
     self.__disetDump = self.__disetConfig.dump()
-    self.credDict['validGroup'] = False
 
     super(WebHandler, self).prepare()
 
@@ -229,6 +228,7 @@ class WebHandler(BaseRequestHandler):
     result = self.__processCredentials()
     if not result['OK']:
       raise Exception(res['Message'])
+    result['Value']['validGroup'] = False
     return result['Value']
 
   def __processCredentials(self):
