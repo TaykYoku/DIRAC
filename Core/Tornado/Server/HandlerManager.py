@@ -140,7 +140,7 @@ class HandlerManager(object):
             for inst in result['Value']:
               newInst = ("%s/%s" % (system, inst))
 
-              if handlerInstance == 'Service':
+              if handlerInstance == 'Services':
                 # We search in the CS all handlers which used HTTPS as protocol
                 isHTTPS = gConfig.getValue('/Systems/%s/%s/Services/%s/Protocol' % (system, sysInstance, inst))
                 if isHTTPS and isHTTPS.lower() == 'https':
