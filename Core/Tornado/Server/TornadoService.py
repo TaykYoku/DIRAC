@@ -100,7 +100,8 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
     These are initialized in the :py:meth:`.initialize` method.
 
   """
-  def _getServiceName(self, request):
+  @classmethod
+  def _getServiceName(cls, request):
     """ Search service name in request.
 
         :param object request: tornado Request
@@ -110,7 +111,8 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
     # Expected path: ``/<System>/<Component>``
     return request.path[1:]
   
-  def _getServiceAuthSection(self, serviceName):
+  @classmethod
+  def _getServiceAuthSection(cls, serviceName):
     """ Search service auth section.
 
         :param str serviceName: service name
@@ -119,7 +121,8 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
     """
     return "%s/Authorization" % PathFinder.getServiceSection(serviceName)
   
-  def _getServiceInfo(self, serviceName, request):
+  @classmethod
+  def _getServiceInfo(cls, serviceName, request):
     """ Fill service information.
 
         :param str serviceName: service name

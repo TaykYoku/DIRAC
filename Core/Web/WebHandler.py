@@ -86,6 +86,7 @@ class WebHandler(BaseRequestHandler):
   # Prefix of methods names
   METHOD_PREFIX = "web_"
 
+  @classmethod
   def _getServiceName(self, request=None):
     """ Search service name in request
 
@@ -95,6 +96,7 @@ class WebHandler(BaseRequestHandler):
     """
     serviceName = cls.__name__
   
+  @classmethod
   def _getServiceAuthSection(self, serviceName=None):
     """ Search service auth section. Developers MUST
         implement it in subclass.
