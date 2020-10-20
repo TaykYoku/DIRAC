@@ -17,19 +17,8 @@ __RCSID__ = "$Id$"
 
 
 class ConfigurationHandler(WebHandler):
-  OVERPATH = True
   AUTH_PROPS = "all"
   LOCATION = "/"
-
-  # def initialize(self):
-  #   super(ConfigurationHandler, self).initialize()
-  #   self.args = {}
-  #   for arg in self.request.arguments:
-  #     if len(self.request.arguments[arg]) > 1:
-  #       self.args[arg] = self.request.arguments[arg]
-  #     else:
-  #       self.args[arg] = self.request.arguments[arg][0] or ''
-  #   return S_OK()
 
   path_conf = ['([a-z]+)']
   @asyncGen
