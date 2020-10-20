@@ -227,6 +227,7 @@ class WebHandler(BaseRequestHandler):
 
     # Unsecure protocol only for visitors
     if self.request.protocol == "https":
+
       if self.__authGrant == 'Certificate':
         try:
           # try read certificate
@@ -234,16 +235,21 @@ class WebHandler(BaseRequestHandler):
             credDict = self.__readCertificateFromNginx()
           else:
             credDict = super(WebHandler, self)._gatherPeerCredentials()
+          # Add a group if it present in the request path
+          if self.__group:
+            credDict['validGroup'] = False
+            credDict['group'] = self.__group
         except Exception as e:
           sLog.warn(str(e))
+
       if self.__authGrant == 'Session':
         # read session
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
-      
-      # Add a group if it present in the request path
-      if self.__group:
-        credDict['validGroup'] = False
-        credDict['group'] = self.__group
+
+      if self.request.headers.get("Authorization"):
+        # read token
+        credDict = self.__readToken()
+
     print('=== _gatherPeerCredentials: %s' % str(credDict))
     return credDict
 
@@ -311,7 +317,17 @@ class WebHandler(BaseRequestHandler):
 
     # Update session expired time
     self.application.updateSession(session)
-    return {'ID': token.sub, 'issuer': token.issuer}
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group, 'validGroup': False}
+  
+  def __readToken(self):
+    """ Fill credentionals from session
+
+        :param str sessionID: session id
+
+        :return: dict
+    """
+    token = ResourceProtector().acquire_token(self.request, 'g:%s' if self.__group else '')
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group or token.groups[0]}
 
   def __readCertificateFromNginx(self):
     """ Fill credentional from certificate and check is registred
