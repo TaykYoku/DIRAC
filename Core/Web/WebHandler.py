@@ -237,7 +237,7 @@ class WebHandler(BaseRequestHandler):
         except Exception as e:
           sLog.warn(str(e))
       if self.__authGrant == 'Session':
-        # try read session
+        # read session
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
       
       # Add a group if it present in the request path
