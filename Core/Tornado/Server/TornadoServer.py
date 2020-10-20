@@ -154,6 +154,7 @@ class TornadoServer(object):
 
     # URLS: {<port>: self.urls}
     for port, urls in self.configData.items():
+
       # Start server
       router = Application(urls, debug=False, compress_response=True)
       server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True)
@@ -162,7 +163,7 @@ class TornadoServer(object):
       except Exception as e:  # pylint: disable=broad-except
         sLog.exception("Exception starting HTTPServer", e)
         raise
-      sLog.always("Listening on port %s" % self.port)
+      sLog.always("Listening on port %s" % port)
       for service in self.urls:
         sLog.debug("Available service: %s" % service)
 

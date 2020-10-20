@@ -190,11 +190,14 @@ class HandlerManager(object):
     """
     portMapping = {}
     newURLs = []
-    for url in urls:
-      if ':' in url:
-        urlTuple = url.split(':')[1]
+    for _url in urls:
+      if ':' in _url:
+        urlTuple = _url.split(':')
         if urlTuple[0] not in portMapping:
           portMapping[urlTuple[0]] = urlTuple[1]
+        newURLs.append(urlTuple[0])
+      else:
+        newURLs.append(_url)
     return (portMapping, newURLs)
 
   def loadEndpointsHandlers(self):
