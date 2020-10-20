@@ -20,6 +20,7 @@ import tornado.web
 import tornado.websocket
 from tornado import gen
 from tornado.web import HTTPError
+from tornado.ioloop import IOLoop
 
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.Core.Web import Conf
