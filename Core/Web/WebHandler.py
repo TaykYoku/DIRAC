@@ -87,7 +87,7 @@ class WebHandler(BaseRequestHandler):
   METHOD_PREFIX = "web_"
 
   @classmethod
-  def _getServiceName(self, request=None):
+  def _getServiceName(cls, request=None):
     """ Search service name in request
 
         :param object request: tornado Request
@@ -97,7 +97,7 @@ class WebHandler(BaseRequestHandler):
     serviceName = cls.__name__
   
   @classmethod
-  def _getServiceAuthSection(self, serviceName=None):
+  def _getServiceAuthSection(cls, serviceName=None):
     """ Search service auth section. Developers MUST
         implement it in subclass.
 
