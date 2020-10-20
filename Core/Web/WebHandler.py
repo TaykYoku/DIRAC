@@ -228,15 +228,18 @@ class WebHandler(BaseRequestHandler):
     # Unsecure protocol only for visitors
     if self.request.protocol == "https":
       if self.__authGrant == 'Certificate':
-        if Conf.balancer() == "nginx":
-          credDict = self.__readCertificateFromNginx()
-        else:
-          credDict = super(WebHandler, self)._gatherPeerCredentials()
+        try:
+          if Conf.balancer() == "nginx":
+            credDict = self.__readCertificateFromNginx()
+          else:
+            credDict = super(WebHandler, self)._gatherPeerCredentials()
+        except Exception as e:
+          sLog.warn(str(e))
       if self.__authGrant == 'Session':
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
     
-    credDict['validGroup'] = False
-    credDict['group'] = self.__group
+      credDict['validGroup'] = False
+      credDict['group'] = self.__group
     print('=== _gatherPeerCredentials: %s' % str(credDict))
     return result['Value']
 
@@ -302,12 +305,9 @@ class WebHandler(BaseRequestHandler):
         raise Exception('%s session invalid, token is not match.' % sessionID)
     token = ResourceProtector().validator(session.token.refresh_token, 'changeGroup', None, 'OR')
 
-    self.credDict['ID'] = token.sub
-    self.credDict['issuer'] = token.issuer
-
     # Update session expired time
     self.application.updateSession(session)
-    return S_OK()
+    return {'ID': token.sub, 'issuer': token.issuer}
 
   def __readCertificateFromNginx(self):
     """ Fill credentional from certificate and check is registred
