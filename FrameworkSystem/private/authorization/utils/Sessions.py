@@ -160,7 +160,7 @@ class SessionManager(object):
       if exp:
         print('UPDATE SESSION: %s' % session.id)
         self.addSession(session.update(kwargs), exp)
-    if createIfNotExist:
+    elif createIfNotExist:
       print('UPDATE hard SESSION: %s' % sessionID)
       self.addSession(sessionID, exp, **kwargs)
 
