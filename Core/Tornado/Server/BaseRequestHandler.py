@@ -281,12 +281,15 @@ class BaseRequestHandler(RequestHandler):
     authorized = self._authManager.authQuery(self.method, self.credDict,
                                              self._getMethodAuthProps())
     if not authorized:
+      extraInfo = ''
+      if self.credDict.get('DN'):
+        extraInfo += 'DN: %s' % self.credDict['DN']
+      if self.credDict.get('ID'):
+        extraInfo += 'ID: %s' % self.credDict['ID']
       sLog.error(
-          "Unauthorized access", "Identity %s; path %s; DN %s" %
+          "Unauthorized access", "Identity %s; path %s; %s" %
           (self.srv_getFormattedRemoteCredentials,
-           self.request.path,
-           self.credDict['DN'],
-           ))
+           self.request.path, extraInfo))
       raise HTTPError(status_code=http_client.UNAUTHORIZED)
 
   def on_finish(self):
