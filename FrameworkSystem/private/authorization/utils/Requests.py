@@ -10,6 +10,10 @@ __RCSID__ = "$Id$"
 
 class OAuth2Request(_OAuth2Request):
   def toDict(self):
+    """ Convert class to dictionary
+
+        :return: dict
+    """
     return {'method': self.method,
             'uri': self.uri,
             'body': self.body,
@@ -17,8 +21,15 @@ class OAuth2Request(_OAuth2Request):
 
 
 def createOAuth2Request(request, method_cls=OAuth2Request, use_json=False):
-  print(method_cls)
-  print(type(method_cls))
+  """ Create request object
+
+      :param request: request
+      :type request: object, dict
+      :param object method_cls: returned class
+      :param str use_json: if data is json
+
+      :return: object
+  """
   if isinstance(request, method_cls):
     return request
   if isinstance(request, dict):
@@ -30,5 +41,4 @@ def createOAuth2Request(request, method_cls=OAuth2Request, use_json=False):
     body = {}
     for k, v in request.body_arguments.items():
       body[k] = ' '.join(v)
-  m = method_cls(request.method, request.uri, body, request.headers)
-  return method_cls(request.method, request.uri, body, request.headers)
+  return method_cls(request.method, request.full_url(), body, request.headers)
