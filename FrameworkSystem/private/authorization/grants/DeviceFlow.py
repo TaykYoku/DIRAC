@@ -54,8 +54,10 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     if not userCode:
       raise OAuth2Error('user_code is absent.')
     session, _ = self.server.getSessionByOption('user_code', userCode)
+    from pprint import pprint
+    pprint(self.server.getSessions())
     if not session:
-      raise OAuth2Error('Session is expired.')
+      raise OAuth2Error('Session with %s user code is expired.' % userCode)
     self.execute_hook('after_validate_authorization_request')
     return None
   
