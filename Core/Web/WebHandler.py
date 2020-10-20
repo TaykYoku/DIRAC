@@ -245,7 +245,7 @@ class WebHandler(BaseRequestHandler):
         credDict['validGroup'] = False
         credDict['group'] = self.__group
     print('=== _gatherPeerCredentials: %s' % str(credDict))
-    return result['Value']
+    return credDict
 
   # def __processCredentials(self):
   #   """ Extract the user credentials based on the certificate or what comes from the balancer
