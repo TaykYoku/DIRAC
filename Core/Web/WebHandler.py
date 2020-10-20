@@ -18,6 +18,7 @@ from authlib.common.security import generate_token
 
 import tornado.web
 import tornado.websocket
+from tornado import gen
 from tornado.web import HTTPError
 
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
