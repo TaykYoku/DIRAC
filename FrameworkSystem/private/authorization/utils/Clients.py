@@ -29,7 +29,7 @@ class Client(OAuth2ClientMixin):
     print('set self.client_secret_expires_at: %s' % params['client_secret_expires_at'])
     self.client_secret_expires_at = params['client_secret_expires_at']
     print('set self.client_metadata: %s' % params['client_metadata'])
-    self.client_metadata = params['client_metadata']
+    self._client_metadata = params['client_metadata']
     print(' __INIT__ OK')
   
   def get_allowed_scope(self, scope):
