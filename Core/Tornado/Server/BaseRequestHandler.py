@@ -325,7 +325,7 @@ class BaseRequestHandler(RequestHandler):
       :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
                 (not a DIRAC structure !)
     """
-
+    print('ORIG _gatherPeerCredentials(self):')
     chainAsText = self.request.get_ssl_certificate().as_pem()
     peerChain = X509Chain()
 
