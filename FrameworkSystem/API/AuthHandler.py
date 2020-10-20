@@ -46,7 +46,7 @@ class AuthHandler(WebHandler):
                                     'serviceName', 'serviceSectionPath',
                                     'csPaths' and 'URL'
     """
-    self.server = AuthServer()
+    cls.server = AuthServer()
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
   def web_index(self, instance):
