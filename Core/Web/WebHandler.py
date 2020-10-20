@@ -128,9 +128,7 @@ class WebHandler(BaseRequestHandler):
 
         :return: list
     """
-    match = self.PATH_RE.match(self.request.path)
-    groups = match.groups()
-    return groups[3:]
+    pass
   
   def _getMethodAuthProps(self):
     """ Resolves the hard coded authorization requirements for method.
@@ -430,9 +428,9 @@ class WebHandler(BaseRequestHandler):
   #       return True
   #   return False
 
-  def get(self, *args, **kwargs):
+  def get(self, setup, group, route, *pathArgs):
     method = self._getMethod()
-    return method(*self._getMethodArgs())
+    return method(*pathArgs)
 
   def post(self, *args, **kwargs):
     return self.get(*args, **kwargs)
