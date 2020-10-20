@@ -288,7 +288,7 @@ class BaseRequestHandler(RequestHandler):
         extraInfo += 'ID: %s' % self.credDict['ID']
       sLog.error(
           "Unauthorized access", "Identity %s; path %s; %s" %
-          (self.srv_getFormattedRemoteCredentials,
+          (self.srv_getFormattedRemoteCredentials(),
            self.request.path, extraInfo))
       raise HTTPError(status_code=http_client.UNAUTHORIZED)
 

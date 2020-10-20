@@ -219,42 +219,48 @@ class WebHandler(BaseRequestHandler):
       :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
                 (not a DIRAC structure !)
     """
+    credDict = {}
+
     # Authorization type
     self.__authGrant = self.get_cookie('authGrant', 'Certificate')
     print('AUTH: %s' % self.__authGrant)
-    self.__sessionID = self.get_secure_cookie('session_id')
-    self.__session = self.application.getSession(self.__sessionID)
-    # self.__jwtAuth = self.request.headers.get("Authorization")
-    result = self.__processCredentials()
-    if not result['OK']:
-      raise Exception(res['Message'])
-    result['Value']['validGroup'] = False
+
+    # Unsecure protocol only for visitors
+    if self.request.protocol == "https":
+      if self.__authGrant == 'Certificate':
+        credDict = super(WebHandler, self)._gatherPeerCredentials()
+      if self.__authGrant == 'Session':
+        credDict = self.__readSession(self.get_secure_cookie('session_id'))
+    
+    credDict['validGroup'] = False
+    credDict['group'] = self.__group
+    print('=== _gatherPeerCredentials: %s' % str(credDict))
     return result['Value']
 
-  def __processCredentials(self):
-    """ Extract the user credentials based on the certificate or what comes from the balancer
+  # def __processCredentials(self):
+  #   """ Extract the user credentials based on the certificate or what comes from the balancer
 
-        :return: S_OK()/S_ERROR()
-    """
-    # Unsecure protocol only for visitors
-    if self.request.protocol != "https":  # or self.__idp == "Visitor":
-      return S_OK()
+  #       :return: S_OK()/S_ERROR()
+  #   """
+  #   # Unsecure protocol only for visitors
+  #   if self.request.protocol != "https":  # or self.__idp == "Visitor":
+  #     return S_OK()
 
-    self.credDict = {'group': self.__group}
+  #   self.credDict = {'group': self.__group}
 
-    if self.__authGrant == 'Session':
-      print('READ SESSION')
-      result = self.__readSession()
-    elif self.__authGrant == 'Visitor':
-      print('READ VISITOR')
-      result = S_OK()
-    else:
-      print('READ CERT')
-      result = self.__readCertificate()
-    print('self.credDict: %s' % self.credDict)
-    if not result['OK']:
-      self.log.error(result['Message'], 'Continue as Visitor.')
-    return S_OK(self.credDict)
+  #   if self.__authGrant == 'Session':
+  #     print('READ SESSION')
+  #     result = self.__readSession()
+  #   elif self.__authGrant == 'Visitor':
+  #     print('READ VISITOR')
+  #     result = S_OK()
+  #   else:
+  #     print('READ CERT')
+  #     result = self.__readCertificate()
+  #   print('self.credDict: %s' % self.credDict)
+  #   if not result['OK']:
+  #     self.log.error(result['Message'], 'Continue as Visitor.')
+  #   return S_OK(self.credDict)
 
   # def _request_summary(self):
   #   """ Return a string returning the summary of the request
@@ -271,27 +277,33 @@ class WebHandler(BaseRequestHandler):
   #   summ = "%s %s" % (summ, "".join(cl))
   #   return summ
 
-  def __readSession(self):
+  def __readSession(self, sessionID):
     """ Fill credentionals from session
 
-        :return: S_OK()/S_ERROR()
+        :param str sessionID: session id
+
+        :return: dict
     """
-    if not self.__session or not self.__session.token:
-      return S_ERROR('Session expired.')
+    if not sessionID:
+      return {}
+    
+    session = self.application.getSession(sessionID)
+    if not session or not session.token:
+      raise Exception('%s session expired.' % sessionID)
 
     if self.request.headers.get("Authorization"):
       token = ResourceProtector().acquire_token(self.request, 'changeGroup')
 
       # Is session active?
-      if self.__session.token.access_token != token.access_token:
-        return S_ERROR('Session expired.')
-    token = ResourceProtector().validator(self.__session.token.refresh_token, 'changeGroup', None, 'OR')
+      if session.token.access_token != token.access_token:
+        raise Exception('%s session invalid, token is not match.' % sessionID)
+    token = ResourceProtector().validator(session.token.refresh_token, 'changeGroup', None, 'OR')
 
     self.credDict['ID'] = token.sub
     self.credDict['issuer'] = token.issuer
 
     # Update session expired time
-    self.application.updateSession(self.__session)
+    self.application.updateSession(session)
     return S_OK()
 
   def __readCertificate(self):
