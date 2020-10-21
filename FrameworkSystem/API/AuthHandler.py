@@ -52,6 +52,9 @@ class AuthHandler(TornadoREST):
                                     'csPaths' and 'URL'
     """
     cls.server = AuthServer()
+  
+  def requestHandler(self):
+    self.currentPath = "https://" + self.request.host + self.request.path
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
   def web_index(self, instance):
@@ -160,7 +163,7 @@ class AuthHandler(TornadoREST):
       </html>''')
       # self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
       #                        query='?' + self.request.query))
-      return t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+      return t.generate(url=self.currentPath,
                         query='?' + self.request.query)
     print('-----> web_device <-------')
 
@@ -217,9 +220,9 @@ class AuthHandler(TornadoREST):
           <ul>
         </body>
       </html>''')
-      # self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+      # self.finish(t.generate(url=self.currentPath,
       #                        query='?' + self.request.query, idPs=idPs))
-      return t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+      return t.generate(url=self.currentPath,
                         query='?' + self.request.query, idPs=idPs)
 
     # Check IdP
@@ -334,7 +337,7 @@ class AuthHandler(TornadoREST):
           <ul>
         </body>
       </html>''')
-      url = self.request.protocol + "://" + self.request.host + self.request.path
+      url = self.currentPath
       # self.finish(t.generate(url=url, session=session, groups=groupStatuses))
       return t.generate(url=url, session=session, groups=groupStatuses)
 
