@@ -110,10 +110,12 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
             credDict = self.__readCertificateFromNginx()
           else:
             credDict = super(TornadoService, self)._gatherPeerCredentials()
-          # Add a group if it present in the request path
-          if self.__group:
-            credDict['validGroup'] = False
-            credDict['group'] = self.__group
+
+          # MUST BE ADDED when read certificate
+          # # Add a group if it present in the request path
+          # if self.__group:
+          #   credDict['validGroup'] = False
+          #   credDict['group'] = self.__group
         except Exception as e:
           self.log.warn(str(e))
 
@@ -126,8 +128,8 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
 
         :return: dict
     """
-    token = ResourceProtector().acquire_token(self.request, self.__group and ('g:%s' % self.__group))
-    return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group or token.groups[0]}
+    token = ResourceProtector().acquire_token(self.request, None)
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
 
   def __readCertificateFromNginx(self):
     """ Fill credentional from certificate and check is registred from nginx.
