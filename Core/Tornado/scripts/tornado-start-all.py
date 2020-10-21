@@ -54,5 +54,5 @@ includeExtensionErrors()
 gLogger.initialize('Tornado', "/")
 
 
-serverToLaunch = TornadoServer()
+serverToLaunch = TornadoServer('Framework/Dummy')
 serverToLaunch.startTornado()
