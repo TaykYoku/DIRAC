@@ -12,7 +12,7 @@ import requests
 
 from tornado import web, gen, template
 from tornado.template import Template
-from tornado.httpclient import HTTPResponse
+from tornado.httpclient import HTTPResponse, HTTPRequest
 from tornado.httputil import HTTPHeaders
 
 from authlib.jose import jwk, jwt
@@ -102,7 +102,7 @@ class AuthHandler(TornadoREST):
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     # self.__finish(*r)
-    return HTTPResponse(self.request, **self.server.create_endpoint_response(name, self.request))
+    return __response(**self.server.create_endpoint_response(name, self.request))
     print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
@@ -123,7 +123,7 @@ class AuthHandler(TornadoREST):
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       # self.__finish(*r)
-      return HTTPResponse(self.request, **self.server.create_endpoint_response(name, self.request))
+      return __response(**self.server.create_endpoint_response(name, self.request))
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
@@ -137,7 +137,7 @@ class AuthHandler(TornadoREST):
         authURL += '?%s&client_id=%s&user_code=%s' % (data['request'].query,
                                                       data['client_id'], userCode)
         # self.redirect(authURL)
-        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": authURL}))
+        return self.__response(code=302, headers=HTTPHeaders({"Location": authURL}))
       
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -235,7 +235,7 @@ class AuthHandler(TornadoREST):
         # raise WErr(503, result['Message'])
         return result
       # self.__finish(*self.server.create_authorization_response(self.request, result['Value']))
-      return HTTPResponse(self.request, **self.server.create_authorization_response(self.request, result['Value']))
+      return __response(**self.server.create_authorization_response(self.request, result['Value']))
 
     # Submit second auth flow through IdP
     # result = yield self.threadTask(self.server.getIdPAuthorization, idP, self.get_argument('state'))
@@ -245,7 +245,7 @@ class AuthHandler(TornadoREST):
       return result
     self.log.notice('Redirect to', result['Value'])
     # self.redirect(result['Value'])
-    return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']}))
+    return self.__response(code=302, headers=HTTPHeaders({"Location": result['Value']}))
     print('-----> web_authorization <-------')
 
   # @asyncGen
@@ -352,7 +352,7 @@ class AuthHandler(TornadoREST):
           raise WErr(503, result['Message'])
         self.log.notice('Redirect to', result['Value'])
         # self.redirect(result['Value'])
-        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']}))
+        return self.__response(code=302, headers=HTTPHeaders({"Location": result['Value']}))
 
       if status not in ['ready', 'unknown']:
         # self.finish('%s - bad group status' % status)
@@ -364,7 +364,7 @@ class AuthHandler(TornadoREST):
     ###### RESPONSE
     # r = yield self.threadTask(self.server.create_authorization_response, request, username)
     # self.__finish(*r)
-    return HTTPResponse(self.request, **self.server.create_authorization_response(request, username))
+    return __response(**self.server.create_authorization_response(request, username))
     print('-----> web_redirect <-------')
 
   # @asyncGen
@@ -372,7 +372,7 @@ class AuthHandler(TornadoREST):
     print('------ web_token --------')
     # r = yield self.threadTask(self.server.create_token_response, self.request)
     # self.__finish(*r)
-    return HTTPResponse(self.request, **self.server.create_token_response(self.request))
+    return __response(**self.server.create_token_response(self.request))
     print('-----> web_token <-------')
   
   # def __finish(self, data, code, headers):
@@ -427,6 +427,9 @@ class AuthHandler(TornadoREST):
     if status not in ['ready', 'unknown']:
       return S_ERROR('%s - bad group status' % status)
     return S_OK(claims.sub)
+  
+  def __response(self, *args, **kwargs):
+    return HTTPResponse(HTTPRequest(self.request.full_url(), self.request.method), *args, **kwargs)
 
   def __validateToken(self):
     """ Load client certchain in DIRAC and extract informations.
