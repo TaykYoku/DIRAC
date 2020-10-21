@@ -255,7 +255,8 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     for h in headers:
       header.add(*h)
     # Expected that 'data' is unicode string, for Python 2 => unicode(str, "utf-8")
-    return HTTPResponse(self.request, status_code, headers=header, buffer=io.StringIO(payload))
+    return dict(code=status_code, headers=header, buffer=io.StringIO(payload))
+    # return HTTPResponse(self.request, status_code, headers=header, buffer=io.StringIO(payload))
 
   def validate_consent_request(self, request, end_user=None):
     """ Validate current HTTP request for authorization page. This page
