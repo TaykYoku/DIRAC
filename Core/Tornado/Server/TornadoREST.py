@@ -22,6 +22,7 @@ from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.Core.Web import Conf
+from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 
 
 class TornadoREST(TornadoService):  # pylint: disable=abstract-method

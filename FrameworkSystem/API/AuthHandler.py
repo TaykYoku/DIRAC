@@ -54,7 +54,7 @@ class AuthHandler(TornadoREST):
     cls.server = AuthServer()
   
   def initializeRequest(self):
-    self.currentPath = "https://" + self.request.host + self.request.path
+    self.currentPath = self.request.protocol + "://" + self.request.host + self.request.path
 
   path_index = ['.well-known/(oauth-authorization-server|openid-configuration)']
   def web_index(self, instance):
