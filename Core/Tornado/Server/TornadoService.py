@@ -428,18 +428,18 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     """
     # Execute the method in an executor (basically a separate thread)
     # Because of that, we cannot calls certain methods like `self.write`
-    # in __executeMethod. This is because these methods are not threadsafe
+    # in _executeMethod. This is because these methods are not threadsafe
     # https://www.tornadoweb.org/en/branch5.1/web.html#thread-safety-notes
     # However, we can still rely on instance attributes to store what should
     # be sent back (reminder: there is an instance
     # of this class created for each request)
-    retVal = yield IOLoop.current().run_in_executor(None, self.__executeMethod, args)
+    retVal = yield IOLoop.current().run_in_executor(None, self._executeMethod, args)
 
     # retVal is :py:class:`tornado.concurrent.Future`
     self._finishFuture(retVal)
 
   @gen.coroutine
-  def __executeMethod(self, args):
+  def _executeMethod(self, args):
     """
       Execute the method called, this method is ran in an executor
       We have several try except to catch the different problem which can occur

@@ -141,7 +141,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
   def get(self, *args, **kwargs):  # pylint: disable=arguments-differ
     """
     """
-    retVal = yield IOLoop.current().run_in_executor(None, self.__executeMethod)
+    retVal = yield IOLoop.current().run_in_executor(None, self._executeMethod, args)
 
     # retVal is :py:class:`tornado.concurrent.Future`
     self._finishFuture(retVal)
