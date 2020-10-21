@@ -156,6 +156,7 @@ class TornadoServer(object):
     for port, urls in self.configData.items():
       if not str(port).endswith('443'):
         ssl_options = None
+
       # Start server
       router = Application(urls, debug=False, compress_response=True)
       server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True)
