@@ -118,6 +118,8 @@ class AuthHandler(TornadoREST):
         GET: /device/<user code>
     """
     print('------ web_device --------')
+    print('-- URL')
+    print(self.request.full_url())
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
