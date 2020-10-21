@@ -115,7 +115,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
             credDict['validGroup'] = False
             credDict['group'] = self.__group
         except Exception as e:
-          sLog.warn(str(e))
+          self.log.warn(str(e))
 
     return credDict
 
