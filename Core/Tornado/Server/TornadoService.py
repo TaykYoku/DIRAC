@@ -483,11 +483,6 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     # Here it is safe to write back to the client, because we are not
     # in a thread anymore
 
-    # If set to true, do not JEncode the return of the RPC call
-    # This is basically only used for file download through
-    # the 'streamToClient' method.
-    rawContent = self.get_argument('rawContent', default=False)
-
     # Parse HTTPResponse
     if isinstance(self.result, HTTPResponse):
       self.set_status(self.result.code)
@@ -495,11 +490,20 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
         self.set_header(key, self.result.headers[key])
       if self.result.body:
         self.write(self.result.body)
-    
-    elif rawContent:
+
+    # If set to true, do not JEncode the return of the RPC call
+    # This is basically only used for file download through
+    # the 'streamToClient' method.
+    elif self.get_argument('rawContent', default=False):
       # See 4.5.1 http://www.rfc-editor.org/rfc/rfc2046.txt
       self.set_header("Content-Type", "application/octet-stream")
       self.write(self.result)
+    
+    # Return simple text or html
+    elif isinstance(self.result, str):
+      self.write(self.result)
+    
+    # DIRAC JSON
     else:
       self.set_header("Content-Type", "application/json")
       self.write(encode(self.result))
@@ -517,7 +521,7 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     try:
       if not self.result['OK']:
         argsString = "ERROR: %s" % self.result['Message']
-    except (AttributeError, KeyError):  # In case it is not a DIRAC structure
+    except (AttributeError, KeyError, TypeError):  # In case it is not a DIRAC structure
       if self._reason != 'OK':
         argsString = 'ERROR %s' % self._reason
 
