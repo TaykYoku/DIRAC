@@ -52,6 +52,7 @@ class AuthHandler(TornadoREST):
                                     'csPaths' and 'URL'
     """
     cls.server = AuthServer()
+    cls.currentPath = None
   
   def requestHandler(self):
     self.currentPath = "https://" + self.request.host + self.request.path
