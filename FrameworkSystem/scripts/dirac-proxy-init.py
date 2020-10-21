@@ -372,7 +372,7 @@ class ProxyInit(object):
       try:
         r = requests.get('%s/option?path=/Systems/Framework/Production/URLs/ProxyAPI' % confUrl, verify=False)
         r.raise_for_status()
-        proxyAPI = decode(r.text)[0]
+        proxyAPI = r.text#decode(r.text)[0]
       except requests.exceptions.Timeout:
         sys.exit('Time out')
       except requests.exceptions.RequestException as e:
