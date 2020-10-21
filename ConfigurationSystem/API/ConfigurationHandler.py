@@ -12,13 +12,16 @@ from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationDat
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 
 from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
+from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
+
 
 __RCSID__ = "$Id$"
 
 
-class ConfigurationHandler(WebHandler):
+class ConfigurationHandler(TornadoREST):#WebHandler):
   AUTH_PROPS = "all"
-  LOCATION = "/"
+  LOCATION = "/DIRAC/"
+  METHOD_PREFIX = 'web_'
 
   path_conf = ['([a-z]+)']
   @asyncGen
@@ -59,20 +62,28 @@ class ConfigurationHandler(WebHandler):
     if version and (version or '0') >= gConfigurationData.getVersion():
       self.finish()
     if key == 'dump':
-      remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
+      # remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
+      result = gConfigurationData.getRemoteCFG()
       result['Value'] = str(remoteCFG)
     elif key == 'option':
-      result = yield self.threadTask(gConfig.getOption, path)
+      # result = yield self.threadTask(gConfig.getOption, path)
+      result = gConfig.getOption(path)
     elif key == 'dict':
-      result = yield self.threadTask(gConfig.getOptionsDict, path)
+      # result = yield self.threadTask(gConfig.getOptionsDict, path)
+      result = gConfig.getOptionsDict(path)
     elif key == 'options':
-      result = yield self.threadTask(gConfig.getOptions, path)
+      # result = yield self.threadTask(gConfig.getOptions, path)
+      result = gConfig.getOptions(path)
     elif key == 'sections':
-      result = yield self.threadTask(gConfig.getSections, path)
+      # result = yield self.threadTask(gConfig.getSections, path)
+      result = gConfig.getSections(path)
     elif key == 'getGroupsStatusByUsername':
-      result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.get_arguments)
+      # result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.get_arguments)
+      result = gProxyManager.getgetGroupsStatusByUsername(**self.get_arguments)
     elif any([key == m and re.match('^[a-z][A-z]+', m) for m in dir(Registry)]) and self.isRegisteredUser():
-      result = yield self.threadTask(getattr(Registry, key), **self.get_arguments)
+      # result = yield self.threadTask(getattr(Registry, key), **self.get_arguments)
+      method = getattr(Registry, key)
+      result = method(**self.get_arguments)
     else:
       raise WErr(500, '%s request unsuported' % key)
       # result = yield self.threadTask(getattr(Registry, key), **self.args)
