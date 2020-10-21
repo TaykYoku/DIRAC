@@ -30,11 +30,12 @@ from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
+from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 
 __RCSID__ = "$Id$"
 
 
-class AuthHandler(WebHandler):
+class AuthHandler(TornadoREST):
   AUTH_PROPS = 'all'
   LOCATION = "/DIRAC/auth"
 
