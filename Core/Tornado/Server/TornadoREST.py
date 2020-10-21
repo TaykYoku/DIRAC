@@ -20,6 +20,7 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
+from DIRAC.Core.Web import Conf
 
 
 class TornadoREST(TornadoService):  # pylint: disable=abstract-method
