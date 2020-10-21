@@ -448,7 +448,8 @@ class ProxyInit(object):
       with OAuth2Session(clientID, token=token) as sess:
         r = sess.get(url, verify=False)
         r.raise_for_status()
-      proxy = decode(r.text)[0]
+        proxy = r.text
+      # proxy = decode(r.text)[0]
       if not proxy:
         sys.exit("Result is empty.")
       
