@@ -102,7 +102,7 @@ class AuthHandler(TornadoREST):
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
     # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
     # self.__finish(*r)
-    return __response(**self.server.create_endpoint_response(name, self.request))
+    return self.__response(**self.server.create_endpoint_response(name, self.request))
     print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
@@ -123,7 +123,7 @@ class AuthHandler(TornadoREST):
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
       # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
       # self.__finish(*r)
-      return __response(**self.server.create_endpoint_response(name, self.request))
+      return self.__response(**self.server.create_endpoint_response(name, self.request))
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
@@ -235,7 +235,7 @@ class AuthHandler(TornadoREST):
         # raise WErr(503, result['Message'])
         return result
       # self.__finish(*self.server.create_authorization_response(self.request, result['Value']))
-      return __response(**self.server.create_authorization_response(self.request, result['Value']))
+      return self.__response(**self.server.create_authorization_response(self.request, result['Value']))
 
     # Submit second auth flow through IdP
     # result = yield self.threadTask(self.server.getIdPAuthorization, idP, self.get_argument('state'))
@@ -364,7 +364,7 @@ class AuthHandler(TornadoREST):
     ###### RESPONSE
     # r = yield self.threadTask(self.server.create_authorization_response, request, username)
     # self.__finish(*r)
-    return __response(**self.server.create_authorization_response(request, username))
+    return self.__response(**self.server.create_authorization_response(request, username))
     print('-----> web_redirect <-------')
 
   # @asyncGen
@@ -372,7 +372,7 @@ class AuthHandler(TornadoREST):
     print('------ web_token --------')
     # r = yield self.threadTask(self.server.create_token_response, self.request)
     # self.__finish(*r)
-    return __response(**self.server.create_token_response(self.request))
+    return self.__response(**self.server.create_token_response(self.request))
     print('-----> web_token <-------')
   
   # def __finish(self, data, code, headers):
