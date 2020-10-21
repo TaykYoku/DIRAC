@@ -82,7 +82,7 @@ class AuthHandler(TornadoREST):
       return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
     print('-----> web_jwk <-------')
   
-  @asyncGen
+  # @asyncGen
   def web_userinfo(self):
     print('------ web_userinfo --------')
     # r = yield self.threadTask(self.__validateToken)
@@ -90,7 +90,7 @@ class AuthHandler(TornadoREST):
     return self.__validateToken()
     print('-----> web_userinfo <-------')
 
-  @asyncGen
+  # @asyncGen
   def web_register(self):
     """ Client registry
 
@@ -107,7 +107,7 @@ class AuthHandler(TornadoREST):
     print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
-  @asyncGen
+  # @asyncGen
   def web_device(self, userCode=None):
     """ Device authorization flow
 
@@ -164,7 +164,7 @@ class AuthHandler(TornadoREST):
     print('-----> web_device <-------')
 
   path_authorization = ['([A-z0-9]*)']
-  @asyncGen
+  # @asyncGen
   def web_authorization(self, provider=None):
     """ Authorization endpoint
 
@@ -247,7 +247,7 @@ class AuthHandler(TornadoREST):
     return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']}))
     print('-----> web_authorization <-------')
 
-  @asyncGen
+  # @asyncGen
   def web_redirect(self):
     print('------ web_redirect --------')
     # Redirect endpoint for response
@@ -366,7 +366,7 @@ class AuthHandler(TornadoREST):
     return self.server.create_authorization_response(request, username)
     print('-----> web_redirect <-------')
 
-  @asyncGen
+  # @asyncGen
   def web_token(self):
     print('------ web_token --------')
     # r = yield self.threadTask(self.server.create_token_response, self.request)
