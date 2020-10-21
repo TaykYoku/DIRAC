@@ -21,6 +21,7 @@ from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
 
+sLog = gLogger.getSubLogger(__name__)
 
 class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
   """
