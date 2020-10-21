@@ -71,7 +71,11 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
 
         :return: list
     """
-    return self._tornadoMethodArgs
+    try:
+      return [a.strip('/') for a in self.request.path.split(self.LOCATION)[1].split('?')[0].split('/')[1:]]
+    except Exception:
+      return []
+    # return self._tornadoMethodArgs
 
   def _gatherPeerCredentials(self):
     """
@@ -134,3 +138,6 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
       items.reverse()
       DN = '/' + '/'.join(items)
     return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
+
+  # def get(self, *args, **kwargs):
+  #   self.post(*args, **kwargs)
