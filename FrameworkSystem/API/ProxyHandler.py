@@ -40,6 +40,10 @@ class ProxyHandler(TornadoREST):
     pass
   
   def initializeRequest(self):
+    print('GROUP: %s' % self.getUserGroup())
+    print('USER ID: %s' % self.getID())
+    print('USER DN: %s' % self.getDN())
+
     self.proxyCli = ProxyManagerClient(delegatedGroup=self.getUserGroup(),
                                        delegatedID=self.getID(), delegatedDN=self.getDN())
 

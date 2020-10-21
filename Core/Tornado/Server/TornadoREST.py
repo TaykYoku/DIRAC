@@ -13,6 +13,7 @@ from tornado.web import HTTPError
 from tornado import gen
 import tornado.ioloop
 from tornado.ioloop import IOLoop
+from six.moves import http_client
 
 import DIRAC
 
