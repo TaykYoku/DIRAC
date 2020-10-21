@@ -72,3 +72,65 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: list
     """
     return self._tornadoMethodArgs
+
+  def _gatherPeerCredentials(self):
+    """
+      Load client certchain in DIRAC and extract informations.
+
+      The dictionary returned is designed to work with the AuthManager,
+      already written for DISET and re-used for HTTPS.
+
+      :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
+                (not a DIRAC structure !)
+    """
+    credDict = {}
+
+    # Authorization type
+    self.__authGrant = self.get_cookie('authGrant', 'Certificate')
+
+    # Unsecure protocol only for visitors
+    if self.request.protocol == "https":
+
+      # if self.__authGrant == 'Session':
+      #   # read session
+      #   credDict = self.__readSession(self.get_secure_cookie('session_id'))
+
+      # elif self.request.headers.get("Authorization"):
+      #   # read token
+      #   credDict = self.__readToken()
+
+      elif self.__authGrant == 'Certificate':
+        try:
+          # try read certificate
+          if Conf.balancer() == "nginx":
+            credDict = self.__readCertificateFromNginx()
+          else:
+            credDict = super(WebHandler, self)._gatherPeerCredentials()
+          # Add a group if it present in the request path
+          if self.__group:
+            credDict['validGroup'] = False
+            credDict['group'] = self.__group
+        except Exception as e:
+          sLog.warn(str(e))
+
+    return credDict
+
+  def __readCertificateFromNginx(self):
+    """ Fill credentional from certificate and check is registred from nginx.
+
+        :return: dict
+    """
+    headers = self.request.headers
+    if not headers:
+      raise Exception('No headers found.')
+    if headers.get('X-Scheme') != "https":
+      raise Exception('Unsecure protocol.')
+    if headers.get('X-Ssl_client_verify') != 'SUCCESS':
+      raise Exception('No certificate upload to browser.')
+
+    DN = headers['X-Ssl_client_s_dn']
+    if not DN.startswith('/'):
+      items = DN.split(',')
+      items.reverse()
+      DN = '/' + '/'.join(items)
+    return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
