@@ -53,9 +53,9 @@ class ConfigurationHandler(TornadoREST):
 
     version = self.get_argument('version', None)
     if version and (version or '0') >= gConfigurationData.getVersion():
-      return S_OK()      
+      return ''
     if key == 'dump':
-      return S_OK(str(gConfigurationData.getRemoteCFG()))
+      return str(gConfigurationData.getRemoteCFG())
     elif key == 'option':
       return gConfig.getOption(path)
     elif key == 'dict':

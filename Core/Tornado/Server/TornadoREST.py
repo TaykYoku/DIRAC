@@ -145,3 +145,18 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
 
     # retVal is :py:class:`tornado.concurrent.Future`
     self._finishFuture(retVal)
+
+  def _finishFuture(self, retVal):
+    """ Handler Future result
+
+        :param object retVal: tornado.concurrent.Future
+    """
+    result = retVal.result()
+    try:
+      if not result['OK']:
+        raise HTTPError(http_client.INTERNAL_SERVER_ERROR)
+      result = result['Value']
+    except (AttributeError, KeyError, TypeError):
+      pass
+    super(TornadoREST, self)._finishFuture(result)
+    

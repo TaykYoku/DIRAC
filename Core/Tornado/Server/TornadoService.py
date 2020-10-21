@@ -22,6 +22,7 @@ from tornado import gen
 import tornado
 import tornado.ioloop
 from tornado.ioloop import IOLoop
+from tornado.concurrent import Future
 
 import DIRAC
 
@@ -478,7 +479,8 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
         :param object retVal: tornado.concurrent.Future
     """
     
-    self.result = retVal.result()
+    # Wait result only if it's a Future object
+    self.result = retVal.result() if isinstance(retVal, Future) else retVal
 
     # Here it is safe to write back to the client, because we are not
     # in a thread anymore
