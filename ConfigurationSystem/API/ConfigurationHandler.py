@@ -20,7 +20,7 @@ __RCSID__ = "$Id$"
 
 class ConfigurationHandler(TornadoREST):#WebHandler):
   AUTH_PROPS = "all"
-  LOCATION = "/DIRAC/"
+  LOCATION = "/DIRAC"
   METHOD_PREFIX = 'web_'
 
   path_conf = ['([a-z]+)']

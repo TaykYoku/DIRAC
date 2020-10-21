@@ -32,10 +32,6 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: str
     """
     route = cls.LOCATION
-    if hasattr(cls, PATH_RE) and cls.PATH_RE:
-      match = cls.PATH_RE.match(request.path)
-      groups = match.groups()
-      route = groups[2]
     return route if route[-1] == "/" else route[:route.rfind("/")]
   
   @classmethod
