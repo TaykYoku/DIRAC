@@ -10,7 +10,7 @@ __RCSID__ = "$Id$"
 
 class OAuth2Request(_OAuth2Request):
   def __init__(self, method, uri, body=None, headers=None):
-    super(_OAuth2Request, self).__init__(method, uri.replace('http://', 'https://'), body, headers)
+    super(OAuth2Request, self).__init__(method, uri.replace('http://', 'https://'), body, headers)
 
   def toDict(self):
     """ Convert class to dictionary
