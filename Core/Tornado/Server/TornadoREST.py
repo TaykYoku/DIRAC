@@ -99,7 +99,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
       #   # read token
       #   credDict = self.__readToken()
 
-      elif self.__authGrant == 'Certificate':
+      if self.__authGrant == 'Certificate':
         try:
           # try read certificate
           if Conf.balancer() == "nginx":
