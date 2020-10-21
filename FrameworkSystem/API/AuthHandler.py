@@ -350,7 +350,7 @@ class AuthHandler(WebHandler):
           raise WErr(503, result['Message'])
         self.log.notice('Redirect to', result['Value'])
         # self.redirect(result['Value'])
-        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']})
+        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']}))
 
       if status not in ['ready', 'unknown']:
         # self.finish('%s - bad group status' % status)
