@@ -97,11 +97,11 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
       #   # read session
       #   credDict = self.__readSession(self.get_secure_cookie('session_id'))
 
-      # elif self.request.headers.get("Authorization"):
-      #   # read token
-      #   credDict = self.__readToken()
+      if self.request.headers.get("Authorization"):
+        # read token
+        credDict = self.__readToken()
 
-      if self.__authGrant == 'Certificate':
+      elif self.__authGrant == 'Certificate':
         try:
           # try read certificate
           if Conf.balancer() == "nginx":
@@ -116,6 +116,16 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
           self.log.warn(str(e))
 
     return credDict
+  
+  def __readToken(self):
+    """ Fill credentionals from session
+
+        :param str sessionID: session id
+
+        :return: dict
+    """
+    token = ResourceProtector().acquire_token(self.request, self.__group and ('g:%s' % self.__group))
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group or token.groups[0]}
 
   def __readCertificateFromNginx(self):
     """ Fill credentional from certificate and check is registred from nginx.
