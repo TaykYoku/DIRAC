@@ -13,12 +13,12 @@ from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 
 from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
-
+from tornado.web import RequestHandler
 
 __RCSID__ = "$Id$"
 
 
-class ConfigurationHandler(TornadoREST):#WebHandler):
+class ConfigurationHandler(RequestHandler):#WebHandler):
   AUTH_PROPS = "all"
   LOCATION = "/DIRAC"
   METHOD_PREFIX = 'web_'
