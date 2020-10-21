@@ -138,3 +138,6 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
       items.reverse()
       DN = '/' + '/'.join(items)
     return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
+
+  def get(self, *args, **kwargs):
+    self.post(*args, **kwargs)

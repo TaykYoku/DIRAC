@@ -18,7 +18,7 @@ from tornado.web import RequestHandler
 __RCSID__ = "$Id$"
 
 
-class ConfigurationHandler(RequestHandler):#WebHandler):
+class ConfigurationHandler(TornadoREST):#WebHandler):
   AUTH_PROPS = "all"
   LOCATION = "/DIRAC"
   METHOD_PREFIX = 'web_'
@@ -91,9 +91,3 @@ class ConfigurationHandler(RequestHandler):#WebHandler):
     if not result['OK']:
       raise WErr(404, result['Message'])
     self.finishJEncode(result['Value'])
-
-  @asyncGen
-  def post(self):
-    """ Post method
-    """
-    pass

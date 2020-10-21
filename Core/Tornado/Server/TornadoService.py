@@ -154,7 +154,7 @@ class TornadoService(BaseRequestHandler):  # pylint: disable=abstract-method
   # See https://www.tornadoweb.org/en/branch5.1/guide/coroutines.html#coroutines
   # for details
   @gen.coroutine
-  def _post(self, *args, **kwargs):  # pylint: disable=arguments-differ
+  def post(self, *args, **kwargs):  # pylint: disable=arguments-differ
     """
       Method to handle incoming ``POST`` requests.
       Note that all the arguments are already prepared in the :py:meth:`.prepare`

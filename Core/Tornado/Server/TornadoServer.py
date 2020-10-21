@@ -16,8 +16,8 @@ import os
 import M2Crypto
 
 import tornado.iostream
-# tornado.iostream.SSLIOStream.configure(
-#     'tornado_m2crypto.m2iostream.M2IOStream')  # pylint: disable=wrong-import-position
+tornado.iostream.SSLIOStream.configure(
+    'tornado_m2crypto.m2iostream.M2IOStream')  # pylint: disable=wrong-import-position
 
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, url
