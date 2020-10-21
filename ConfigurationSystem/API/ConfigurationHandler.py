@@ -11,20 +11,17 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Resources, Registry
 from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 
-from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
-from tornado.web import RequestHandler
 
 __RCSID__ = "$Id$"
 
 
-class ConfigurationHandler(TornadoREST):#WebHandler):
+class ConfigurationHandler(TornadoREST):
   AUTH_PROPS = "all"
   LOCATION = "/DIRAC"
   METHOD_PREFIX = 'web_'
 
   path_conf = ['([a-z]+)']
-  @asyncGen
   def web_conf(self, key):
     """ REST endpoint for configuration system:
 
@@ -51,43 +48,26 @@ class ConfigurationHandler(TornadoREST):#WebHandler):
             +-----------+---------------------------------------+------------------------+
     """
     self.log.notice('Request configuration information')
-    # optns = self.overpath.strip('/').split('/')
-    # path = self.args.get('path', '/')
-    # if not optns or len(optns) > 1:
-    #   raise WErr(404, "You forgot to set attribute.")
+
     path = self.get_argument('path', '/')
 
-    result = S_ERROR('%s request unsuported' % key)
     version = self.get_argument('version', None)
     if version and (version or '0') >= gConfigurationData.getVersion():
-      self.finish()
+      return S_OK()      
     if key == 'dump':
-      # remoteCFG = yield self.threadTask(gConfigurationData.getRemoteCFG)
-      result = gConfigurationData.getRemoteCFG()
-      result['Value'] = str(remoteCFG)
+      return S_OK(str(gConfigurationData.getRemoteCFG()))
     elif key == 'option':
-      # result = yield self.threadTask(gConfig.getOption, path)
-      result = gConfig.getOption(path)
+      return gConfig.getOption(path)
     elif key == 'dict':
-      # result = yield self.threadTask(gConfig.getOptionsDict, path)
-      result = gConfig.getOptionsDict(path)
+      return gConfig.getOptionsDict(path)
     elif key == 'options':
-      # result = yield self.threadTask(gConfig.getOptions, path)
-      result = gConfig.getOptions(path)
+      return gConfig.getOptions(path)
     elif key == 'sections':
-      # result = yield self.threadTask(gConfig.getSections, path)
-      result = gConfig.getSections(path)
+      return gConfig.getSections(path)
     elif key == 'getGroupsStatusByUsername':
-      # result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, **self.get_arguments)
-      result = gProxyManager.getgetGroupsStatusByUsername(**self.get_arguments)
+      return gProxyManager.getgetGroupsStatusByUsername(**self.get_arguments)
     elif any([key == m and re.match('^[a-z][A-z]+', m) for m in dir(Registry)]) and self.isRegisteredUser():
-      # result = yield self.threadTask(getattr(Registry, key), **self.get_arguments)
       method = getattr(Registry, key)
-      result = method(**self.get_arguments)
+      return method(**self.get_arguments)
     else:
-      raise WErr(500, '%s request unsuported' % key)
-      # result = yield self.threadTask(getattr(Registry, key), **self.args)
-
-    if not result['OK']:
-      raise WErr(404, result['Message'])
-    self.finishJEncode(result['Value'])
+      return S_ERROR('%s request unsuported' % key)

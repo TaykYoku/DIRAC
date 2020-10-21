@@ -77,7 +77,8 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: list
     """
     try:
-      return [a.strip('/') for a in self.request.path.split(self.LOCATION)[1].split('?')[0].split('/')[1:] if a]
+      p = self.request.path
+      return [a.strip('/') for a in p.split(self.LOCATION)[1].split('?')[0].strip('/').split('/')[1:] if a]
     except Exception:
       return []
     # return self._tornadoMethodArgs
