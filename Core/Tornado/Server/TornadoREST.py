@@ -36,9 +36,6 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
       return cls.LOCATION.split('/')[-1].strip('/')
     except expression as identifier:
       return cls.__name__
-    
-    # route = cls.LOCATION
-    # return route if route[-1] == "/" else route[:route.rfind("/")]
   
   @classmethod
   def _getServiceAuthSection(cls, serviceName):
@@ -71,17 +68,12 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
     except Exception:
       return 'index'
 
-  def _getMethodArgs(self):
+  def _getMethodArgs(self, args):
     """ Decode args.
 
         :return: list
     """
-    try:
-      p = self.request.path
-      return [a.strip('/') for a in p.split(self.LOCATION)[1].split('?')[0].strip('/').split('/')[1:] if a]
-    except Exception:
-      return []
-    # return self._tornadoMethodArgs
+    return args
 
   def _gatherPeerCredentials(self):
     """
@@ -146,5 +138,10 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
     return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
 
   @gen.coroutine
-  def get(self, *args, **kwargs):
-    self.post(*args, **kwargs)
+  def get(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    """
+    """
+    retVal = yield IOLoop.current().run_in_executor(None, self.__executeMethod)
+
+    # retVal is :py:class:`tornado.concurrent.Future`
+    self._finishFuture(retVal)

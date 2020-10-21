@@ -5,6 +5,8 @@ from __future__ import print_function
 import json
 from time import time
 from pprint import pprint
+from tornado.httpclient import HTTPResponse
+from tornado.httputil import HTTPHeaders
 
 from authlib.deprecate import deprecate
 from authlib.jose import jwt
@@ -247,7 +249,13 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
       # `OAuth2Request` is not JSON serializable
       payload.pop('request', None)
       payload = json_dumps(payload)
-    return (payload, status_code, headers)
+    # return (payload, status_code, headers)
+    
+    header = HTTPHeaders()
+    for h in headers:
+      header.add(*h)
+    # Expected that 'data' is unicode string, for Python 2 => unicode(str, "utf-8")
+    return HTTPResponse(self.request, status_code, headers=header, buffer=io.StringIO(payload))
 
   def validate_consent_request(self, request, end_user=None):
     """ Validate current HTTP request for authorization page. This page

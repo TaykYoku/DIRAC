@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import io
 import re
 import json
 from time import time
@@ -12,6 +13,8 @@ import requests
 
 from tornado import web, gen, template
 from tornado.template import Template
+from tornado.httpclient import HTTPResponse
+from tornado.httputil import HTTPHeaders
 
 from authlib.jose import jwk, jwt
 # from authlib.jose import JsonWebKey
@@ -33,7 +36,9 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(WebHandler):
   AUTH_PROPS = 'all'
-  LOCATION = "/auth"
+  LOCATION = "/DIRAC/auth"
+
+  METHOD_PREFIX = 'web_'
 
   @classmethod
   def initializeHandler(cls, serviceInfo):
@@ -57,7 +62,8 @@ class AuthHandler(WebHandler):
     """
     print('------ web_.well-known --------')
     if self.request.method == "GET":
-      self.finish(dict(self.server.metadata))
+      # self.finish(dict(self.server.metadata))
+      return dict(self.server.metadata)
     print('-----> web_.well-known <-------')
 
   def web_jwk(self):
@@ -67,17 +73,20 @@ class AuthHandler(WebHandler):
     if self.request.method == "GET":
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
-      # For newer version
-      # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
-      self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
-      # self.finish(key.as_dict())
+      # # # For newer version
+      # # # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
+      # # # self.finish(key.as_dict())
+      
+      # self.finish({'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]})
+      return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
     print('-----> web_jwk <-------')
   
   @asyncGen
   def web_userinfo(self):
     print('------ web_userinfo --------')
-    r = yield self.threadTask(self.__validateToken)
-    self.finish(r)
+    # r = yield self.threadTask(self.__validateToken)
+    # self.finish(r)
+    return self.__validateToken()
     print('-----> web_userinfo <-------')
 
   @asyncGen
@@ -91,8 +100,9 @@ class AuthHandler(WebHandler):
     """
     print('------ web_register --------')
     name = ClientRegistrationEndpoint.ENDPOINT_NAME
-    r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-    self.__finish(*r)
+    # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+    # self.__finish(*r)
+    return self.server.create_endpoint_response(name, self.request)
     print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
@@ -109,21 +119,23 @@ class AuthHandler(WebHandler):
     print('------ web_device --------')
     if self.request.method == 'POST':
       name = DeviceAuthorizationEndpoint.ENDPOINT_NAME
-      r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
-      self.__finish(*r)
+      # r = yield self.threadTask(self.server.create_endpoint_response, name, self.request)
+      # self.__finish(*r)
+      return self.server.create_endpoint_response(name, self.request)
 
     elif self.request.method == 'GET':
       userCode = self.get_argument('user_code', userCode)
       if userCode:
-        session, data = yield self.threadTask(self.server.getSessionByOption, 'user_code', userCode)
+        # session, data = yield self.threadTask(self.server.getSessionByOption, 'user_code', userCode)
+        session, data = self.server.getSessionByOption('user_code', userCode)
         if not session:
-          self.finish('%s authorization session expired.' % session)
-          return
+          # self.finish('%s authorization session expired.' % session)
+          return '%s authorization session expired.' % session
         authURL = self.server.metadata['authorization_endpoint']
         authURL += '?%s&client_id=%s&user_code=%s' % (data['request'].query,
                                                       data['client_id'], userCode)
-        self.redirect(authURL)
-        return
+        # self.redirect(authURL)
+        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": authURL}))
       
       t = template.Template('''<!DOCTYPE html>
       <html>
@@ -144,8 +156,10 @@ class AuthHandler(WebHandler):
           </script>
         </body>
       </html>''')
-      self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
-                             query='?' + self.request.query))
+      # self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+      #                        query='?' + self.request.query))
+      return t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+                        query='?' + self.request.query)
     print('-----> web_device <-------')
 
   path_authorization = ['([A-z0-9]*)']
@@ -170,15 +184,18 @@ class AuthHandler(WebHandler):
     if self.request.method == 'GET':
       try:
         # grant = yield self.threadTask(self.server.validate_consent_request, self.request, None)
-        grant, _ = yield self.threadTask(self.server.validate_consent_request, self.request, None)
+        # grant, _ = yield self.threadTask(self.server.validate_consent_request, self.request, None)
+        grant, _ =self.server.validate_consent_request(self.request, None)
       except OAuth2Error as error:
-        self.finish("%s</br>%s" % (error.error, error.description))
-        return
+        # self.finish("%s</br>%s" % (error.error, error.description))
+        return "%s</br>%s" % (error.error, error.description)
 
     # Research supported IdPs
-    result = yield self.threadTask(getProvidersForInstance, 'Id')
+    # result = yield self.threadTask(getProvidersForInstance, 'Id')
+    result = getProvidersForInstance('Id')
     if not result['OK']:
-      raise WErr(503, result['Message'])
+      # raise WErr(503, result['Message'])
+      return result
     idPs = result['Value']
 
     idP = self.get_argument('provider', provider)
@@ -198,29 +215,35 @@ class AuthHandler(WebHandler):
           <ul>
         </body>
       </html>''')
-      self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
-                             query='?' + self.request.query, idPs=idPs))
-      return
+      # self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+      #                        query='?' + self.request.query, idPs=idPs))
+      return t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
+                        query='?' + self.request.query, idPs=idPs)
 
     # Check IdP
     if idP not in idPs:
-      self.finish('%s is not registered in DIRAC.' % idP)
-      return
+      # self.finish('%s is not registered in DIRAC.' % idP)
+      return '%s is not registered in DIRAC.' % idP
 
     # IMPLICIT test
     if grant.GRANT_TYPE == 'implicit' and self.get_argument('access_token', None):
-      result = yield self.threadTask(self.__implicitFlow)
+      # result = yield self.threadTask(self.__implicitFlow)
+      result = self.__implicitFlow()
       if not result['OK']:
-        raise WErr(503, result['Message'])
-      self.__finish(*self.server.create_authorization_response(self.request, result['Value']))
-      return
+        # raise WErr(503, result['Message'])
+        return result
+      # self.__finish(*self.server.create_authorization_response(self.request, result['Value']))
+      return self.server.create_authorization_response(self.request, result['Value'])
 
     # Submit second auth flow through IdP
-    result = yield self.threadTask(self.server.getIdPAuthorization, idP, self.get_argument('state'))
+    # result = yield self.threadTask(self.server.getIdPAuthorization, idP, self.get_argument('state'))
+    result = self.server.getIdPAuthorization(idP, self.get_argument('state'))
     if not result['OK']:
-      raise WErr(503, result['Message'])
+      # raise WErr(503, result['Message'])
+      return result
     self.log.notice('Redirect to', result['Value'])
-    self.redirect(result['Value'])
+    # self.redirect(result['Value'])
+    return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']}))
     print('-----> web_authorization <-------')
 
   @asyncGen
@@ -237,8 +260,8 @@ class AuthHandler(WebHandler):
     if error:
       description = self.get_argument('error_description', '')
       self.server.updateSession(session, Status='failed', Comment=': '.join([error, description]))
-      self.finish('%s session crashed with error:\n%s\n%s' % (session, error, description))
-      return
+      # self.finish('%s session crashed with error:\n%s\n%s' % (session, error, description))
+      return '%s session crashed with error:\n%s\n%s' % (session, error, description)
 
     # Try to parse IdP session id
     # session = self.get_argument('session', self.get_argument('state', None))
@@ -250,15 +273,18 @@ class AuthHandler(WebHandler):
     if not choosedScope:
       # Parse result of the second authentication flow
       self.log.info(session, 'session, parsing authorization response %s' % self.get_arguments)
-      result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
+      # result = yield self.threadTask(self.server.parseIdPAuthorizationResponse, self.request, session)
+      result = self.server.parseIdPAuthorizationResponse(self.request, session)
       if not result['OK']:
         self.server.updateSession(session, Status='failed', Comment=result['Message'])
-        raise WErr(503, result['Message'])
+        # raise WErr(503, result['Message'])
+        return result
       # Return main session flow
       session = result['Value']
 
     # Main session metadata
-    sessionDict = yield self.threadTask(self.server.getSession, session)
+    # sessionDict = yield self.threadTask(self.server.getSession, session)
+    sessionDict = self.server.getSession(session)
     username = sessionDict['username']
     request = sessionDict['request']    
     userID = sessionDict['userID']
@@ -274,11 +300,12 @@ class AuthHandler(WebHandler):
     print('GROUPS: %s' % groups)
 
     # Researche Group
-    result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, username, groups)
+    # result = yield self.threadTask(gProxyManager.getGroupsStatusByUsername, username, groups)
+    result = gProxyManager.getGroupsStatusByUsername(username, groups)
     if not result['OK']:
       self.server.updateSession(session, Status='failed', Comment=result['Message'])
-      self.finish(result['Message'])
-      return
+      # self.finish(result['Message'])
+      return result
     groupStatuses = result['Value']
     print('======= Group STATUSES:')
     pprint(groupStatuses)
@@ -306,8 +333,8 @@ class AuthHandler(WebHandler):
         </body>
       </html>''')
       url = self.request.protocol + "://" + self.request.host + self.request.path
-      self.finish(t.generate(url=url, session=session, groups=groupStatuses))
-      return
+      # self.finish(t.generate(url=url, session=session, groups=groupStatuses))
+      return t.generate(url=url, session=session, groups=groupStatuses)
 
     for group in groups:
       status = groupStatuses[group]['Status']
@@ -316,36 +343,44 @@ class AuthHandler(WebHandler):
       if status == 'needToAuth':
         # Submit second auth flow through IdP
         idP = action[1][0]
-        result = yield self.threadTask(self.server.getIdPAuthorization, idP, session)
+        # result = yield self.threadTask(self.server.getIdPAuthorization, idP, session)
+        result = self.server.getIdPAuthorization(idP, session)
         if not result['OK']:
           self.server.updateSession(session, Status='failed', Comment=result['Message'])
           raise WErr(503, result['Message'])
         self.log.notice('Redirect to', result['Value'])
-        self.redirect(result['Value'])
-        return
+        # self.redirect(result['Value'])
+        return HTTPResponse(self.request, 302, headers=HTTPHeaders({"Location": result['Value']})
+
       if status not in ['ready', 'unknown']:
-        self.finish('%s - bad group status' % status)
-        return
+        # self.finish('%s - bad group status' % status)
+        return '%s - bad group status' % status
 
     # self.server.updateSession(session, Status='authed')
+    #HTTPResponse(self.request, 599, error=value, request_time=self.io_loop.time() - self.start_time)
 
     ###### RESPONSE
-    r = yield self.threadTask(self.server.create_authorization_response, request, username)
-    self.__finish(*r)
+    # r = yield self.threadTask(self.server.create_authorization_response, request, username)
+    # self.__finish(*r)
+    return self.server.create_authorization_response(request, username)
     print('-----> web_redirect <-------')
 
   @asyncGen
   def web_token(self):
     print('------ web_token --------')
-    r = yield self.threadTask(self.server.create_token_response, self.request)
-    self.__finish(*r)
+    # r = yield self.threadTask(self.server.create_token_response, self.request)
+    # self.__finish(*r)
+    return self.server.create_token_response(self.request)
     print('-----> web_token <-------')
   
-  def __finish(self, data, code, headers):
-    self.set_status(code)
-    for header in headers:
-      self.set_header(*header)
-    self.finish(data)
+  # def __finish(self, data, code, headers):
+  #   # self.set_status(code)
+  #   header = HTTPHeaders()
+  #   for h in headers:
+  #     header.add(*h)
+  #   # Expected that 'data' is unicode string, for Python 2 => unicode(str, "utf-8")
+  #   return HTTPResponse(self.request, code, headers=header, buffer=io.StringIO(data))
+  #   # self.finish(data)
   
   def __implicitFlow(self):
     accessToken = self.get_argument('access_token')

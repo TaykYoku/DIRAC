@@ -17,6 +17,7 @@ import threading
 from datetime import datetime
 from six.moves import http_client
 from tornado.web import RequestHandler, HTTPError
+from tornado.httpclient import HTTPResponse
 from tornado import gen
 import tornado
 import tornado.ioloop
@@ -302,7 +303,7 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     """
     return self.get_argument("method")
 
-  def _getMethodArgs(self):
+  def _getMethodArgs(self, args):
     """ Decode args.
 
         :return: list
@@ -425,15 +426,6 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
             u'validDN': False,
             u'validGroup': False}}
     """
-    print('POST service')
-    self._tornadoMethodArgs = args
-
-    sLog.notice(
-        "Incoming request %s /%s: %s" %
-        (self.srv_getFormattedRemoteCredentials(),
-         self._serviceName,
-         self.method))
-
     # Execute the method in an executor (basically a separate thread)
     # Because of that, we cannot calls certain methods like `self.write`
     # in __executeMethod. This is because these methods are not threadsafe
@@ -441,32 +433,13 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     # However, we can still rely on instance attributes to store what should
     # be sent back (reminder: there is an instance
     # of this class created for each request)
-    retVal = yield IOLoop.current().run_in_executor(None, self.__executeMethod)
+    retVal = yield IOLoop.current().run_in_executor(None, self.__executeMethod, args)
 
     # retVal is :py:class:`tornado.concurrent.Future`
-    self.result = retVal.result()
-
-    # Here it is safe to write back to the client, because we are not
-    # in a thread anymore
-
-    # If set to true, do not JEncode the return of the RPC call
-    # This is basically only used for file download through
-    # the 'streamToClient' method.
-    rawContent = self.get_argument('rawContent', default=False)
-
-    if rawContent:
-      # See 4.5.1 http://www.rfc-editor.org/rfc/rfc2046.txt
-      self.set_header("Content-Type", "application/octet-stream")
-      result = self.result
-    else:
-      self.set_header("Content-Type", "application/json")
-      result = encode(self.result)
-
-    self.write(result)
-    self.finish()
+    self._finishFuture(retVal)
 
   @gen.coroutine
-  def __executeMethod(self):
+  def __executeMethod(self, args):
     """
       Execute the method called, this method is ran in an executor
       We have several try except to catch the different problem which can occur
@@ -479,18 +452,59 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
         See https://www.tornadoweb.org/en/branch5.1/web.html#thread-safety-notes
     """
 
+    sLog.notice(
+        "Incoming request %s /%s: %s" %
+        (self.srv_getFormattedRemoteCredentials(),
+         self._serviceName,
+         self.method))
+
     # getting method
     method = self._getMethod()
+    methodArgs = self._getMethodArgs(args)
 
     # Execute
     try:
       self.initializeRequest()
-      retVal = method(*self._getMethodArgs())
+      retVal = method(*args)
     except Exception as e:  # pylint: disable=broad-except
       sLog.exception("Exception serving request", "%s:%s" % (str(e), repr(e)))
       raise HTTPError(http_client.INTERNAL_SERVER_ERROR)
 
     return retVal
+
+  def _finishFuture(self, retVal):
+    """ Handler Future result
+
+        :param object retVal: tornado.concurrent.Future
+    """
+    
+    self.result = retVal.result()
+
+    # Here it is safe to write back to the client, because we are not
+    # in a thread anymore
+
+    # If set to true, do not JEncode the return of the RPC call
+    # This is basically only used for file download through
+    # the 'streamToClient' method.
+    rawContent = self.get_argument('rawContent', default=False)
+
+    # Parse HTTPResponse
+    if isinstance(self.result, HTTPResponse):
+      self.set_status(self.result.code)
+      for key in self.result.headers:
+        self.set_header(key, self.result.headers[key])
+      if self.result.body:
+        self.write(self.result.body)
+    
+    elif rawContent:
+      # See 4.5.1 http://www.rfc-editor.org/rfc/rfc2046.txt
+      self.set_header("Content-Type", "application/octet-stream")
+      self.write(self.result)
+    else:
+      self.set_header("Content-Type", "application/json")
+      self.write(encode(self.result))
+
+    self.finish()
 
   def on_finish(self):
     """
