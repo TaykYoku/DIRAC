@@ -12,30 +12,38 @@ from tornado import web, gen
 from tornado.template import Template
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
-from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
+# from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
+from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 
 __RCSID__ = "$Id$"
 
 
-class ProxyHandler(WebHandler):
-  OVERPATH = True
+class ProxyHandler(TornadoREST):
   AUTH_PROPS = "authenticated"
   LOCATION = "/"
 
-  # def initialize(self):
-  #   super(ProxyHandler, self).initialize()
-  #   self.args = {}
-  #   for arg in self.request.arguments:
-  #     if len(self.request.arguments[arg]) > 1:
-  #       self.args[arg] = self.request.arguments[arg]
-  #     else:
-  #       self.args[arg] = self.request.arguments[arg][0] or ''
-  #   return S_OK()
+  METHOD_PREFIX = "web_"
+
+  @classmethod
+  def initializeHandler(cls, serviceInfo):
+    """
+      This may be overwritten when you write a DIRAC service handler
+      And it must be a class method. This method is called only one time,
+      at the first request
+
+      :param dict ServiceInfoDict: infos about services, it contains
+                                    'serviceName', 'serviceSectionPath',
+                                    'csPaths' and 'URL'
+    """
+    pass
+  
+  def initializeRequest(self):
+    self.proxyCli = ProxyManagerClient(delegatedGroup=self.getUserGroup(),
+                                       delegatedID=self.getID(), delegatedDN=self.getDN())
 
   path_proxy = ['([a-z]*)[\/]?([a-z]*)']
-  @asyncGen
   def web_proxy(self, user=None, group=None):
     """ REST endpoints to user proxy management
 
@@ -63,13 +71,7 @@ class ProxyHandler(WebHandler):
     try:
       proxyLifeTime = int(self.get_argument('lifetime', 3600 * 12))
     except Exception:
-      raise 
-    # if re.match('[0-9]+', self.args.get('lifetime') or ''):
-    #   proxyLifeTime = int(self.args.get('lifetime'))
-    # optns = self.overpath.strip('/').split('/')
-
-    credGroup = self.getUserGroup()
-    proxyCli = ProxyManagerClient(delegatedGroup=credGroup, delegatedID=self.getID(), delegatedDN=self.getDN())
+      return S_ERROR('Cannot read "lifetime" argument.') 
 
     # GET
     if self.request.method == 'GET':
@@ -79,15 +81,15 @@ class ProxyHandler(WebHandler):
 
       # Return personal proxy
       if not user and not group: #self.overpath:
-        result = yield self.threadTask(proxyCli.downloadPersonalProxy, self.getUserName(),
-                                       credGroup, requiredTimeLeft=proxyLifeTime, voms=voms)
-        if not result['OK']:
-          raise WErr(500, result['Message'])
-        self.log.notice('Proxy was created.')
-        result = result['Value'].dumpAllToString()
-        if not result['OK']:
-          raise WErr(500, result['Message'])
-        self.finishJEncode(result['Value'])
+        result = self.proxyCli.downloadPersonalProxy(self.getUserName(), self.getUserGroup(),
+                                                     requiredTimeLeft=proxyLifeTime, voms=voms)
+        if result['OK']:
+          self.log.notice('Proxy was created.')
+          result = result['Value'].dumpAllToString()
+        return result
+        # if not result['OK']:
+        #   return result
+        # self.finishJEncode(result['Value'])
 
       # Return proxy
       elif user and group:
@@ -97,19 +99,19 @@ class ProxyHandler(WebHandler):
         # Get proxy to string
         result = getDNForUsernameInGroup(user, group)
         if not result['OK'] or not result.get('Value'):
-          raise WErr(500, '%s@%s has no registred DN: %s' % (user, group, result.get('Message') or ""))
+          return S_ERROR('%s@%s has no registred DN: %s' % (user, group, result.get('Message') or ""))
 
         if voms:
-          result = yield self.threadTask(proxyCli.downloadVOMSProxy, user, group, requiredTimeLeft=proxyLifeTime)
+          result = self.proxyCli.downloadVOMSProxy(user, group, requiredTimeLeft=proxyLifeTime)
         else:
-          result = yield self.threadTask(proxyCli.downloadProxy, user, group, requiredTimeLeft=proxyLifeTime)
-        if not result['OK']:
-          raise WErr(500, result['Message'])
-        self.log.notice('Proxy was created.')
-        result = result['Value'].dumpAllToString()
-        if not result['OK']:
-          raise WErr(500, result['Message'])
-        self.finishJEncode(result['Value'])
+          result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=proxyLifeTime)
+        if result['OK']:
+          self.log.notice('Proxy was created.')
+          result = result['Value'].dumpAllToString()
+        return result
+        # if not result['OK']:
+        #   return result
+        # self.finishJEncode(result['Value'])
 
       else:
-        raise WErr(404, "Wrone way")
+        return S_ERROR("Wrone way")

@@ -47,6 +47,6 @@ includeExtensionErrors()
 
 gLogger.initialize('Tornado', "/")
 
-endpoints = ['Configuration/Configuration', 'Framework/Auth']
+endpoints = ['Configuration/Configuration', 'Framework/Auth', 'Framework/Proxy']
 serverToLaunch = TornadoServer(False, endpoints, 8000)
 serverToLaunch.startTornado()

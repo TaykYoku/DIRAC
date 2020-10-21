@@ -65,7 +65,6 @@ class AuthHandler(TornadoREST):
     """
     print('------ web_.well-known --------')
     if self.request.method == "GET":
-      # self.finish(dict(self.server.metadata))
       return dict(self.server.metadata)
     print('-----> web_.well-known <-------')
 
@@ -84,7 +83,6 @@ class AuthHandler(TornadoREST):
       return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
     print('-----> web_jwk <-------')
   
-  # @asyncGen
   def web_userinfo(self):
     print('------ web_userinfo --------')
     # r = yield self.threadTask(self.__validateToken)
@@ -92,7 +90,6 @@ class AuthHandler(TornadoREST):
     return self.__validateToken()
     print('-----> web_userinfo <-------')
 
-  # @asyncGen
   def web_register(self):
     """ Client registry
 
@@ -109,7 +106,6 @@ class AuthHandler(TornadoREST):
     print('-----> web_register <-------')
 
   path_device = ['([A-z0-9-_]*)']
-  # @asyncGen
   def web_device(self, userCode=None):
     """ Device authorization flow
 
@@ -161,14 +157,10 @@ class AuthHandler(TornadoREST):
           </script>
         </body>
       </html>''')
-      # self.finish(t.generate(url=self.request.protocol + "://" + self.request.host + self.request.path,
-      #                        query='?' + self.request.query))
-      return t.generate(url=self.currentPath,
-                        query='?' + self.request.query)
+      return t.generate(url=self.currentPath, query='?' + self.request.query)
     print('-----> web_device <-------')
 
   path_authorization = ['([A-z0-9]*)']
-  # @asyncGen
   def web_authorization(self, provider=None):
     """ Authorization endpoint
 
@@ -220,10 +212,7 @@ class AuthHandler(TornadoREST):
           <ul>
         </body>
       </html>''')
-      # self.finish(t.generate(url=self.currentPath,
-      #                        query='?' + self.request.query, idPs=idPs))
-      return t.generate(url=self.currentPath,
-                        query='?' + self.request.query, idPs=idPs)
+      return t.generate(url=self.currentPath, query='?' + self.request.query, idPs=idPs)
 
     # Check IdP
     if idP not in idPs:
@@ -251,7 +240,6 @@ class AuthHandler(TornadoREST):
     return self.__response(code=302, headers=HTTPHeaders({"Location": result['Value']}))
     print('-----> web_authorization <-------')
 
-  # @asyncGen
   def web_redirect(self):
     print('------ web_redirect --------')
     # Redirect endpoint for response
@@ -337,9 +325,7 @@ class AuthHandler(TornadoREST):
           <ul>
         </body>
       </html>''')
-      url = self.currentPath
-      # self.finish(t.generate(url=url, session=session, groups=groupStatuses))
-      return t.generate(url=url, session=session, groups=groupStatuses)
+      return t.generate(url=self.currentPath, session=session, groups=groupStatuses)
 
     for group in groups:
       status = groupStatuses[group]['Status']
@@ -370,7 +356,6 @@ class AuthHandler(TornadoREST):
     return self.__response(**self.server.create_authorization_response(request, username))
     print('-----> web_redirect <-------')
 
-  # @asyncGen
   def web_token(self):
     print('------ web_token --------')
     # r = yield self.threadTask(self.server.create_token_response, self.request)
