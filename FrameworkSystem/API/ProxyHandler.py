@@ -22,7 +22,7 @@ __RCSID__ = "$Id$"
 
 class ProxyHandler(TornadoREST):
   AUTH_PROPS = "authenticated"
-  LOCATION = "/"
+  LOCATION = "/DIRAC"
 
   METHOD_PREFIX = "web_"
 
