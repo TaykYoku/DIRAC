@@ -32,8 +32,13 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
 
         :return: str
     """
-    route = cls.LOCATION
-    return route if route[-1] == "/" else route[:route.rfind("/")]
+    try:
+      return cls.LOCATION.split('/')[-1].strip('/')
+    except expression as identifier:
+      return cls.__name__
+    
+    # route = cls.LOCATION
+    # return route if route[-1] == "/" else route[:route.rfind("/")]
   
   @classmethod
   def _getServiceAuthSection(cls, serviceName):
@@ -62,7 +67,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: str
     """
     try:
-      return self.request.path.split(self.LOCATION)[1].split('?')[0].split('/')[0].strip('/')
+      return self.request.path.split(self.LOCATION)[1].split('?')[0].strip('/').split('/')[0].strip('/')
     except Exception:
       return 'index'
 
@@ -72,7 +77,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: list
     """
     try:
-      return [a.strip('/') for a in self.request.path.split(self.LOCATION)[1].split('?')[0].split('/')[1:]]
+      return [a.strip('/') for a in self.request.path.split(self.LOCATION)[1].split('?')[0].split('/')[1:] if a]
     except Exception:
       return []
     # return self._tornadoMethodArgs
