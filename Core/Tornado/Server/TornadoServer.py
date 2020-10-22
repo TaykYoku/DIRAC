@@ -177,6 +177,8 @@ class TornadoServer(object):
                                                template_loader=tLoader,
                                                cookie_secret=str(Conf.cookieSecret()))
     for _url in routes:
+      if not isinstance(_url, url):
+        _url = url(_url)
       if _url not in self.__portRoutes[port]['URLs']:
         self.__portRoutes[port]['URLs'].append(_url)
 
