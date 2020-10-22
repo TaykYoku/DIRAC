@@ -14,6 +14,7 @@ log = gLogger.getSubLogger(__name__)
 
 class NotebookImplicitGrant(_ImplicitGrant):
   def create_authorization_response(self, redirect_uri, grant_user):
+    print('== NotebookImplicitGrant: user: %s' % grant_user)
     state = self.request.state
     if grant_user:
       self.request.user = grant_user
