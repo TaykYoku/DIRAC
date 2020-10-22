@@ -349,11 +349,11 @@ class TornadoServer(object):
     """
     status = handler.get_status()
     if status < 400:
-      logm = sLog.notice
+      logm = self.log.notice
     elif status < 500:
-      logm = sLog.warn
+      logm = self.log.warn
     else:
-      logm = sLog.error
+      logm = self.log.error
     request_time = 1000.0 * handler.request.request_time()
     logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
 
