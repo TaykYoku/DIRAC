@@ -152,7 +152,7 @@ class TornadoServer(object):
   def loadWeb(self, name=None):
     from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 
-    self.__handlerMgr = HandlerMgr(handlersLoc, Conf.rootURL())
+    self.__handlerMgr = HandlerMgr('WebApp.handler', Conf.rootURL())
 
     # Load required CFG files
     if not self._loadDefaultWebCFG():
