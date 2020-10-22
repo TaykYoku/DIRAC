@@ -178,7 +178,7 @@ class TornadoServer(object):
                                                cookie_secret=str(Conf.cookieSecret()))
     for _url in routes:
       if _url not in self.__portRoutes[port]['URLs']:
-        self.__portRoutes[port]['URLs'].append(tURL)
+        self.__portRoutes[port]['URLs'].append(_url)
 
   def stopChildProcesses(self, sig, frame):
     """
