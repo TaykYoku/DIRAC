@@ -347,13 +347,17 @@ class TornadoServer(object):
         
         :param object handler: RequestHandler object
     """
+    print('=== _logRequest')
+    print('=== %s' % handler)
+    print(sLog)
+    print('===============')
     status = handler.get_status()
     if status < 400:
-      logm = self.log.notice
+      logm = sLog.notice
     elif status < 500:
-      logm = self.log.warn
+      logm = sLog.warn
     else:
-      logm = self.log.error
+      logm = sLog.error
     request_time = 1000.0 * handler.request.request_time()
     logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
 
