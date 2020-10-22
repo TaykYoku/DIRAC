@@ -176,7 +176,9 @@ class TornadoServer(object):
     self.__portRoutes[port]['settings'] = dict(debug=Conf.devMode(),
                                                template_loader=tLoader,
                                                cookie_secret=str(Conf.cookieSecret()))
+    from pprint import pprint
     for _url in routes:
+      pprint(_url)
       if not isinstance(_url, url):
         _url = url(_url)
       if _url not in self.__portRoutes[port]['URLs']:
