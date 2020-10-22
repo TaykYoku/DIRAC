@@ -661,8 +661,10 @@ class ProxyManagerHandler(RequestHandler):
           continue
 
         role = Registry.getGroupOption(group, 'VOMSRole')
+        print('===================== voData[dn] --->>')
+        pprint.pprint(voData[dn])
         if not role:
-          if voData[dn]['Suspended']:
+          if voData[dn].get('Suspended'):  # TODO: voData[dn]['Suspended']
             if dn in groupDict[group]:
               groupDict[group].remove(dn)
             st = {'Status': 'suspended', 'DN': dn, 'Action': ['openURL', [vomsServerURL]],
