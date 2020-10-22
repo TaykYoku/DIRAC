@@ -21,8 +21,8 @@ class NotebookImplicitGrant(_ImplicitGrant):
       from pprint import pprint
       import inspect
       print("args:")
-      pprint(inspect.getargspec(foo))
-      inspect.getfullargspec(a_method)
+      pprint(inspect.getargspec(self.generate_token))
+      # inspect.getfullargspec(a_method)
       token = self.generate_token(client=self.request.client, grant_type=self.GRANT_TYPE,
                                   user=grant_user, scope=self.request.scope, include_refresh_token=False)
       return 200, token, []
