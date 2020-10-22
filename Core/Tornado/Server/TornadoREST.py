@@ -21,6 +21,8 @@ from DIRAC.Core.Web import Conf
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 
+sLog = gLogger.getSubLogger(__name__)
+
 
 class TornadoREST(TornadoService):  # pylint: disable=abstract-method
   METHOD_PREFIX = 'web_'
@@ -121,7 +123,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
           # credDict['validGroup'] = False
           #   credDict['group'] = self.__group
         except Exception as e:
-          self.log.warn(str(e))
+          sLog.warn(str(e))
 
     return credDict
   
