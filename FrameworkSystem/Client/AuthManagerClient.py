@@ -15,8 +15,8 @@ from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base.Client import Client, createClient
 from DIRAC.Core.Utilities import DIRACSingleton
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
-from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+# from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
+# from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import Session
 

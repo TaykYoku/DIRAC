@@ -4,15 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import re
-import time
-import base64
-
-from tornado import web, gen
-from tornado.template import Template
-
-from DIRAC import S_OK, S_ERROR, gConfig, gLogger
-# from DIRAC.Core.Web.WebHandler import WebHandler, asyncGen, WErr
+from DIRAC import S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
@@ -23,27 +15,9 @@ __RCSID__ = "$Id$"
 class ProxyHandler(TornadoREST):
   AUTH_PROPS = "authenticated"
   LOCATION = "/DIRAC"
-
-  METHOD_PREFIX = "web_"
-
-  @classmethod
-  def initializeHandler(cls, serviceInfo):
-    """
-      This may be overwritten when you write a DIRAC service handler
-      And it must be a class method. This method is called only one time,
-      at the first request
-
-      :param dict ServiceInfoDict: infos about services, it contains
-                                    'serviceName', 'serviceSectionPath',
-                                    'csPaths' and 'URL'
-    """
-    pass
   
   def initializeRequest(self):
-    print('GROUP: %s' % self.getUserGroup())
-    print('USER ID: %s' % self.getID())
-    print('USER DN: %s' % self.getDN())
-
+    """ Request initialization """
     self.proxyCli = ProxyManagerClient(delegatedGroup=self.getUserGroup(),
                                        delegatedID=self.getID(), delegatedDN=self.getDN())
 
@@ -84,21 +58,16 @@ class ProxyHandler(TornadoREST):
       #   pass
 
       # Return personal proxy
-      if not user and not group: #self.overpath:
+      if not user and not group:
         result = self.proxyCli.downloadPersonalProxy(self.getUserName(), self.getUserGroup(),
                                                      requiredTimeLeft=proxyLifeTime, voms=voms)
         if result['OK']:
           self.log.notice('Proxy was created.')
           result = result['Value'].dumpAllToString()
         return result
-        # if not result['OK']:
-        #   return result
-        # self.finishJEncode(result['Value'])
 
       # Return proxy
       elif user and group:
-        # user = optns[0]
-        # group = optns[1]
 
         # Get proxy to string
         result = getDNForUsernameInGroup(user, group)
@@ -113,9 +82,6 @@ class ProxyHandler(TornadoREST):
           self.log.notice('Proxy was created.')
           result = result['Value'].dumpAllToString()
         return result
-        # if not result['OK']:
-        #   return result
-        # self.finishJEncode(result['Value'])
 
       else:
         return S_ERROR("Wrone way")

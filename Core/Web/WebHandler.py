@@ -32,6 +32,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 # from DIRAC.FrameworkSystem.Client.AuthManagerData import gAuthManagerData
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
+from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 
 global gThreadPool
 gThreadPool = ThreadPoolExecutor(100)
@@ -74,7 +75,7 @@ def asyncGen(method):
   return gen.coroutine(method)
 
 
-class WebHandler(BaseRequestHandler):
+class WebHandler(TornadoREST):
   __disetConfig = ThreadConfig()
 
   # Auth requirements
@@ -87,6 +88,22 @@ class WebHandler(BaseRequestHandler):
   PATH_RE = None
   # Prefix of methods names
   METHOD_PREFIX = "web_"
+
+  def threadTask(self, method, *args, **kwargs):
+    def threadJob(*targs, **tkwargs):
+      args = targs[0]
+      disetConf = targs[1]
+      self.__disetConfig.reset()
+      self.__disetConfig.load(disetConf)
+      return method(*args, **tkwargs)
+
+    targs = (args, self.__disetDump)
+    return IOLoop.current().run_in_executor(gThreadPool, functools.partial(threadJob, *targs, **kwargs))
+
+  def __disetBlockDecor(self, func):
+    def wrapper(*args, **kwargs):
+      raise RuntimeError("All DISET calls must be made from inside a Threaded Task!")
+    return wrapper
 
   @classmethod
   def _getServiceName(cls, request):
@@ -121,41 +138,6 @@ class WebHandler(BaseRequestHandler):
     groups = match.groups()
     route = groups[2]
     return "index" if route[-1] == "/" else route[route.rfind("/") + 1:]
-
-  def _getMethodArgs(self):
-    """ Parse method argiments.
-
-        :return: list
-    """
-    pass
-  
-  def _getMethodAuthProps(self):
-    """ Resolves the hard coded authorization requirements for method.
-
-        :return: object
-    """
-    hardcodedAuth = super(WebHandler, self)._getMethodAuthProps()
-    if not hardcodedAuth and hasattr(self, 'AUTH_PROPS'):
-      if not isinstance(self.AUTH_PROPS, (list, tuple)):
-        self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
-      hardcodedAuth = self.AUTH_PROPS
-    return hardcodedAuth
-
-  def threadTask(self, method, *args, **kwargs):
-    def threadJob(*targs, **tkwargs):
-      args = targs[0]
-      disetConf = targs[1]
-      self.__disetConfig.reset()
-      self.__disetConfig.load(disetConf)
-      return method(*args, **tkwargs)
-
-    targs = (args, self.__disetDump)
-    return IOLoop.current().run_in_executor(gThreadPool, functools.partial(threadJob, *targs, **kwargs))
-
-  def __disetBlockDecor(self, func):
-    def wrapper(*args, **kwargs):
-      raise RuntimeError("All DISET calls must be made from inside a Threaded Task!")
-    return wrapper
 
   def prepare(self):
     """
@@ -223,30 +205,19 @@ class WebHandler(BaseRequestHandler):
     # Authorization type
     self.__authGrant = self.get_cookie('authGrant', 'Certificate')
 
-    # Unsecure protocol only for visitors
-    if self.request.protocol == "https":
-
+    if self.request.protocol == "https" and self.__authGrant.lower() != 'visitor':
       if self.__authGrant == 'Session':
         # read session
         credDict = self.__readSession(self.get_secure_cookie('session_id'))
 
-      elif self.request.headers.get("Authorization"):
-        # read token
-        credDict = self.__readToken()
-
-      elif self.__authGrant == 'Certificate':
-        try:
-          # try read certificate
-          if Conf.balancer() == "nginx":
-            credDict = self.__readCertificateFromNginx()
-          else:
-            credDict = super(WebHandler, self)._gatherPeerCredentials()
-          # Add a group if it present in the request path
-          if self.__group:
-            credDict['validGroup'] = False
-            credDict['group'] = self.__group
-        except Exception as e:
-          sLog.warn(str(e))
+      else:
+        # Read token and certificate
+        credDict = super(WebHandler, self)._gatherPeerCredentials()
+      
+      # Add a group if it present in the request path
+      if self.__group:
+        credDict['validGroup'] = False
+        credDict['group'] = self.__group
 
     return credDict
 
@@ -291,37 +262,15 @@ class WebHandler(BaseRequestHandler):
     self.application.updateSession(session)
     return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group, 'validGroup': False}
   
-  def __readToken(self):
+  def _readToken(self, scope=None):
     """ Fill credentionals from session
 
-        :param str sessionID: session id
+        :param str scope: scope
 
         :return: dict
     """
-    token = ResourceProtector().acquire_token(self.request, self.__group and ('g:%s' % self.__group))
-    return {'ID': token.sub, 'issuer': token.issuer, 'group': self.__group or token.groups[0]}
+    return super(WebHandler, self)._readToken(self.__group and ('g:%s' % self.__group))
 
-  def __readCertificateFromNginx(self):
-    """ Fill credentional from certificate and check is registred from nginx.
-
-        :return: dict
-    """
-    headers = self.request.headers
-    if not headers:
-      raise Exception('No headers found.')
-    if headers.get('X-Scheme') != "https":
-      raise Exception('Unsecure protocol.')
-    if headers.get('X-Ssl_client_verify') != 'SUCCESS':
-      raise Exception('No certificate upload to browser.')
-
-    DN = headers['X-Ssl_client_s_dn']
-    if not DN.startswith('/'):
-      items = DN.split(',')
-      items.reverse()
-      DN = '/' + '/'.join(items)
-    return {'DN': DN, 'issuer': headers['X-Ssl_client_i_dn']}
-
-  @property
   def log(self):
     return sLog
 

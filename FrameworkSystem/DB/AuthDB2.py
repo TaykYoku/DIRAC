@@ -4,9 +4,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from authlib.common.security import generate_token
-
-from time import time
 from pprint import pprint
 
 from DIRAC import S_OK, S_ERROR, gLogger
@@ -14,10 +11,9 @@ from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
 
 __RCSID__ = "$Id$"
 
-from werkzeug.security import gen_salt
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
-from sqlalchemy.orm import relationship, scoped_session
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, Text, BigInteger, String
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
@@ -79,6 +75,12 @@ class AuthDB2(SQLAlchemyDB):
     return S_OK()
 
   def addClient(self, data):
+    """ Add new client
+
+        :param dict data: client metadata
+
+        :return: S_OK(dict)/S_ERROR()
+    """
     print('============ addClient ============')
     pprint(data)
     session = self.session()
@@ -101,6 +103,12 @@ class AuthDB2(SQLAlchemyDB):
     return self.__result(session, S_OK(res))
   
   def removeClient(self, clientID):
+    """ Remove client
+
+        :param str clientID: client id
+
+        :return: S_OK()/S_ERROR()
+    """
     session = self.session()
     try:
       session.query(Client).filter(Client.client_id==clientID).delete()
@@ -109,6 +117,12 @@ class AuthDB2(SQLAlchemyDB):
     return self.__result(session, S_OK())
 
   def getClient(self, clientID):
+    """ Get client
+
+        :param str clientID: client id
+
+        :return: S_OK(dict)/S_ERROR()
+    """
     session = self.session()
     try:
       client = session.query(Client).filter(Client.client_id==clientID).first()
@@ -123,25 +137,31 @@ class AuthDB2(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK(data))  # client.client_info.update({'redirect_uri': redirect_uri})))
 
-  def getClientByID(self, clientID, redirect_uri=None, **kwargs):
-    session = self.session()
-    try:
-      client = session.query(Client).filter(Client.client_id==clientID).one()
-      if not redirect_uri:
-        redirect_uri = client.get_default_redirect_uri()
-      elif not client.check_redirect_uri(redirect_uri):
-        self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
-      resDict = client.client_info
-      resDict['redirect_uri'] = redirect_uri
-    except MultipleResultsFound:
-      return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
-    except NoResultFound:
-      return self.__result(session, S_ERROR("%s client not registred." % clientID))
-    except Exception as e:
-      return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK(resDict))#client.client_info.update({'redirect_uri': redirect_uri})))
+  # def getClientByID(self, clientID, redirect_uri=None, **kwargs):
+  #   session = self.session()
+  #   try:
+  #     client = session.query(Client).filter(Client.client_id==clientID).one()
+  #     if not redirect_uri:
+  #       redirect_uri = client.get_default_redirect_uri()
+  #     elif not client.check_redirect_uri(redirect_uri):
+  #       self.__result(session, S_ERROR("redirect_uri: '%s' is wrong for %s client." % (redirect_uri, clientID)))
+  #     resDict = client.client_info
+  #     resDict['redirect_uri'] = redirect_uri
+  #   except MultipleResultsFound:
+  #     return self.__result(session, S_ERROR("%s is not unique ID." % clientID))
+  #   except NoResultFound:
+  #     return self.__result(session, S_ERROR("%s client not registred." % clientID))
+  #   except Exception as e:
+  #     return self.__result(session, S_ERROR(str(e)))
+  #   return self.__result(session, S_OK(resDict))#client.client_info.update({'redirect_uri': redirect_uri})))
 
   def storeToken(self, metadata):
+    """ Save token
+
+        :param dict metadata: token info
+
+        :return: S_OK(str)/S_ERROR()
+    """
     attrts = {}
     print('========= STORE TOKEN')
     pprint(metadata)
@@ -161,6 +181,13 @@ class AuthDB2(SQLAlchemyDB):
     return self.__result(session, S_OK('Component successfully added'))
   
   def updateToken(self, token, refreshToken):
+    """ Update token
+
+        :param dict token: token info
+        :param str refreshToken: refresh token
+
+        :return: S_OK(object)/S_ERROR()
+    """
     session = self.session()
     try:
       session.update(Token(**token)).where(Token.refresh_token==refreshToken)
@@ -173,6 +200,13 @@ class AuthDB2(SQLAlchemyDB):
     return self.__result(session, S_OK(OAuth2Token(token)))
 
   def removeToken(self, access_token=None, refresh_token=None):
+    """ Remove token
+
+        :param str access_token: access token
+        :param str refresh_token: refresh token
+
+        :return: S_OK(object)/S_ERROR()
+    """
     session = self.session()
     try:
       if access_token:

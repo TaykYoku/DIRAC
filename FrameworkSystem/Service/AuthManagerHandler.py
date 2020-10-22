@@ -329,18 +329,18 @@ class AuthManagerHandler(RequestHandler):
     """
     return self.__db.addClient(**kwargs)
 
-  types_getClientByID = [six.string_types]
-  auth_getClientByID = []  # "authenticated", "TrustedHost"]
+  # types_getClientByID = [six.string_types]
+  # auth_getClientByID = []  # "authenticated", "TrustedHost"]
 
-  def export_getClientByID(self, clientID, metadata):
-    """ Generates a state string to be used in authorizations
+  # def export_getClientByID(self, clientID, metadata):
+  #   """ Generates a state string to be used in authorizations
 
-        :param str provider: provider
-        :param str session: session number
+  #       :param str provider: provider
+  #       :param str session: session number
 
-        :return: S_OK(str)/S_ERROR()
-    """
-    return self.__db.getClientByID(clientID, **metadata)
+  #       :return: S_OK(str)/S_ERROR()
+  #   """
+  #   return self.__db.getClientByID(clientID, **metadata)
   
   types_storeToken = [dict]
   auth_storeToken = ["authenticated"]

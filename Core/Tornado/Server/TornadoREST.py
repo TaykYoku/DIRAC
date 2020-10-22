@@ -9,23 +9,22 @@ from __future__ import print_function
 
 __RCSID__ = "$Id$"
 
-from tornado.web import HTTPError
-from tornado import gen
 import tornado.ioloop
+from tornado import gen
+from tornado.web import HTTPError
 from tornado.ioloop import IOLoop
 from six.moves import http_client
 
 import DIRAC
 
-from DIRAC import S_OK, S_ERROR
-from DIRAC.ConfigurationSystem.Client import PathFinder
-from DIRAC.Core.Utilities.JEncode import decode, encode
-from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.Core.Web import Conf
+from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 
 
 class TornadoREST(TornadoService):  # pylint: disable=abstract-method
+  METHOD_PREFIX = 'web_'
+
   @classmethod
   def _getServiceName(cls, request):
     """ Search service name in request.
@@ -76,6 +75,18 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
         :return: list
     """
     return args
+  
+  def _getMethodAuthProps(self):
+    """ Resolves the hard coded authorization requirements for method.
+
+        :return: object
+    """
+    hardcodedAuth = super(TornadoREST, self)._getMethodAuthProps()
+    if not hardcodedAuth and hasattr(self, 'AUTH_PROPS'):
+      if not isinstance(self.AUTH_PROPS, (list, tuple)):
+        self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
+      hardcodedAuth = self.AUTH_PROPS
+    return hardcodedAuth
 
   def _gatherPeerCredentials(self):
     """
@@ -89,21 +100,14 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
     """
     credDict = {}
 
-    # Authorization type
-    self.__authGrant = self.get_cookie('authGrant', 'Certificate')
-
     # Unsecure protocol only for visitors
     if self.request.protocol == "https":
 
-      # if self.__authGrant == 'Session':
-      #   # read session
-      #   credDict = self.__readSession(self.get_secure_cookie('session_id'))
-
       if self.request.headers.get("Authorization"):
         # read token
-        credDict = self.__readToken()
+        credDict = self._readToken()
 
-      elif self.__authGrant == 'Certificate':
+      else:
         try:
           # try read certificate
           if Conf.balancer() == "nginx":
@@ -114,21 +118,21 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
           # MUST BE ADDED when read certificate
           # # Add a group if it present in the request path
           # if self.__group:
-          #   credDict['validGroup'] = False
+          # credDict['validGroup'] = False
           #   credDict['group'] = self.__group
         except Exception as e:
           self.log.warn(str(e))
 
     return credDict
   
-  def __readToken(self):
+  def _readToken(self, scope=None):
     """ Fill credentionals from session
 
-        :param str sessionID: session id
+        :param str scope: scope
 
         :return: dict
     """
-    token = ResourceProtector().acquire_token(self.request, None)
+    token = ResourceProtector().acquire_token(self.request, scope)
     return {'ID': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
 
   def __readCertificateFromNginx(self):

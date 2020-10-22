@@ -35,30 +35,7 @@ __RCSID__ = "$Id$"
 class Application(_Application, SessionManager):
   def __init__(self, *args, **kwargs):
     _Application.__init__(self, *args, **kwargs)
-
-    # WebPortal
     SessionManager.__init__(self)
-    # result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
-    # if not result['OK']:
-    #   raise("Can't load web portal settings.")
-    # print('=========== METADATA ===============')
-    # pprint(result['Value'])
-    # OAuth2IdProvider.__init__(self, **result['Value'])
-    # result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
-    # if not result['OK']:
-    #   raise("Can't load authorization server settings.")
-    # self.metadata = result['Value']  #self.loadMetadata()
-    # print('--APP META:')
-    # pprint(self.metadata)
-    # self._resourceProtector = ResourceProtector()
-  
-  # def _updateToken(self, token, refresh_token):
-  #   session, _ = self.getSessionByOption('refresh_token', refresh_token)
-  #   self.updateSession(session, token=token)
-  
-  # def _storeToken(self, token, session):
-  #   self.updateSession(session, token=token)
-  #   return S_OK()
 
 
 class App(object):
@@ -215,25 +192,6 @@ class App(object):
     # Configure tornado app
     self.__app = Application(routes, **kw)
 
-    # # Add authorization server
-    # if self.__handlerMgr.isAuthServer():
-    #   setattr(self.__app, '_authServer', AuthServer())
-    
-    # Add WebClient
-    if self.__handlerMgr.isPortal():
-      result = gConfig.getOptionsDictRecursively("/WebApp/AuthorizationClient")
-      if not result['OK']:
-        raise Exception("Can't load web portal settings.")
-      config = result['Value']
-      result = gConfig.getOptionsDictRecursively('/Systems/Framework/Production/Services/AuthManager/AuthorizationServer')
-      if not result['OK']:
-        raise Exception("Can't load authorization server settings.")
-      serverMetadata = result['Value']
-      config.update(serverMetadata)
-      config = dict((k, v.replace(', ', ',').split(',') if ',' in v else v) for k, v in config.items())
-      setattr(self.__app, '_authClient', OAuth2IdProvider(**config))
-      setattr(self.__app, '_idps', IdProviderFactory())
-    
     self.log.notice("Configuring HTTP on port %s" % (Conf.HTTPPort()))
     # Create the web servers
     srv = tornado.httpserver.HTTPServer(self.__app, xheaders=True)
