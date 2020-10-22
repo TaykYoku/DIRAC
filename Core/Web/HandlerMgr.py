@@ -84,6 +84,7 @@ class HandlerMgr(object):
       hendlerList += list(result['Value'].items())
     self.__handlers = collections.OrderedDict(hendlerList)
 
+    # ['/opt/dirac/pro/WebAppExt/WebApp/static', ...]
     staticPaths = self.getPaths("static")
     self.log.verbose("Static paths found:\n - %s" % "\n - ".join(staticPaths))
     self.__routes = []

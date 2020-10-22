@@ -139,15 +139,15 @@ class TornadoServer(object):
 
     # if no service list is given, load services from configuration
     handlerDict = self.handlerManager.getHandlersDict()
-    for _url, data in handlerDict.items():
+    for route, data in handlerDict.items():
       handler, _port = data
-      tURL = url(_url, handler)
+      tURL = url(route, handler)
       self.urls.append(tURL)
       port = _port or self.port
       if port not in self.__portRoutes:
-        self.__portRoutes[port] = {'URLs': [], 'settings': {}}
-      if tURL not in self.__portRoutes[port]['URLs']:
-        self.__portRoutes[port]['URLs'].append(tURL)
+        self.__portRoutes[port] = {'routes': [], 'settings': {}}
+      if tURL not in self.__portRoutes[port]['routes']:
+        self.__portRoutes[port]['routes'].append(tURL)
   
   def loadWeb(self, name=None):
     from DIRAC.Core.Web.HandlerMgr import HandlerMgr
@@ -172,17 +172,14 @@ class TornadoServer(object):
     tLoader = TemplateLoader(self.__handlerMgr.getPaths("template"))
 
     if port not in self.__portRoutes:
-      self.__portRoutes[port] = {'URLs': [], 'settings': {}}
+      self.__portRoutes[port] = {'routes': [], 'settings': {}}
     self.__portRoutes[port]['settings'] = dict(debug=Conf.devMode(),
                                                template_loader=tLoader,
                                                cookie_secret=str(Conf.cookieSecret()))
     from pprint import pprint
-    for _url in routes:
-      pprint(_url)
-      if not isinstance(_url, url):
-        _url = url(_url)
-      if _url not in self.__portRoutes[port]['URLs']:
-        self.__portRoutes[port]['URLs'].append(_url)
+    for route in routes:
+      if route not in self.__portRoutes[port]['routes']:
+        self.__portRoutes[port]['routes'].append(route)
 
   def stopChildProcesses(self, sig, frame):
     """
@@ -261,7 +258,7 @@ class TornadoServer(object):
       settings.update(app['settings'])
 
       # Start server
-      router = Application(app['URLs'], settings)
+      router = Application(app['routes'], settings)
       server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True, xheaders=True)
       try:
         server.listen(port)
@@ -271,8 +268,8 @@ class TornadoServer(object):
       if settings['debug']:
         sLog.info("Configuring in developer mode...")
       sLog.always("Listening on https://127.0.0.1:%s" % port)
-      for service in app['URLs']:
-        sLog.debug("Available service: %s" % service)
+      for service in app['routes']:
+        sLog.debug("Available service: %s" % service if isinstance(servise, url) else service[0])
 
     tornado.autoreload.add_reload_hook(lambda: sLog.verbose("\n == Reloading web app...\n"))
     IOLoop.current().start()
