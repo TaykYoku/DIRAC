@@ -274,13 +274,13 @@ class AuthServer(_AuthorizationServer, SessionManager, ClientManager):
     grant = self.get_authorization_grant(req)
     print('==== GRANT: %s ===' % grant)
     grant.validate_consent_request()
-    # session = req.state or generate_token(10)
+    session = req.state or generate_token(10)
     # self.server.updateSession(session, request=req, group=req.args.get('group'))
     if not hasattr(grant, 'prompt'):
       grant.prompt = None
-    print('==== Session: %s' % req.state)
+    print('==== Session: %s' % session)
     print('==== Request:')
     pprint(req.data)
     print('============')
-    self.updateSession(req.state, request=req, createIfNotExist=True)
-    return grant, req.state
+    self.updateSession(session, request=req, createIfNotExist=True)
+    return grant, session
