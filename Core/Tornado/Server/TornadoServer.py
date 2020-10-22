@@ -269,7 +269,7 @@ class TornadoServer(object):
         sLog.info("Configuring in developer mode...")
       sLog.always("Listening on https://127.0.0.1:%s" % port)
       for service in app['routes']:
-        sLog.debug("Available service: %s" % service if isinstance(servise, url) else service[0])
+        sLog.debug("Available service: %s" % service if isinstance(service, url) else service[0])
 
     tornado.autoreload.add_reload_hook(lambda: sLog.verbose("\n == Reloading web app...\n"))
     IOLoop.current().start()
