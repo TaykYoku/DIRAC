@@ -33,6 +33,7 @@ from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
 ## FROM WEB
+import sys
 import signal
 import tornado.process
 import tornado.autoreload
@@ -178,6 +179,22 @@ class TornadoServer(object):
     for _url in routes:
       if _url not in self.__portRoutes[port]['URLs']:
         self.__portRoutes[port]['URLs'].append(tURL)
+
+  def stopChildProcesses(self, sig, frame):
+    """
+    It is used to properly stop tornado when more than one process is used.
+    In principle this is doing the job of runsv....
+
+    :param int sig: the signal sent to the process
+    :param object frame: execution frame which contains the child processes
+    """
+    # tornado.ioloop.IOLoop.instance().add_timeout(time.time()+5, sys.exit)
+    for child in frame.f_locals.get('children', []):
+      gLogger.info("Stopping child processes: %d" % child)
+      os.kill(child, signal.SIGTERM)
+    # tornado.ioloop.IOLoop.instance().stop()
+    # gLogger.info('exit success')
+    sys.exit(0)
 
   def startTornado(self):
     """
