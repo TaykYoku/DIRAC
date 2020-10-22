@@ -105,7 +105,7 @@ class AuthManagerData(object):
     # If the AuthManager service is down client will ignore it 1 minute
     if result.get('Errno', 0) == 1112:
       crash = self.__service.get('crash')
-      self.__service.add('crash', 60, value=(result, 1 if crash else crash[1] + 1))
+      self.__service.add('crash', 60, value=(result, (crash[1] + 1) if crash else 1))
     if result['OK'] and result['Value']:
       for uid, data in result['Value'].items():
         if data:
