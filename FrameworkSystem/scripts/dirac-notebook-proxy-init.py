@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-########################################################################
-# File :    dirac-proxy-init.py
-# Author :  Adrian Casajus
-########################################################################
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
