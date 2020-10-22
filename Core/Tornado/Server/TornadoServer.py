@@ -149,9 +149,9 @@ class TornadoServer(object):
       if tURL not in self.__portRoutes[port]['routes']:
         self.__portRoutes[port]['routes'].append(tURL)
   
-  def loadWeb(self, name=None):
-    from DIRAC.Core.Web.HandlerMgr import HandlerMgr
-
+  def loadWeb(self, name=None, port=None):
+    if not port:
+      port = Conf.HTTPPort()
     self.__handlerMgr = HandlerMgr('WebApp.handler', Conf.rootURL())
 
     # Load required CFG files
@@ -165,7 +165,7 @@ class TornadoServer(object):
     if not result['OK']:
       return result
     routes = result['Value']
-    port = Conf.HTTPPort()
+    
     # Initialize the session data
     SessionData.setHandlers(self.__handlerMgr.getHandlers()['Value'])
     # Create the app
