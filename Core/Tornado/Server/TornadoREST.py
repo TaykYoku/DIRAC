@@ -116,7 +116,7 @@ class TornadoREST(TornadoService):  # pylint: disable=abstract-method
           if Conf.balancer() == "nginx":
             credDict = self.__readCertificateFromNginx()
           else:
-            credDict = super(TornadoService, self)._gatherPeerCredentials()
+            credDict = super(TornadoREST, self)._gatherPeerCredentials()
 
           # MUST BE ADDED when read certificate
           # # Add a group if it present in the request path
