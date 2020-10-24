@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import os
 from DIRAC import gConfig, gLogger
-from DIRAC.Core.Web import Conf
+from DIRAC.Core.Tornado.Server.Web import Conf
 from DIRAC.Core.Utilities import List, ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.DISET.AuthManager import AuthManager

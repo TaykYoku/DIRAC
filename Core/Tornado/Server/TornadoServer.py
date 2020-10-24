@@ -44,7 +44,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 from DIRAC.Core.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Web.TemplateLoader import TemplateLoader
 from DIRAC.Core.Web.SessionData import SessionData
-from DIRAC.Core.Web import Conf
+from DIRAC.Core.Tornado.Server.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import SessionManager
 
 class Application(_Application, SessionManager):
@@ -100,25 +100,21 @@ class TornadoServer(object):
         :param str balancer: if need to use balancer, e.g.:: `nginx`
         :param int processes: number of processes
     """
+    # Balancer, like as nginx
     self.__balancer = balancer
+    # Multiprocessor mode settings
     self.__processes = processes or 0
-    self.__portRoutes = {}
-
+    # Applicatio metadata, routes and settings mapping on the ports
+    self.__appsSettings = {}
+    # Default port, if enother is not discover
     if port is None:
       port = gConfig.getValue("/Systems/Tornado/%s/Port" % PathFinder.getSystemInstance('Tornado'), 8443)
-
-    if services and not isinstance(services, list):
-      services = [services]
-
-    # URLs for services.
-    # Contains Tornado :py:class:`tornado.web.url` object
-    self.urls = []
-    # Other infos
     self.port = port
+
+    # Handler manager initialization with default settings
     self.handlerManager = HandlerManager(services, endpoints)
-
+    
     # Monitoring attributes
-
     self._monitor = MonitoringClient()
     # temp value for computation, used by the monitoring
     self.__report = None
@@ -137,49 +133,76 @@ class TornadoServer(object):
       sLog.error(retVal['Message'])
       raise ImportError("Some endpoints can't be loaded, check the endpoint names and configuration.")
 
+  def __calculateAppSettings(self):
+    """ Calculate application information mapping on the ports
+    """  
     # if no service list is given, load services from configuration
     handlerDict = self.handlerManager.getHandlersDict()
-    for route, data in handlerDict.items():
-      handler, _port = data
-      tURL = url(route, handler)
-      self.urls.append(tURL)
-      port = _port or self.port
-      if port not in self.__portRoutes:
-        self.__portRoutes[port] = {'routes': [], 'settings': {}}
-      if tURL not in self.__portRoutes[port]['routes']:
-        self.__portRoutes[port]['routes'].append(tURL)
+    for data in handlerDict.values():
+      port = data.get('Port', self.port)
+      for hURL in data['URLs']:
+        self.urls.append(url(hURL))
+        if port not in self.__appsSettings:
+          self.__appsSettings[port] = {'routes': [], 'settings': {}}
+        if hURL not in self.__appsSettings[port]['routes']:
+          self.__appsSettings[port]['routes'].append(hURL)
+    return bool(self.__appsSettings)
+  
+  def loadServices(self, services):
+    """ Load a services
+
+        :param services: List of service handlers to load. Default value set at initialization
+            If ``True``, loads all services from CS
+        :type services: bool or list
+
+        :return: S_OK()/S_ERROR()
+    """
+    return self.handlerManager.loadServicesHandlers(services)
+  
+  def loadEndpoints(self, endpoints):
+    """ Load a endpoints
+
+        :param endpoints: List of service handlers to load. Default value set at initialization
+            If ``True``, loads all endpoints from CS
+        :type endpoints: bool or list
+
+        :return: S_OK()/S_ERROR()
+    """
+    return self.handlerManager.loadEndpointsHandlers(endpoints)
   
   def loadWeb(self, name=None, port=None):
+    """ Load Web portals
+
+        :return: S_OK()/S_ERROR()
+    """
+    # Load Web portal required CFG files
+    Conf.loadWebCFG()
+
     if not port:
       port = Conf.HTTPPort()
-    self.__handlerMgr = HandlerMgr('WebApp.handler', Conf.rootURL())
-
-    # Load required CFG files
-    if not self._loadDefaultWebCFG():
-      # if we have a web.cfg under etc directory we use it, otherwise
-      # we use the configuration file defined by the developer
-      self._loadWebAppCFGFiles()
+    webHandlerMgr = HandlerMgr('WebApp.handler', Conf.rootURL())
 
     # Calculating routes
-    result = self.__handlerMgr.getRoutes()
+    result = webHandlerMgr.getRoutes()
     if not result['OK']:
       return result
     routes = result['Value']
     
     # Initialize the session data
-    SessionData.setHandlers(self.__handlerMgr.getHandlers()['Value'])
+    SessionData.setHandlers(webHandlerMgr.getHandlers()['Value'])
     # Create the app
-    tLoader = TemplateLoader(self.__handlerMgr.getPaths("template"))
+    tLoader = TemplateLoader(webHandlerMgr.getPaths("template"))
 
-    if port not in self.__portRoutes:
-      self.__portRoutes[port] = {'routes': [], 'settings': {}}
-    self.__portRoutes[port]['settings'] = dict(debug=Conf.devMode(),
+    if port not in self.__appsSettings:
+      self.__appsSettings[port] = {'routes': [], 'settings': {}}
+    self.__appsSettings[port]['settings'] = dict(debug=Conf.devMode(),
                                                template_loader=tLoader,
                                                cookie_secret=str(Conf.cookieSecret()))
-    from pprint import pprint
     for route in routes:
-      if route not in self.__portRoutes[port]['routes']:
-        self.__portRoutes[port]['routes'].append(route)
+      if route not in self.__appsSettings[port]['routes']:
+        self.__appsSettings[port]['routes'].append(route)
+
+    return S_OK()
 
   def stopChildProcesses(self, sig, frame):
     """
@@ -189,12 +212,9 @@ class TornadoServer(object):
     :param int sig: the signal sent to the process
     :param object frame: execution frame which contains the child processes
     """
-    # tornado.ioloop.IOLoop.instance().add_timeout(time.time()+5, sys.exit)
     for child in frame.f_locals.get('children', []):
       gLogger.info("Stopping child processes: %d" % child)
       os.kill(child, signal.SIGTERM)
-    # tornado.ioloop.IOLoop.instance().stop()
-    # gLogger.info('exit success')
     sys.exit(0)
 
   def startTornado(self):
@@ -204,18 +224,12 @@ class TornadoServer(object):
     """
 
     # If there is no services loaded:
-    if not self.__portRoutes:
+    if not self.__calculateAppSettings():
       raise ImportError("There is no services loaded, please check your configuration")
 
     sLog.debug("Starting Tornado")
 
-    ### NGINX ###
-    Conf.generateRevokedCertsFile()  # it is used by nginx....
-    # when NGINX is used then the Conf.HTTPS return False, it means tornado
-    # does not have to be configured using 443 port
-    Conf.generateCAFile()  # if we use Nginx we have to generate the cas as well...
-    #############
-
+    # Prepare SSL settings
     certs = Locations.getHostCertificateAndKeyLocation()
     if certs is False:
       sLog.fatal("Host certificates not found ! Can't start the Server")
@@ -229,14 +243,19 @@ class TornadoServer(object):
         'sslDebug': False,  # Set to true if you want to see the TLS debug messages
     }
 
-    self._initMonitoring()
-    self.__monitorLastStatsUpdate = time.time()
-    self.__report = self.__startReportToMonitoringLoop()
+    if self.__balancer:
+      # Create CAs for balancer
+      Conf.generateRevokedCertsFile()  # it is used by nginx....
+      # when NGINX is used then the Conf.HTTPS return False, it means tornado
+      # does not have to be configured using 443 port
+      Conf.generateCAFile()  # if we use Nginx we have to generate the cas as well...
 
-    # Configure server.
+    # Default server configuration
     settings = dict(debug=False, compress_response=True,
                     # Use gLogger instead tornado log
-                    log_function=self._logRequest, autoreload=self.__processes < 2)
+                    log_function=self._logRequest,
+                    # Trun off autoreload for more that 2 processes
+                    autoreload=self.__processes < 2)
 
     ############
     # please do no move this lines. The lines must be before the fork_processes
@@ -249,12 +268,18 @@ class TornadoServer(object):
       settings['debug'] = False
     #############
 
+    # Init monitoring
+    self._initMonitoring()
+    self.__monitorLastStatsUpdate = time.time()
+    self.__report = self.__startReportToMonitoringLoop()
+    
     # Starting monitoring, IOLoop waiting time in ms, __monitoringLoopDelay is defined in seconds
     tornado.ioloop.PeriodicCallback(self.__reportToMonitoring, self.__monitoringLoopDelay * 1000).start()
 
-    for port, app in self.__portRoutes.items():
+    for port, app in self.__appsSettings.items():
       sLog.debug(" - %s" % "\n - ".join(["%s = %s" % (k, ssl_options[k]) for k in ssl_options]))
 
+      # Merge appllication settings
       settings.update(app['settings'])
 
       # Start server
@@ -271,7 +296,7 @@ class TornadoServer(object):
       for service in app['routes']:
         sLog.debug("Available service: %s" % service if isinstance(service, url) else service[0])
 
-    tornado.autoreload.add_reload_hook(lambda: sLog.verbose("\n == Reloading web app...\n"))
+    tornado.autoreload.add_reload_hook(lambda: sLog.verbose("\n == Reloading server...\n"))
     IOLoop.current().start()
 
   def _initMonitoring(self):
@@ -360,82 +385,3 @@ class TornadoServer(object):
       logm = sLog.error
     request_time = 1000.0 * handler.request.request_time()
     logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
-
-  #### LOAD WEB CFG ####
-  def _loadWebAppCFGFiles(self):
-    """
-    Load WebApp/web.cfg definitions
-    """
-    exts = []
-    for ext in CSGlobals.getCSExtensions():
-      if ext == "DIRAC":
-        continue
-      if ext[-5:] != "DIRAC":
-        ext = "%sDIRAC" % ext
-      if ext != "WebAppDIRAC":
-        exts.append(ext)
-    exts.append("DIRAC")
-    exts.append("WebAppDIRAC")
-    webCFG = CFG()
-    for modName in reversed(exts):
-      try:
-        modPath = imp.find_module(modName)[1]
-      except ImportError:
-        continue
-      gLogger.verbose("Found module %s at %s" % (modName, modPath))
-      cfgPath = os.path.join(modPath, "WebApp", "web.cfg")
-      if not os.path.isfile(cfgPath):
-        gLogger.verbose("Inexistant %s" % cfgPath)
-        continue
-      try:
-        modCFG = CFG().loadFromFile(cfgPath)
-      except Exception as excp:
-        gLogger.error("Could not load %s: %s" % (cfgPath, excp))
-        continue
-      gLogger.verbose("Loaded %s" % cfgPath)
-      expl = [Conf.BASECS]
-      while len(expl):
-        current = expl.pop(0)
-        if not modCFG.isSection(current):
-          continue
-        if modCFG.getOption("%s/AbsoluteDefinition" % current, False):
-          gLogger.verbose("%s:%s is an absolute definition" % (modName, current))
-          try:
-            webCFG.deleteKey(current)
-          except BaseException:
-            pass
-          modCFG.deleteKey("%s/AbsoluteDefinition" % current)
-        else:
-          for sec in modCFG[current].listSections():
-            expl.append("%s/%s" % (current, sec))
-      # Add the modCFG
-      webCFG = webCFG.mergeWith(modCFG)
-    gConfig.loadCFG(webCFG)
-
-  def _loadDefaultWebCFG(self):
-    """ This method reloads the web.cfg file from etc/web.cfg
-
-        :return: bool
-    """
-    modCFG = None
-    cfgPath = os.path.join(DIRAC.rootPath, 'etc', 'web.cfg')
-    isLoaded = True
-    if not os.path.isfile(cfgPath):
-      isLoaded = False
-    else:
-      try:
-        modCFG = CFG().loadFromFile(cfgPath)
-      except Exception as excp:
-        isLoaded = False
-        gLogger.error("Could not load %s: %s" % (cfgPath, excp))
-
-    if modCFG:
-      if modCFG.isSection("/Website"):
-        gLogger.warn("%s configuration file is not correct. It is used by the old portal!" % (cfgPath))
-        isLoaded = False
-      else:
-        gConfig.loadCFG(modCFG)
-    else:
-      isLoaded = False
-
-    return isLoaded

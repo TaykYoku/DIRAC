@@ -5,7 +5,7 @@ from __future__ import print_function
 import urlparse
 import tornado.web
 
-from DIRAC.Core.Web import Conf
+from DIRAC.Core.Tornado.Server.Web import Conf
 
 __RCSID__ = "$Id$"
 
