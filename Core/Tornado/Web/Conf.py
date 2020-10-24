@@ -7,6 +7,8 @@ import uuid
 import tempfile
 import tornado.process
 
+from diraccfg import CFG
+
 from DIRAC import gConfig, rootPath, gLogger
 from DIRAC.Core.Security import Locations, X509Chain, X509CRL
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
