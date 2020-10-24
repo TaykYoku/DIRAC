@@ -7,7 +7,7 @@ import uuid
 import tempfile
 import tornado.process
 
-from DIRAC import gConfig
+from DIRAC import gConfig, rootPath
 from DIRAC.Core.Security import Locations, X509Chain, X509CRL
 
 __RCSID__ = "$Id$"
@@ -395,7 +395,7 @@ def _loadDefaultWebCFG():
       :return: bool
   """
   modCFG = None
-  cfgPath = os.path.join(DIRAC.rootPath, 'etc', 'web.cfg')
+  cfgPath = os.path.join(rootPath, 'etc', 'web.cfg')
   isLoaded = True
   if not os.path.isfile(cfgPath):
     isLoaded = False
