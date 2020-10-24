@@ -9,6 +9,7 @@ import tornado.process
 
 from DIRAC import gConfig, rootPath, gLogger
 from DIRAC.Core.Security import Locations, X509Chain, X509CRL
+from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
 
 __RCSID__ = "$Id$"
 
