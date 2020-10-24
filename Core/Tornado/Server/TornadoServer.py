@@ -193,8 +193,8 @@ class TornadoServer(object):
     if port not in self.__appsSettings:
       self.__appsSettings[port] = {'routes': [], 'settings': {}}
     self.__appsSettings[port]['settings'] = dict(debug=Conf.devMode(),
-                                               template_loader=tLoader,
-                                               cookie_secret=str(Conf.cookieSecret()))
+                                                 template_loader=tLoader,
+                                                 cookie_secret=str(Conf.cookieSecret()))
     for route in routes:
       if route not in self.__appsSettings[port]['routes']:
         self.__appsSettings[port]['routes'].append(route)
@@ -250,7 +250,7 @@ class TornadoServer(object):
     # Default server configuration
     settings = dict(debug=False, compress_response=True,
                     # Use gLogger instead tornado log
-                    log_function=self._logRequest,
+                    log_function=_logRequest,
                     # Trun off autoreload for more that 2 processes
                     autoreload=self.__processes < 2)
 
@@ -364,21 +364,21 @@ class TornadoServer(object):
     if percentage > 0:
       self._monitor.addMark('CPU', percentage)
 
-  def _logRequest(self, handler):
-    """ This function will be called at the end of every request to log the result
-        
-        :param object handler: RequestHandler object
-    """
-    print('=== _logRequest')
-    print('=== %s' % handler)
-    print(sLog)
-    print('===============')
-    status = handler.get_status()
-    if status < 400:
-      logm = sLog.notice
-    elif status < 500:
-      logm = sLog.warn
-    else:
-      logm = sLog.error
-    request_time = 1000.0 * handler.request.request_time()
-    logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
+def _logRequest(handler):
+  """ This function will be called at the end of every request to log the result
+      
+      :param object handler: RequestHandler object
+  """
+  print('=== _logRequest')
+  print('=== %s' % handler)
+  print(sLog)
+  print('===============')
+  status = handler.get_status()
+  if status < 400:
+    logm = sLog.notice
+  elif status < 500:
+    logm = sLog.warn
+  else:
+    logm = sLog.error
+  request_time = 1000.0 * handler.request.request_time()
+  logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
