@@ -341,6 +341,9 @@ def loadWebCFG():
     # if we have a web.cfg under etc directory we use it, otherwise
     # we use the configuration file defined by the developer
     _loadWebAppCFGFiles()
+  print('CONF UPLOADED')
+  from pprint import pprint
+  pprint(gConfig.getSections('/'))
 
 def _loadWebAppCFGFiles():
   """
