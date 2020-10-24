@@ -280,7 +280,7 @@ class TornadoServer(object):
       settings.update(app['settings'])
 
       # Start server
-      router = Application(app['routes'], settings)
+      router = Application(app['routes'], **settings)
       server = HTTPServer(router, ssl_options=ssl_options, decompress_request=True, xheaders=True)
       try:
         server.listen(port)
