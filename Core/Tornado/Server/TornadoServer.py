@@ -9,9 +9,9 @@ from __future__ import print_function
 
 __RCSID__ = "$Id$"
 
+import os
 import time
 import datetime
-import os
 
 import M2Crypto
 
@@ -25,7 +25,7 @@ from tornado.ioloop import IOLoop
 import tornado.ioloop
 
 import DIRAC
-from DIRAC import gConfig, gLogger
+from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Security import Locations
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
@@ -38,13 +38,10 @@ import signal
 import tornado.process
 import tornado.autoreload
 
-from diraccfg import CFG
-
-from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
+from DIRAC.Core.Tornado.Web import Conf
 from DIRAC.Core.Tornado.Web.HandlerMgr import HandlerMgr
 from DIRAC.Core.Tornado.Web.TemplateLoader import TemplateLoader
 from DIRAC.Core.Tornado.Web.SessionData import SessionData
-from DIRAC.Core.Tornado.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import SessionManager
 
 class Application(_Application, SessionManager):
