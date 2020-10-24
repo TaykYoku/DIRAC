@@ -343,7 +343,7 @@ def loadWebCFG():
     _loadWebAppCFGFiles()
   print('CONF UPLOADED')
   from pprint import pprint
-  pprint(gConfig.getSections('/'))
+  pprint(gConfig.getOptionsDict('/WebApp/'))
 
 def _loadWebAppCFGFiles():
   """
