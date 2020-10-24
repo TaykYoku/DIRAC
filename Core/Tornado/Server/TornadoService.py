@@ -16,6 +16,7 @@ import time
 import threading
 from datetime import datetime
 from six.moves import http_client
+from six.moves.urllib.parse import unquote
 from tornado.web import RequestHandler, HTTPError
 from tornado.httpclient import HTTPResponse
 from tornado import gen
@@ -543,17 +544,17 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
     """
     peerChain = X509Chain()
     derCert = self.request.get_ssl_certificate()
+
+    # Get client certificate pem
     if derCert:
       chainAsText = derCert.as_pem()
-
       # Here we read all certificate chain
       cert_chain = self.request.get_ssl_certificate_chain()
       for cert in cert_chain:
         chainAsText += cert.as_pem()
     else:
-      chainAsText = self.request.headers.get('X-SSL-CERT')
-      print('chainAsText:  ')
-      print(chainAsText)
+      chainAsTextEncoded = self.request.headers.get('X-SSL-CERT')
+      chainAsText = unquote(chainAsTextEncoded)
 
     peerChain.loadChainFromString(chainAsText)
 
