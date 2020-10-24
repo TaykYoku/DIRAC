@@ -153,6 +153,10 @@ class SessionData(object):
 
         :return: dict
     """
+    from pprint import pprint
+    print('-- getData --')
+    pprint(self.__credDict)
+    pprint(self.__getGroupMenu())
     data = {'configuration': self.getWebConfiguration(),
             'menu': self.__getGroupMenu(),
             'user': self.__credDict,
