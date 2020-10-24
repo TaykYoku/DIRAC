@@ -541,15 +541,19 @@ class TornadoService(RequestHandler):  # pylint: disable=abstract-method
       :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
                 (not a DIRAC structure !)
     """
-    print('CONECTION: =========>')
-    print(self.connection)
-    chainAsText = self.request.get_ssl_certificate().as_pem()
     peerChain = X509Chain()
+    derCert = self.request.get_ssl_certificate()
+    if derCert:
+      chainAsText = derCert.as_pem()
 
-    # Here we read all certificate chain
-    cert_chain = self.request.get_ssl_certificate_chain()
-    for cert in cert_chain:
-      chainAsText += cert.as_pem()
+      # Here we read all certificate chain
+      cert_chain = self.request.get_ssl_certificate_chain()
+      for cert in cert_chain:
+        chainAsText += cert.as_pem()
+    else:
+      chainAsText = self.request.headers.get('X-SSL-CERT')
+      print('chainAsText:  ')
+      print(chainAsText)
 
     peerChain.loadChainFromString(chainAsText)
 
