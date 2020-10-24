@@ -27,8 +27,8 @@ from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.Core.Security import Properties
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.Core.Utilities.JEncode import encode
-from DIRAC.Core.Tornado.Server.Web import Conf
-from DIRAC.Core.Tornado.Server.Web.SessionData import SessionData
+from DIRAC.Core.Tornado.Web import Conf
+from DIRAC.Core.Tornado.Web.SessionData import SessionData
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector

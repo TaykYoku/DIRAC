@@ -41,10 +41,10 @@ import tornado.autoreload
 from diraccfg import CFG
 
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
-from DIRAC.Core.Web.HandlerMgr import HandlerMgr
-from DIRAC.Core.Web.TemplateLoader import TemplateLoader
-from DIRAC.Core.Web.SessionData import SessionData
-from DIRAC.Core.Tornado.Server.Web import Conf
+from DIRAC.Core.Tornado.Web.HandlerMgr import HandlerMgr
+from DIRAC.Core.Tornado.Web.TemplateLoader import TemplateLoader
+from DIRAC.Core.Tornado.Web.SessionData import SessionData
+from DIRAC.Core.Tornado.Web import Conf
 from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import SessionManager
 
 class Application(_Application, SessionManager):

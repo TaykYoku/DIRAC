@@ -11,10 +11,10 @@ import inspect
 import collections
 
 from DIRAC import S_OK, S_ERROR, rootPath, gLogger
-from DIRAC.Core.Tornado.Server.Web import Conf
-from DIRAC.Core.Tornado.Server.Web.WebHandler import WebHandler, WebSocketHandler
-from DIRAC.Core.Tornado.Server.Web.CoreHandler import CoreHandler
-from DIRAC.Core.Tornado.Server.Web.StaticHandler import StaticHandler
+from DIRAC.Core.Tornado.Web import Conf
+from DIRAC.Core.Tornado.Web.WebHandler import WebHandler, WebSocketHandler
+from DIRAC.Core.Tornado.Web.CoreHandler import CoreHandler
+from DIRAC.Core.Tornado.Web.StaticHandler import StaticHandler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.Core.Utilities.DIRACSingleton import DIRACSingleton
 from DIRAC.ConfigurationSystem.Client.Helpers import CSGlobals
