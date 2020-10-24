@@ -7,7 +7,7 @@ import uuid
 import tempfile
 import tornado.process
 
-from DIRAC import gConfig, rootPath
+from DIRAC import gConfig, rootPath, gLogger
 from DIRAC.Core.Security import Locations, X509Chain, X509CRL
 
 __RCSID__ = "$Id$"
