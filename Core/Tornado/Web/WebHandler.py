@@ -272,6 +272,7 @@ class WebHandler(TornadoREST):
     """
     return super(WebHandler, self)._readToken(self.__group and ('g:%s' % self.__group))
 
+  @property
   def log(self):
     return sLog
 
