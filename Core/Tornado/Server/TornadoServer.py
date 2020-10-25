@@ -85,7 +85,7 @@ class TornadoServer(object):
 
   """
 
-  def __init__(self, services=None, endpoints=None, port=None, balancer=None, processes=None):
+  def __init__(self, services=None, endpoints=None, port=None, debug=False, balancer=None, processes=None):
     """ C'r
 
         :param list services: (default None) List of service handlers to load.
@@ -95,12 +95,14 @@ class TornadoServer(object):
         :param int port: Port to listen to.
             If ``None``, the port is resolved following the logic described in the class documentation
         :param str balancer: if need to use balancer, e.g.:: `nginx`
-        :param int processes: number of processes
+        :param int processes: number of processes or if it's True just use all server CPUs
     """
+    # Debug
+    self.debug = debug
     # Balancer, like as nginx
-    self.__balancer = balancer
+    self.balancer = balancer
     # Multiprocessor mode settings
-    self.__processes = processes or 0
+    self.processes = 1 if processes is None else 0 if processes is True else processes
     # Applicatio metadata, routes and settings mapping on the ports
     self.__appsSettings = {}
     # Default port, if enother is not discover
@@ -222,7 +224,7 @@ class TornadoServer(object):
 
     # If there is no services loaded:
     if not self.__calculateAppSettings():
-      raise ImportError("There is no services loaded, please check your configuration")
+      raise Exception("There is no services loaded, please check your configuration")
 
     sLog.debug("Starting Tornado")
 
@@ -230,7 +232,7 @@ class TornadoServer(object):
     certs = Locations.getHostCertificateAndKeyLocation()
     if certs is False:
       sLog.fatal("Host certificates not found ! Can't start the Server")
-      raise ImportError("Unable to load certificates")
+      raise Exception("Unable to load certificates")
     ca = Locations.getCAsLocation()
     ssl_options = {
         'certfile': certs[0],
@@ -240,29 +242,25 @@ class TornadoServer(object):
         'sslDebug': False,  # Set to true if you want to see the TLS debug messages
     }
 
-    if self.__balancer:
+    if self.balancer:
       # Create CAs for balancer
       Conf.generateRevokedCertsFile()  # it is used by nginx....
       # when NGINX is used then the Conf.HTTPS return False, it means tornado
       # does not have to be configured using 443 port
       Conf.generateCAFile()  # if we use Nginx we have to generate the cas as well...
 
-    # Default server configuration
-    settings = dict(debug=False, compress_response=True,
-                    # Use gLogger instead tornado log
-                    log_function=_logRequest,
-                    # Trun off autoreload for more that 2 processes
-                    autoreload=self.__processes < 2)
-
     ############
     # please do no move this lines. The lines must be before the fork_processes
     signal.signal(signal.SIGTERM, self.stopChildProcesses)
     signal.signal(signal.SIGINT, self.stopChildProcesses)
 
-    # Check processes if we're under a load balancert
-    if self.__balancer and self.__processes not in (0, 1):
-      tornado.process.fork_processes(self.__processes, max_restarts=0)
-      settings['debug'] = False
+    # Check processes if we're under a load balancert and have only one port
+    if self.processes != 1:
+      if not self.balancer:
+        raise Exception("For multi processor mode, please, use balacer.")
+      if len(self.__appsSettings) != 1:
+        raise Exception("For multi processor mode, please, use one server port.")
+      tornado.process.fork_processes(self.processes, max_restarts=0)
     #############
 
     # Init monitoring
@@ -276,8 +274,18 @@ class TornadoServer(object):
     for port, app in self.__appsSettings.items():
       sLog.debug(" - %s" % "\n - ".join(["%s = %s" % (k, ssl_options[k]) for k in ssl_options]))
 
+      # Default server configuration
+      settings = dict(debug=self.debug,
+                      compress_response=True,
+                      # Use gLogger instead tornado log
+                      log_function=_logRequest)
+
       # Merge appllication settings
       settings.update(app['settings'])
+
+      # Don't use autoreload for multiprocess
+      if self.processes != 1:
+        settings['autoreload'] = False
 
       # Start server
       router = Application(app['routes'], **settings)
