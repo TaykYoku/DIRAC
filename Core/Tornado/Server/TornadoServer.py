@@ -287,7 +287,7 @@ class TornadoServer(object):
       if self.processes != 1:
         if self.balancer:
           port = 8000
-        port = port + (tornado.process.task_id() or 0)
+        port += tornado.process.task_id() or 0
         settings['autoreload'] = False
 
       # Start server
