@@ -300,7 +300,7 @@ class TornadoServer(object):
         raise
       if settings['debug']:
         sLog.info("Configuring in developer mode...")
-      sLog.always("Listening on https://127.0.0.1:%s" % port)
+      sLog.always("Listening on 127.0.0.1:%s" % port)
       for service in app['routes']:
         sLog.debug("Available service: %s" % service if isinstance(service, url) else service[0])
 
