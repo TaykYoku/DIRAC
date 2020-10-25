@@ -285,6 +285,9 @@ class TornadoServer(object):
 
       # Don't use autoreload for multiprocess
       if self.processes != 1:
+        if self.balancer:
+          port = 8000
+        port = port + (tornado.process.task_id() or 0)
         settings['autoreload'] = False
 
       # Start server
