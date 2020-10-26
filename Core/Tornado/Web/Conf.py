@@ -337,13 +337,15 @@ def getAppSettings(app):
 def loadWebCFG():
   """ Load required CFG files
   """
+  from pprint import pprint
+  pprint(gConfig.getOptionsDict('/WebApp'))
   if not _loadDefaultWebCFG():
     # if we have a web.cfg under etc directory we use it, otherwise
     # we use the configuration file defined by the developer
     _loadWebAppCFGFiles()
   print('CONF UPLOADED')
-  from pprint import pprint
-  pprint(gConfig.getOptionsDict('/WebApp/'))
+  
+  pprint(gConfig.getOptionsDict('/WebApp'))
 
 def _loadWebAppCFGFiles():
   """
