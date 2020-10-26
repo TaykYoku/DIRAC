@@ -46,9 +46,10 @@ if __name__ == "__main__":
 
   includeExtensionErrors()
 
-
   gLogger.initialize('Tornado', "/")
 
-  serverToLaunch = TornadoServer(False, port=8000, balancer='nginx')
+  endpoints = ['Configuration/Configuration', 'Framework/Auth', 'Framework/Proxy']
+
+  serverToLaunch = TornadoServer(False, endpoints, port=8000, balancer='nginx')
   serverToLaunch.loadWeb()
   serverToLaunch.startTornado()
