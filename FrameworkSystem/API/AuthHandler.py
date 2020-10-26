@@ -76,7 +76,7 @@ class AuthHandler(TornadoREST):
   #auth_userinfo = ["authenticated"]
   def web_userinfo(self):
     print('------ web_userinfo --------')
-    token = ResourceProtector().acquire_token(self.request, scope)
+    token = ResourceProtector().acquire_token(self.request, '')
     return {'ID': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
     # return {'username': credDict['username'],
     #         'group': credDict['group']}
