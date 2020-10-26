@@ -50,5 +50,5 @@ if __name__ == "__main__":
   gLogger.initialize('Tornado', "/")
 
   serverToLaunch = TornadoServer(False, port=8000, balancer='nginx', processes=4)
-  serverToLaunch.loadWeb(port=8000)
+  serverToLaunch.loadWeb()
   serverToLaunch.startTornado()

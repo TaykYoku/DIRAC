@@ -103,6 +103,8 @@ class TornadoServer(object):
     self.balancer = balancer
     # Multiprocessor mode settings
     self.processes = 1 if processes is None else 0 if processes is True else processes
+    if processes:
+      raise ImportError('Multiprocessor mode is not supported.')
     # Applicatio metadata, routes and settings mapping on the ports
     self.__appsSettings = {}
     # Default port, if enother is not discover
@@ -203,18 +205,18 @@ class TornadoServer(object):
 
     return S_OK()
 
-  def stopChildProcesses(self, sig, frame):
-    """
-    It is used to properly stop tornado when more than one process is used.
-    In principle this is doing the job of runsv....
+  # def stopChildProcesses(self, sig, frame):
+  #   """
+  #   It is used to properly stop tornado when more than one process is used.
+  #   In principle this is doing the job of runsv....
 
-    :param int sig: the signal sent to the process
-    :param object frame: execution frame which contains the child processes
-    """
-    for child in frame.f_locals.get('children', []):
-      gLogger.info("Stopping child processes: %d" % child)
-      os.kill(child, signal.SIGTERM)
-    sys.exit(0)
+  #   :param int sig: the signal sent to the process
+  #   :param object frame: execution frame which contains the child processes
+  #   """
+  #   for child in frame.f_locals.get('children', []):
+  #     gLogger.info("Stopping child processes: %d" % child)
+  #     os.kill(child, signal.SIGTERM)
+  #   sys.exit(0)
 
   def startTornado(self):
     """
@@ -249,19 +251,19 @@ class TornadoServer(object):
       # does not have to be configured using 443 port
       Conf.generateCAFile()  # if we use Nginx we have to generate the cas as well...
 
-    ############
-    # please do no move this lines. The lines must be before the fork_processes
-    signal.signal(signal.SIGTERM, self.stopChildProcesses)
-    signal.signal(signal.SIGINT, self.stopChildProcesses)
+    # ############
+    # # please do no move this lines. The lines must be before the fork_processes
+    # signal.signal(signal.SIGTERM, self.stopChildProcesses)
+    # signal.signal(signal.SIGINT, self.stopChildProcesses)
 
-    # Check processes if we're under a load balancert and have only one port
-    if self.processes != 1:
-      if not self.balancer:
-        raise Exception("For multi processor mode, please, use balacer.")
-      if len(self.__appsSettings) != 1:
-        raise Exception("For multi processor mode, please, use one server port.")
-      tornado.process.fork_processes(self.processes, max_restarts=0)
-    #############
+    # # Check processes if we're under a load balancert and have only one port
+    # if self.processes != 1:
+    #   if not self.balancer:
+    #     raise Exception("For multi processor mode, please, use balacer.")
+    #   if len(self.__appsSettings) != 1:
+    #     raise Exception("For multi processor mode, please, use one server port.")
+    #   tornado.process.fork_processes(self.processes, max_restarts=0)
+    # #############
 
     # Init monitoring
     self._initMonitoring()
@@ -283,12 +285,12 @@ class TornadoServer(object):
       # Merge appllication settings
       settings.update(app['settings'])
 
-      # Don't use autoreload for multiprocess
-      if self.processes != 1:
-        if self.balancer:
-          port = 8000
-        port += tornado.process.task_id() or 0
-        settings['autoreload'] = False
+      # # Don't use autoreload in debug mode for multiprocess
+      # if self.processes != 1:
+      #   if self.balancer:
+      #     port = 8000
+      #   port += tornado.process.task_id() or 0
+      #   settings['debug'] = False
 
       # Start server
       router = Application(app['routes'], **settings)
