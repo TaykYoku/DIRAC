@@ -23,6 +23,7 @@ from DIRAC.FrameworkSystem.private.authorization.utils.Clients import ClientRegi
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 
 __RCSID__ = "$Id$"
 
@@ -75,8 +76,10 @@ class AuthHandler(TornadoREST):
   auth_userinfo = ["authenticated"]
   def web_userinfo(self):
     print('------ web_userinfo --------')
-    return {'username': credDict['username'],
-            'group': credDict['group']}
+    token = ResourceProtector().acquire_token(self.request, scope)
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
+    # return {'username': credDict['username'],
+    #         'group': credDict['group']}
     # return self.__validateToken()
     print('-----> web_userinfo <-------')
 
