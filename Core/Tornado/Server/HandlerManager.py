@@ -114,7 +114,7 @@ class HandlerManager(object):
         continue
 
       # Finally add the URL to handlers
-      gLogger.info("Add new URL %s to %s handler" % (ur, lhandlerPath))
+      gLogger.info("Add new URL %s to %s handler" % (url, handlerPath))
       self.__handlers[handlerPath]['URLs'].append((url, handler))
 
     return S_OK()
@@ -258,10 +258,11 @@ class HandlerManager(object):
             # argObj = inspect.getargspec(mObj)
             # args = '/'.join(['([A-z0-9_.-]+)'] * (len(argObj.args) - 1 - len(argObj.defaults or [])))
             # defs = '/'.join(['([A-z0-9_.-]*)'] * len(argObj.defaults or []))
-            gLogger.debug(" - Route %s/%s ->  %s.%s" % (handler.LOCATION, methodName, module['loadName'], mName))
+            gLogger.debug(" - Route %s/%s ->  %s %s" % (handler.LOCATION, methodName, module['loadName'], mName))
             url = "%s%s" % (handler.LOCATION, '' if methodName == 'index' else ('/%s' % methodName))
             if args:
               url += '[\/]?%s' % '/'.join(args)
+            urls.append(url)
             gLogger.debug("  * %s" % url)
         self.__addHandler(module['loadName'], handler, urls, ports.get(module['modName']))
     return S_OK()
