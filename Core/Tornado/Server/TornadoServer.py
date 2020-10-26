@@ -142,7 +142,6 @@ class TornadoServer(object):
     for data in handlerDict.values():
       port = data.get('Port', self.port)
       for hURL in data['URLs']:
-        self.urls.append(url(hURL))
         if port not in self.__appsSettings:
           self.__appsSettings[port] = {'routes': [], 'settings': {}}
         if hURL not in self.__appsSettings[port]['routes']:
