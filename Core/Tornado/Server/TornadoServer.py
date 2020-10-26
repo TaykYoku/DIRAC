@@ -140,7 +140,7 @@ class TornadoServer(object):
     # if no service list is given, load services from configuration
     handlerDict = self.handlerManager.getHandlersDict()
     for data in handlerDict.values():
-      port = data.get('Port', self.port)
+      port = data.get('Port') or self.port
       for hURL in data['URLs']:
         if port not in self.__appsSettings:
           self.__appsSettings[port] = {'routes': [], 'settings': {}}
