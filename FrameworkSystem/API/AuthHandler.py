@@ -73,7 +73,7 @@ class AuthHandler(TornadoREST):
       return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
     print('-----> web_jwk <-------')
   
-  auth_userinfo = ["authenticated"]
+  #auth_userinfo = ["authenticated"]
   def web_userinfo(self):
     print('------ web_userinfo --------')
     token = ResourceProtector().acquire_token(self.request, scope)
