@@ -395,3 +395,6 @@ class AuthHandler(TornadoREST):
       raise Exception("User is not valid.")
     claims['username'] = result['Value']
     return claims
+  
+  def _gatherPeerCredentials(self):
+    return {}
