@@ -147,6 +147,7 @@ class WebHandler(TornadoREST):
       regardless of the HTTP method used
 
     """
+    self.__session = None
     self.__parseURI()
     self.__disetConfig.reset()
     self.__disetConfig.setDecorator(self.__disetBlockDecor)
