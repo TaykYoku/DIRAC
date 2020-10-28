@@ -51,25 +51,6 @@ class Application(_Application, SessionManager):
   def __init__(self, *args, **kwargs):
     _Application.__init__(self, *args, **kwargs)
     SessionManager.__init__(self)
-  
-  def _logRequest(handler):
-    """ This function will be called at the end of every request to log the result
-        
-        :param object handler: RequestHandler object
-    """
-    print('=== _logRequest')
-    print('=== %s' % handler)
-    print(sLog)
-    print('===============')
-    status = handler.get_status()
-    if status < 400:
-      logm = sLog.notice
-    elif status < 500:
-      logm = sLog.warn
-    else:
-      logm = sLog.error
-    request_time = 1000.0 * handler.request.request_time()
-    logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
 
 
 class TornadoServer(object):

@@ -40,6 +40,10 @@ class BaseRequestHandler(RequestHandler):
   # We also need to add specific attributes for each service
   _monitor = None
 
+  # Type of component
+  MONITORING_COMPONENT = MonitoringClient.COMPONENT_WEB
+  # Authentication types
+  AUTHZ_GRANTS = ['SSL', 'JWT']
   # Prefix of methods names
   METHOD_PREFIX = "export_"
   
@@ -57,7 +61,7 @@ class BaseRequestHandler(RequestHandler):
     # Init extra bits of monitoring
 
     cls._monitor = MonitoringClient()
-    cls._monitor.setComponentType(MonitoringClient.COMPONENT_WEB)
+    cls._monitor.setComponentType(cls.MONITORING_COMPONENT)
 
     cls._monitor.initialize()
 
@@ -79,38 +83,39 @@ class BaseRequestHandler(RequestHandler):
     return S_OK()
 
   @classmethod
-  def _getServiceName(cls, request=None):
-    """ Search service name in request. Developers MUST
-        implement it in subclass.
+  def _getServiceName(cls, request):
+    """ Search service name in request.
 
         :param object request: tornado Request
 
         :return: str
     """
-    raise NotImplementedError()
+    # Expected path: ``/<System>/<Component>``
+    return request.path[1:]
   
   @classmethod
-  def _getServiceAuthSection(cls, serviceName=None):
-    """ Search service auth section. Developers MUST
-        implement it in subclass.
+  def _getServiceAuthSection(cls, serviceName):
+    """ Search service auth section.
 
         :param str serviceName: service name
 
         :return: str
     """
-    raise NotImplementedError()
+    return "%s/Authorization" % PathFinder.getServiceSection(serviceName)
   
   @classmethod
   def _getServiceInfo(cls, serviceName, request):
-    """ Fill service information. Developers CAN
-        implement it in subclass.
+    """ Fill service information.
 
         :param str serviceName: service name
         :param object request: tornado Request
 
         :return: dict
     """
-    return {}
+    return {'serviceName': serviceName,
+            'serviceSectionPath': PathFinder.getServiceSection(serviceName),
+            'csPaths': [PathFinder.getServiceSection(serviceName)],
+            'URL': request.full_url()}
 
   @classmethod
   def __initializeService(cls, request):
@@ -214,29 +219,19 @@ class BaseRequestHandler(RequestHandler):
     self._monitor.addMark("Queries")
 
   def _getMethodName(self):
-    """ Parse method name. Developers MUST implement it in subclass.
+    """ Parse method name.
 
         :return: str
     """
-    raise NotImplementedError()
+    return self.get_argument("method")
 
-  def _getMethodArgs(self):
-    """ Parse method argiments. Developers MUST implement it in subclass.
+  def _getMethodArgs(self, args):
+    """ Decode args.
 
         :return: list
     """
-    raise NotImplementedError()
-  
-  def _getMethod(self):
-    """ Get method object.
-
-        :return: object
-    """
-    try:
-      return getattr(self, '%s%s' % (self.METHOD_PREFIX, self.method))
-    except AttributeError as e:
-      sLog.error("Invalid method", self.method)
-      raise HTTPError(status_code=http_client.NOT_IMPLEMENTED)
+    args_encoded = self.get_body_argument('args', default=encode([]))
+    return decode(args_encoded)[0]
 
   def _getMethodAuthProps(self):
     """ Resolves the hard coded authorization requirements for method.
@@ -247,6 +242,17 @@ class BaseRequestHandler(RequestHandler):
       return getattr(self, 'auth_' + self.method)
     except AttributeError:
       return None
+
+  def _getMethod(self):
+    """ Get method object.
+
+        :return: object
+    """
+    try:
+      return getattr(self, '%s%s' % (self.METHOD_PREFIX, self.method))
+    except AttributeError as e:
+      sLog.error("Invalid method", self.method)
+      raise HTTPError(status_code=http_client.NOT_IMPLEMENTED)
 
   def prepare(self):
     """
@@ -293,6 +299,140 @@ class BaseRequestHandler(RequestHandler):
            self.request.path, extraInfo))
       raise HTTPError(status_code=http_client.UNAUTHORIZED)
 
+  # Make post a coroutine.
+  # See https://www.tornadoweb.org/en/branch5.1/guide/coroutines.html#coroutines
+  # for details
+  @gen.coroutine
+  def post(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    """
+      Method to handle incoming ``POST`` requests.
+      Note that all the arguments are already prepared in the :py:meth:`.prepare`
+      method.
+
+      The ``POST`` arguments expected are:
+
+      * ``method``: name of the method to call
+      * ``args``: JSON encoded arguments for the method
+      * ``extraCredentials``: (optional) Extra informations to authenticate client
+      * ``rawContent``: (optionnal, default False) If set to True, return the raw output
+        of the method called.
+
+      If ``rawContent`` was requested by the client, the ``Content-Type``
+      is ``application/octet-stream``, otherwise we set it to ``application/json``
+      and JEncode retVal.
+
+      If ``retVal`` is a dictionary that contains a ``Callstack`` item,
+      it is removed, not to leak internal information.
+
+
+      Example of call using ``requests``::
+
+        In [20]: url = 'https://server:8443/DataManagement/TornadoFileCatalog'
+          ...: cert = '/tmp/x509up_u1000'
+          ...: kwargs = {'method':'whoami'}
+          ...: caPath = '/home/dirac/ClientInstallDIR/etc/grid-security/certificates/'
+          ...: with requests.post(url, data=kwargs, cert=cert, verify=caPath) as r:
+          ...:     print r.json()
+          ...:
+        {u'OK': True,
+            u'Value': {u'DN': u'/C=ch/O=DIRAC/OU=DIRAC CI/CN=ciuser/emailAddress=lhcb-dirac-ci@cern.ch',
+            u'group': u'dirac_user',
+            u'identity': u'/C=ch/O=DIRAC/OU=DIRAC CI/CN=ciuser/emailAddress=lhcb-dirac-ci@cern.ch',
+            u'isLimitedProxy': False,
+            u'isProxy': True,
+            u'issuer': u'/C=ch/O=DIRAC/OU=DIRAC CI/CN=ciuser/emailAddress=lhcb-dirac-ci@cern.ch',
+            u'properties': [u'NormalUser'],
+            u'secondsLeft': 85441,
+            u'subject': u'/C=ch/O=DIRAC/OU=DIRAC CI/CN=ciuser/emailAddress=lhcb-dirac-ci@cern.ch/CN=2409820262',
+            u'username': u'adminusername',
+            u'validDN': False,
+            u'validGroup': False}}
+    """
+    # Execute the method in an executor (basically a separate thread)
+    # Because of that, we cannot calls certain methods like `self.write`
+    # in _executeMethod. This is because these methods are not threadsafe
+    # https://www.tornadoweb.org/en/branch5.1/web.html#thread-safety-notes
+    # However, we can still rely on instance attributes to store what should
+    # be sent back (reminder: there is an instance
+    # of this class created for each request)
+    retVal = yield IOLoop.current().run_in_executor(None, self._executeMethod, args)
+
+    # retVal is :py:class:`tornado.concurrent.Future`
+    self._finishFuture(retVal)
+
+  @gen.coroutine
+  def _executeMethod(self, args):
+    """
+      Execute the method called, this method is ran in an executor
+      We have several try except to catch the different problem which can occur
+
+      - First, the method does not exist => Attribute error, return an error to client
+      - second, anything happend during execution => General Exception, send error to client
+
+      .. warning::
+        This method is called in an executor, and so cannot use methods like self.write
+        See https://www.tornadoweb.org/en/branch5.1/web.html#thread-safety-notes
+    """
+
+    sLog.notice(
+        "Incoming request %s /%s: %s" %
+        (self.srv_getFormattedRemoteCredentials(),
+         self._serviceName,
+         self.method))
+
+    # getting method
+    method = self._getMethod()
+    methodArgs = self._getMethodArgs(args)
+
+    # Execute
+    try:
+      self.initializeRequest()
+      retVal = method(*args)
+    except Exception as e:  # pylint: disable=broad-except
+      sLog.exception("Exception serving request", "%s:%s" % (str(e), repr(e)))
+      raise HTTPError(http_client.INTERNAL_SERVER_ERROR)
+
+    return retVal
+
+  def _finishFuture(self, retVal):
+    """ Handler Future result
+
+        :param object retVal: tornado.concurrent.Future
+    """
+    
+    # Wait result only if it's a Future object
+    self.result = retVal.result() if isinstance(retVal, Future) else retVal
+
+    # Here it is safe to write back to the client, because we are not
+    # in a thread anymore
+
+    # Parse HTTPResponse
+    if isinstance(self.result, HTTPResponse):
+      self.set_status(self.result.code)
+      for key in self.result.headers:
+        self.set_header(key, self.result.headers[key])
+      if self.result.body:
+        self.write(self.result.body)
+
+    # If set to true, do not JEncode the return of the RPC call
+    # This is basically only used for file download through
+    # the 'streamToClient' method.
+    elif self.get_argument('rawContent', default=False):
+      # See 4.5.1 http://www.rfc-editor.org/rfc/rfc2046.txt
+      self.set_header("Content-Type", "application/octet-stream")
+      self.write(self.result)
+    
+    # Return simple text or html
+    elif isinstance(self.result, str):
+      self.write(self.result)
+    
+    # DIRAC JSON
+    else:
+      self.set_header("Content-Type", "application/json")
+      self.write(encode(self.result))
+
+    self.finish()
+
   def on_finish(self):
     """
       Called after the end of HTTP request.
@@ -304,7 +444,7 @@ class BaseRequestHandler(RequestHandler):
     try:
       if not self.result['OK']:
         argsString = "ERROR: %s" % self.result['Message']
-    except (AttributeError, KeyError):  # In case it is not a DIRAC structure
+    except (AttributeError, KeyError, TypeError):  # In case it is not a DIRAC structure
       if self._reason != 'OK':
         argsString = 'ERROR %s' % self._reason
 
@@ -313,29 +453,55 @@ class BaseRequestHandler(RequestHandler):
                                                               elapsedTime, argsString))
 
   def _gatherPeerCredentials(self):
-    """
-      Load client certchain in DIRAC and extract informations.
+    """ Returne a dictionary designed to work with the AuthManager,
+        already written for DISET and re-used for HTTPS.
 
-      The dictionary returned is designed to work with the AuthManager,
-      already written for DISET and re-used for HTTPS.
-
-      :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
-                (not a DIRAC structure !)
+        :returns: a dict containing the return of :py:meth:`DIRAC.Core.Security.X509Chain.X509Chain.getCredentials`
+                  (not a DIRAC structure !)
     """
-    chainAsText = self.request.get_ssl_certificate().as_pem()
+    err = ''
+    result = S_OK({})
+    for a in AUTHZ_GRANTS:
+      if a.upper() == 'SSL':
+        result = self.__authzCertificate()
+      if a.upper() == 'JWT':
+        result = self.__authzToken()
+      else:
+        raise Exception('%s authentication type is not supported.' % a)
+      if result['OK']:
+        break
+      err += '%s authentication: %s; '
+    if err:
+      raise Exception(err)
+    return result['Value']
+
+  def __authzCertificate(self):
+    """ Load client certchain in DIRAC and extract informations.
+
+        :return: S_OK(dict)/S_ERROR()
+    """
     peerChain = X509Chain()
+    derCert = self.request.get_ssl_certificate()
 
-    # Here we read all certificate chain
-    cert_chain = self.request.get_ssl_certificate_chain()
-    for cert in cert_chain:
-      chainAsText += cert.as_pem()
+    # Get client certificate pem
+    if derCert:
+      chainAsText = derCert.as_pem()
+      # Here we read all certificate chain
+      cert_chain = self.request.get_ssl_certificate_chain()
+      for cert in cert_chain:
+        chainAsText += cert.as_pem()
+    elif self.request.headers.get('X-Ssl_client_verify') == 'SUCCESS':
+      chainAsTextEncoded = self.request.headers.get('X-SSL-CERT')
+      chainAsText = unquote(chainAsTextEncoded)
+    else:
+      return S_ERROR('Not found a valide client certificate.')
 
     peerChain.loadChainFromString(chainAsText)
 
     # Retrieve the credentials
     res = peerChain.getCredentials(withRegistryInfo=False)
     if not res['OK']:
-      raise Exception(res['Message'])
+      return res
 
     credDict = res['Value']
 
@@ -344,7 +510,18 @@ class BaseRequestHandler(RequestHandler):
       extraCred = self.get_argument("extraCredentials")
       if extraCred:
         credDict['extraCredentials'] = decode(extraCred)[0]
-    return credDict
+    return S_OK(credDict)
+  
+  def __authzToken(self):
+    """ Load token claims in DIRAC and extract informations.
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    try:
+      token = ResourceProtector().acquire_token(self.request, scope)
+    except Exception as e:
+      return S_ERROR(str(e))
+    return {'ID': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
 
   @property
   def log(self):
