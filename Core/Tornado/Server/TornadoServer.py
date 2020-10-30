@@ -38,10 +38,6 @@ import signal
 import tornado.process
 import tornado.autoreload
 
-from DIRAC.Core.Tornado.Web import Conf
-from DIRAC.Core.Tornado.Web.HandlerMgr import HandlerMgr
-from DIRAC.Core.Tornado.Web.TemplateLoader import TemplateLoader
-from DIRAC.Core.Tornado.Web.SessionData import SessionData
 from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import SessionManager
 
 sLog = gLogger.getSubLogger(__name__)
@@ -229,10 +225,10 @@ class TornadoServer(object):
 
     if self.balancer:
       # Create CAs for balancer
-      Conf.generateRevokedCertsFile()  # it is used by nginx....
+      generateRevokedCertsFile()  # it is used by nginx....
       # when NGINX is used then the Conf.HTTPS return False, it means tornado
       # does not have to be configured using 443 port
-      Conf.generateCAFile()  # if we use Nginx we have to generate the cas as well...
+      generateCAFile()  # if we use Nginx we have to generate the cas as well...
 
     # ############
     # # please do no move this lines. The lines must be before the fork_processes
@@ -360,6 +356,7 @@ class TornadoServer(object):
     if percentage > 0:
       self._monitor.addMark('CPU', percentage)
 
+
 def _logRequest(handler):
   """ This function will be called at the end of every request to log the result
       
@@ -378,3 +375,60 @@ def _logRequest(handler):
     logm = sLog.error
   request_time = 1000.0 * handler.request.request_time()
   logm("%d %s %.2fms" % (status, handler._request_summary(), request_time))
+
+
+def generateCAFile():
+  """ Generate a single CA file with all the PEMs
+
+      :return: str or bool
+  """
+  caDir = Locations.getCAsLocation()
+  for fn in (os.path.join(os.path.dirname(caDir), "cas.pem"),
+             os.path.join(os.path.dirname(HTTPSCert()), "cas.pem"),
+             False):
+    if not fn:
+      fn = tempfile.mkstemp(prefix="cas.", suffix=".pem")[1]
+    try:
+      fd = open(fn, "w")
+    except IOError:
+      continue
+    for caFile in os.listdir(caDir):
+      caFile = os.path.join(caDir, caFile)
+      chain = X509Chain.X509Chain()
+      result = chain.loadChainFromFile(caFile)
+      if not result['OK']:
+        continue
+      expired = chain.hasExpired()
+      if not expired['OK'] or expired['Value']:
+        continue
+      fd.write(chain.dumpAllToString()['Value'])
+    fd.close()
+    return fn
+  return False
+
+
+def generateRevokedCertsFile():
+  """ Generate a single CA file with all the PEMs
+
+      :return: str or bool
+  """
+  caDir = Locations.getCAsLocation()
+  for fn in (os.path.join(os.path.dirname(caDir), "allRevokedCerts.pem"),
+             os.path.join(os.path.dirname(HTTPSCert()), "allRevokedCerts.pem"),
+             False):
+    if not fn:
+      fn = tempfile.mkstemp(prefix="allRevokedCerts", suffix=".pem")[1]
+    try:
+      fd = open(fn, "w")
+    except IOError:
+      continue
+    for caFile in os.listdir(caDir):
+      caFile = os.path.join(caDir, caFile)
+      chain = X509CRL.X509CRL()
+      result = chain.loadCRLFromFile(caFile)
+      if not result['OK']:
+        continue
+      fd.write(chain.dumpAllToString()['Value'])
+    fd.close()
+    return fn
+  return False

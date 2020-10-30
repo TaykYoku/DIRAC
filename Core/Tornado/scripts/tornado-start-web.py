@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
   endpoints = ['Configuration/Configuration', 'Framework/Auth', 'Framework/Proxy']
 
+  # Get routes and settings for a portal
   result = App().getAppToDict(8000)
   if not result['OK']:
     gLogger.fatal(result['Message'])
