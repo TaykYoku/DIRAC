@@ -21,6 +21,8 @@ from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
 from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 
+from WebAppDIRAC.Core.App import App
+
 
 if __name__ == "__main__":
   # We check if there is no configuration server started as master
@@ -50,6 +52,12 @@ if __name__ == "__main__":
 
   endpoints = ['Configuration/Configuration', 'Framework/Auth', 'Framework/Proxy']
 
+  result = App().getAppToDict(8000)
+  if not result['OK']:
+    gLogger.fatal(result['Message'])
+    sys.exit(1)
+  app = result['Value']
+
   serverToLaunch = TornadoServer(False, endpoints, port=8000, balancer='nginx')
-  serverToLaunch.loadWeb()
+  serverToLaunch.addHandlers(app['routes'], app['settings'], app['port'])
   serverToLaunch.startTornado()

@@ -40,6 +40,8 @@ class BaseRequestHandler(RequestHandler):
   # We also need to add specific attributes for each service
   _monitor = None
 
+  # Auth requirements
+  AUTH_PROPS = None
   # Type of component
   MONITORING_COMPONENT = MonitoringClient.COMPONENT_WEB
   # Authentication types
@@ -90,8 +92,7 @@ class BaseRequestHandler(RequestHandler):
 
         :return: str
     """
-    # Expected path: ``/<System>/<Component>``
-    return request.path[1:]
+    raise NotImplementedError()
   
   @classmethod
   def _getServiceAuthSection(cls, serviceName):
@@ -112,10 +113,7 @@ class BaseRequestHandler(RequestHandler):
 
         :return: dict
     """
-    return {'serviceName': serviceName,
-            'serviceSectionPath': PathFinder.getServiceSection(serviceName),
-            'csPaths': [PathFinder.getServiceSection(serviceName)],
-            'URL': request.full_url()}
+    return {}
 
   @classmethod
   def __initializeService(cls, request):
@@ -223,15 +221,14 @@ class BaseRequestHandler(RequestHandler):
 
         :return: str
     """
-    return self.get_argument("method")
+    raise NotImplementedError()
 
   def _getMethodArgs(self, args):
     """ Decode args.
 
         :return: list
     """
-    args_encoded = self.get_body_argument('args', default=encode([]))
-    return decode(args_encoded)[0]
+    return args
 
   def _getMethodAuthProps(self):
     """ Resolves the hard coded authorization requirements for method.
@@ -241,7 +238,9 @@ class BaseRequestHandler(RequestHandler):
     try:
       return getattr(self, 'auth_' + self.method)
     except AttributeError:
-      return None
+      if not isinstance(self.AUTH_PROPS, (list, tuple)):
+        self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
+      return self.AUTH_PROPS
 
   def _getMethod(self):
     """ Get method object.

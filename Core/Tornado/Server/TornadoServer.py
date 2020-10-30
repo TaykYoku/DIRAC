@@ -170,34 +170,18 @@ class TornadoServer(object):
     """
     return self.handlerManager.loadEndpointsHandlers(endpoints)
   
-  def loadWeb(self, name=None, port=None):
-    """ Load Web portals
+  def addHandlers(routes, settings=None, port=None):
+    """ Add new routes
 
-        :return: S_OK()/S_ERROR()
+        :param list routes: routes
+        :param dict settings: application settings
+        :param int port: port
     """
-    # Load Web portal required CFG files
-    Conf.loadWebCFG()
-
-    if not port:
-      port = Conf.HTTPPort()
-    webHandlerMgr = HandlerMgr('WebApp.handler', Conf.rootURL())
-
-    # Calculating routes
-    result = webHandlerMgr.getRoutes()
-    if not result['OK']:
-      return result
-    routes = result['Value']
-    
-    # Initialize the session data
-    SessionData.setHandlers(webHandlerMgr.getHandlers()['Value'])
-    # Create the app
-    tLoader = TemplateLoader(webHandlerMgr.getPaths("template"))
-
+    port = port or self.port
     if port not in self.__appsSettings:
       self.__appsSettings[port] = {'routes': [], 'settings': {}}
-    self.__appsSettings[port]['settings'] = dict(debug=Conf.devMode(),
-                                                 template_loader=tLoader,
-                                                 cookie_secret=str(Conf.cookieSecret()))
+    if settings:
+      self.__appsSettings[port]['settings'].update(settings)
     for route in routes:
       if route not in self.__appsSettings[port]['routes']:
         self.__appsSettings[port]['routes'].append(route)
