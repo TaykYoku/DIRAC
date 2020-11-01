@@ -460,7 +460,7 @@ class BaseRequestHandler(RequestHandler):
     """
     err = ''
     result = S_OK({})
-    for a in AUTHZ_GRANTS:
+    for a in self.AUTHZ_GRANTS:
       if a.upper() == 'SSL':
         result = self.__authzCertificate()
       if a.upper() == 'JWT':

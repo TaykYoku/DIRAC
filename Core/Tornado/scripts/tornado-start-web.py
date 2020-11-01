@@ -64,5 +64,5 @@ if __name__ == "__main__":
   app = result['Value']
 
   serverToLaunch = TornadoServer(False, endpoints, port=8000, balancer='nginx')
-  serverToLaunch.addHandlers(app['routes'], app['settings'], app['port'])
+  serverToLaunch.addHandlers(app['routes'], app['settings'])
   serverToLaunch.startTornado()
