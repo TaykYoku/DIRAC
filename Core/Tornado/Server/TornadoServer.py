@@ -30,6 +30,7 @@ from DIRAC.Core.Security import Locations
 from DIRAC.Core.Utilities import MemStat
 from DIRAC.Core.Tornado.Server.HandlerManager import HandlerManager
 from DIRAC.ConfigurationSystem.Client import PathFinder
+from DIRAC.Core.Security import Locations, X509Chain, X509CRL
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
 ## FROM WEB
