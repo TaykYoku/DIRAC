@@ -21,8 +21,6 @@ from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
 from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
 
-from WebAppDIRAC.Core.App import App
-
 
 if __name__ == "__main__":
   # We check if there is no configuration server started as master
@@ -51,6 +49,12 @@ if __name__ == "__main__":
   gLogger.initialize('Tornado', "/")
 
   endpoints = ['Configuration/Configuration', 'Framework/Auth', 'Framework/Proxy']
+
+  try:
+    from WebAppDIRAC.Core.App import App
+  except ImportError:
+    gLogger.fatal('Web portal is not installed.')
+    sys.exit(1)
 
   # Get routes and settings for a portal
   result = App().getAppToDict(8000)
