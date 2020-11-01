@@ -166,7 +166,7 @@ class TornadoServer(object):
     """
     return self.handlerManager.loadEndpointsHandlers(endpoints)
   
-  def addHandlers(routes, settings=None, port=None):
+  def addHandlers(self, routes, settings=None, port=None):
     """ Add new routes
 
         :param list routes: routes
