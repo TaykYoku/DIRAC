@@ -418,9 +418,15 @@ def generateRevokedCertsFile():
 
       :return: str or bool
   """
+  cert = Locations.getHostCertificateAndKeyLocation()
+  if cert:
+    cert = cert[0]
+  else:
+    cert = "/opt/dirac/etc/grid-security/hostcert.pem"
+
   caDir = Locations.getCAsLocation()
   for fn in (os.path.join(os.path.dirname(caDir), "allRevokedCerts.pem"),
-             os.path.join(os.path.dirname(HTTPSCert()), "allRevokedCerts.pem"),
+             os.path.join(os.path.dirname(cert), "allRevokedCerts.pem"),
              False):
     if not fn:
       fn = tempfile.mkstemp(prefix="allRevokedCerts", suffix=".pem")[1]
