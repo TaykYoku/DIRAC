@@ -464,7 +464,7 @@ class BaseRequestHandler(RequestHandler):
     for a in self.AUTHZ_GRANTS:
       if a.upper() == 'SSL':
         result = self.__authzCertificate()
-      if a.upper() == 'JWT':
+      elif a.upper() == 'JWT':
         result = self.__authzToken()
       else:
         raise Exception('%s authentication type is not supported.' % a)
