@@ -32,24 +32,38 @@ You need to configure your webserver, if you use nginx:
 
 - add a location block to handler your requests and the "upload" access permissions inside::
 
+    client_max_body_size 100m;
+
     location /DIRAC/upload {
+      # if the client-side certificate failed to authenticate, show 403
+      if ($ssl_client_verify != SUCCESS) {
+        return 403;
+      }
+      
       # Access based on the host name or IP address
-      # Allowed only for 192.168.1.10
-      allow 192.168.1.10;
-      deny  all;
+      satisfy any;
+      allow XXX.XXX.XX.XX; # Add here allowed server IP
+      deny all;
 
       # Store files to this directory
       upload_store /path/to/pilot/;
-      upload_cleanup 400 404 499 500-505;
-      break;
 
-      # Access based on the host certificate DN
-      #set $allowed_dn /O=my/OU=server/CN=dn;
-      #if ($ssl_client_s_dn=$allowed_dn) {
-      #  upload_store /path/to/pilot/;
-      #  upload_cleanup 400 404 499 500-505;
-      #  break;
-      #}
+      # Allow everyone access to uploaded files
+      upload_store_access all:r;
+
+      upload_cleanup 400 404 499 500-505;
+      error_page 405 = 200 $uri;
+      break;
+    }
+
+    location ~ ^/pilot/(.+\.(jpg|jpeg|gif|png|bmp|ico|pdf))$ {
+      alias /path/to/pilot/;
+      try_files $1 /;
+      expires 10d;
+      gzip_static on;
+      gzip_disable "MSIE [1-6]\.";
+      add_header Cache-Control public;
+      break;
     }
        
 - create the following directory in the webserver machine::

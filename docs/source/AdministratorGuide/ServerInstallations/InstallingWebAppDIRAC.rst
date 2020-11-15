@@ -158,35 +158,71 @@ The structure of the web.cfg file is the following::
       {
         Balancer = None #[nginx] in case you have installed nginx
         #NumProcesses = 1
-        #SSLProrocol = "" [PROTOCOL_SSLv2, PROTOCOL_SSLv23, PROTOCOL_SSLv3, PROTOCOL_TLSv1] in case you do not want to use the default protocol
+        #SSLProtocol = "" [PROTOCOL_SSLv2, PROTOCOL_SSLv23, PROTOCOL_SSLv3, PROTOCOL_TLSv1] in case you do not want to use the default protocol
         Theme = tabs #[desktop]
+        
+        # This section describes welcome popup window
+        # WelcomePage
+        # {
+        #   show = True
+        #   title = New weclome window
+        #   text = Bla bla bla ...
+        #   visitor_title = 
+        #   visitor_text = Text for visitor
+        #   style = opacity: 0.7
+        # }
+
+        # This section describes auth types that will be showed on taskbar:
+        # TypeAuths
+        # {
+        #   # CheckIn configuration example:
+        #   CheckIn
+        #   {
+        #    method = oAuth2
+        #    authority = https://aai.egi.eu/oidc
+        #    client_id = 2C7823B4-8B5B-4A85-A912-E5D06D955809
+        #    popup_redirect_uri = https://ce-emi.bitp.kiev.ua/demo/popup.html
+        #    silent_redirect_uri = https://ce-emi.bitp.kiev.ua/demo/silent-renew.html
+        #    post_logout_redirect_uri = https://aai.egi.eu/oidc/saml/logout
+        #    response_type = id_token token
+        #    scope = openid profile email
+        #    accessTokenExpiringNotificationTime = 4
+        #    automaticSilentRenew = true
+        #    filterProtocolClaims = true 
+        #   }
+        # }
+
         Schema
         {
-          Tools{
-           Proxy Upload = DIRAC.ProxyUpload
-           Job Launchpad = DIRAC.JobLaunchpad
-           Notepad = DIRAC.Notepad
-          }
-          OldPortal{
-            Request Manager = link|https://lhcb-web-dirac.cern.ch/DIRAC/LHCb-Production/lhcb_user/Production/ProductionRequest/display
+          Help = link|http://dirac.readthedocs.io/en/latest/UserGuide/index.html
+          Tools
+          {
+            Application Wizard = DIRAC.ApplicationWizard
+            Job Launchpad = DIRAC.JobLaunchpad
+            Notepad = DIRAC.Notepad
+            Proxy Upload = DIRAC.ProxyUpload
           }
           Applications
           {
-            Public State Manager = DIRAC.PublicStateManager
-            Job Monitor = DIRAC.JobMonitor
-            Pilot Monitor = DIRAC.PilotMonitor
-            Accounting = DIRAC.AccountingPlot
-            Configuration Manager = DIRAC.ConfigurationManager
-            Registry Manager = DIRAC.RegistryManager
-            File Catalog = DIRAC.FileCatalog
-            System Administration = DIRAC.SystemAdministration
+            Accounting = DIRAC.Accounting
             Activity Monitor = DIRAC.ActivityMonitor
-            Transformation Monitor = DIRAC.TransformationMonitor
-            Request Monitor = DIRAC.RequestMonitor
+            Component History = DIRAC.ComponentHistory
+            Configuration Manager = DIRAC.ConfigurationManager
+            Downtimes = DIRAC.Downtimes
+            File Catalog = DIRAC.FileCatalog
+            Job Monitor = DIRAC.JobMonitor
+            Job Summary = DIRAC.JobSummary
+            Pilot Monitor = DIRAC.PilotMonitor
             Pilot Summary = DIRAC.PilotSummary
+            Proxy Manager = DIRAC.ProxyManager
+            Public State Manager = DIRAC.PublicStateManager
+            Registry Manager = DIRAC.RegistryManager
+            Request Monitor = DIRAC.RequestMonitor
             Resource Summary = DIRAC.ResourceSummary
             Site Summary = DIRAC.SiteSummary
-            Proxy Manager = DIRAC.ProxyManager
+            Space Occupancy = DIRAC.SpaceOccupancy
+            System Administration = DIRAC.SystemAdministration
+            Transformation Monitor = DIRAC.TransformationMonitor
             #ExampleApp = DIRAC.ExampleApp
           }
           DIRAC = link|http://diracgrid.org
