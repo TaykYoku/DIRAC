@@ -16,21 +16,20 @@ import time
 import threading
 from datetime import datetime
 from six.moves import http_client
-from tornado.web import RequestHandler, HTTPError
-from tornado.httpclient import HTTPResponse
-from tornado import gen
+
 import tornado
 import tornado.ioloop
+from tornado import gen
+from tornado.web import RequestHandler, HTTPError
 from tornado.ioloop import IOLoop
-from tornado.concurrent import Future
 
 import DIRAC
 
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.DISET.AuthManager import AuthManager
-from DIRAC.ConfigurationSystem.Client import PathFinder
-from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.Core.Utilities.JEncode import decode, encode
+from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
+from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 
 sLog = gLogger.getSubLogger(__name__)
