@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unsubscriptable-object
-""" Changed for DIRAC. Beautiful terminal spinners in Python. Source: https://github.com/manrajgrover/halo and dependens
+""" Beautiful terminal spinners in Python.
+    Source: https://github.com/manrajgrover/halo
 
     MIT License
 
@@ -23,11 +24,41 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
+
+    --
+    Source: https://github.com/tartley/colorama
+
+    Copyright (c) 2010 Jonathan Hartley
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of the copyright holders, nor those of its contributors
+      may be used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 from __future__ import absolute_import, unicode_literals
 
 import os
@@ -42,55 +73,12 @@ import codecs
 import platform
 import functools
 import threading
+
+from termcolor import colored
 try:
   from shutil import get_terminal_size
 except ImportError:
   from backports.shutil_get_terminal_size import get_terminal_size
-
-
-def coloredFrame(text, color=None, onColor=None, attrs=['bold']):
-  """ Colorize text, while stripping nested ANSI color sequences.
-      Source: https://github.com/hfeeki/termcolor/blob/master/termcolor.py
-
-      :param str text: text
-      :param str color: text colors -> red, green, yellow, blue, magenta, cyan, white.
-      :param str onColor: text highlights -> on_red, on_green, on_yellow, on_blue, on_magenta, on_cyan, on_white.
-      :param list attrs: attributes -> bold, dark, underline, blink, reverse, concealed.
-
-      --
-          coloredFrame('Hello, World!', 'red', 'on_grey', ['blue', 'blink'])
-          coloredFrame('Hello, World!', 'green')
-
-      :return: str
-  """
-  ATTRIBUTES = dict(list(zip(['bold', 'dark', '', 'underline', 'blink', '', 'reverse', 'concealed'],
-                             list(range(1, 9)))))
-  del ATTRIBUTES['']
-  ATTRIBUTES_RE = r'\033\[(?:%s)m' % '|'.join(['%d' % v for v in ATTRIBUTES.values()])
-  HIGHLIGHTS = dict(list(zip(['on_grey', 'on_red', 'on_green', 'on_yellow', 'on_blue',
-                              'on_magenta', 'on_cyan', 'on_white'], list(range(40, 48)))))
-  HIGHLIGHTS_RE = r'\033\[(?:%s)m' % '|'.join(['%d' % v for v in HIGHLIGHTS.values()])
-  COLORS = dict(list(zip(['grey', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white', ],
-                         list(range(30, 38)))))
-  COLORS_RE = r'\033\[(?:%s)m' % '|'.join(['%d' % v for v in COLORS.values()])
-  RESET = '\033[0m'
-  RESET_RE = r'\033\[0m'
-
-  if os.getenv('ANSI_COLORS_DISABLED') is None:
-    fmtStr = '\033[%dm%s'
-    if color is not None:
-      text = re.sub(COLORS_RE + '(.*?)' + RESET_RE, r'\1', text)
-      text = fmtStr % (COLORS[color], text)
-    if onColor is not None:
-      text = re.sub(HIGHLIGHTS_RE + '(.*?)' + RESET_RE, r'\1', text)
-      text = fmtStr % (HIGHLIGHTS[onColor], text)
-    if attrs is not None:
-      text = re.sub(ATTRIBUTES_RE + '(.*?)' + RESET_RE, r'\1', text)
-      for attr in attrs:
-        text = fmtStr % (ATTRIBUTES[attr], text)
-    return text + RESET
-  else:
-    return text
 
 
 class StreamWrapper(object):
@@ -174,14 +162,6 @@ sys.stderr = PreWrapp(sys.stderr).stream
 atexit.register(resetAll)
 
 
-def isSupported():
-  """ Check whether operating system supports main symbols or not.
-
-      :return: boolen -- Whether operating system supports main symbols or not
-  """
-  return platform.system() != 'Windows'
-
-
 def getEnvironment():
   """ Get the environment in which halo is running
 
@@ -201,16 +181,6 @@ def getEnvironment():
       return 'terminal'  # Other type (?)
   except NameError:
     return 'terminal'
-
-
-def isTextType(text):
-  """ Check if given parameter is a string or not
-
-      :param str text: Parameter to be checked for text type
-
-      :return: boolen -- Whether parameter is a string or not
-  """
-  return bool(isinstance(text, six.text_type) or isinstance(text, six.string_types))
 
 
 def decodeUTF8Text(text):
@@ -237,16 +207,6 @@ def encodeUTF8Text(text):
     return codecs.encode(text, 'utf-8', 'ignore')
   except (TypeError, ValueError):
     return text
-
-
-def getTerminalColumns():
-  """ Determine the amount of available columns in the terminal
-
-      :return: int -- Terminal width
-  """
-  # If column size is 0 either we are not connected
-  # to a terminal or something else went wrong. Fallback to 80.
-  return 80 if get_terminal_size().columns == 0 else get_terminal_size().columns
 
 
 class Halo(object):
@@ -342,6 +302,16 @@ class Halo(object):
       with self:
         return f(*args, **kwargs)
     return wrapped
+
+  def coloredFrame(text, color=None):
+    """ Colorize text, while stripping nested ANSI color sequences.
+
+        :param str text: text
+        :param str color: text colors -> red, green, yellow, blue, magenta, cyan, white.
+
+        :return: str
+    """
+    return colored(frame, color, attrs=['bold'])
 
   @property
   def spinner(self):
@@ -537,9 +507,13 @@ class Halo(object):
     # Check which frame of the animation is the widest
     maxSpinnerLength = max([len(i) for i in self._spinner['frames']])
 
+    # If column size is 0 either we are not connected
+    # to a terminal or something else went wrong. Fallback to 80.
+    terminalColumns = 80 if get_terminal_size().columns == 0 else get_terminal_size().columns
+
     # Subtract to the current terminal size the max spinner length
     # (-1 to leave room for the extra space between spinner and text)
-    terminalWidth = getTerminalColumns() - maxSpinnerLength - 1
+    terminalWidth = terminalColumns - maxSpinnerLength - 1
     textLength = len(strippedText)
     frames = []
     if terminalWidth < textLength and animation:
