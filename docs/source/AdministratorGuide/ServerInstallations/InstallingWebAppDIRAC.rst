@@ -298,11 +298,21 @@ Change to the Nginx source code directory, compile the module, and copy it to th
 Configure NGINX
 ~~~~~~~~~~~~~~~
 
-You have to find the nginx.conf file. You can see which configuration used in /etc/init.d/nginx. For example::
+You have to find the nginx.conf file. For example, by using nginx command::
+
+  nginx -t
+  nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+  nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+Make sure there is a line 'include /etc/nginx/conf.d/\*.conf;'::
 
   vim /etc/nginx/nginx.conf
 
-Make sure there is a line 'include /etc/nginx/conf.d/\*.conf;', then create a site.conf under /etc/nginx/conf.d/. The content of the site.conf (please modify it!!!)::
+Then create a site.conf under /etc/nginx/conf.d/::
+
+  vim /etc/nginx/conf.d/site.conf
+
+The example of the site.conf::
 
   upstream tornadoserver {
     # One for every tornado instance you're running that you want to balance
