@@ -342,6 +342,7 @@ class ProxyInit(object):
     spinner = Halo()
     proxyAPI = getProxyAPI()
     reqGroup = None
+    tokenLoc = '/tmp/token'
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -396,8 +397,14 @@ class ProxyInit(object):
         spin.text = 'Exchange token for %s group..' % reqGroup
         idpObj.token = idpObj.exchangeGroup(reqGroup)
 
-      spin.text = 'Saving token to env DIRAC_TOKEN..'
-      os.environ["DIRAC_TOKEN"] = json.dumps(idpObj.token)
+      spin.text = 'Saving token.. to %s..' % tokenLoc
+      try:
+        with open(tokenLoc, 'w+') as fd:
+          fd.write(json.dumps(idpObj.token).encode("UTF-8"))
+        os.chmod(tokenLoc, stat.S_IRUSR | stat.S_IWUSR)
+      except Exception as e:
+        return S_ERROR("%s :%s" % (tokenLoc, repr(e).replace(',)', ')')))
+      spin.text = 'Token is saved to %s.' % tokenLoc
 
     with Halo('Download proxy..') as spin:
       url = '%s?lifetime=%s' % (proxyAPI, self.__piParams.proxyLifeTime)
