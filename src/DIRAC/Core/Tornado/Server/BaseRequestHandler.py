@@ -288,7 +288,7 @@ class BaseRequestHandler(RequestHandler):
     try:
       return getattr(self, 'auth_' + self.method)
     except AttributeError:
-      if not isinstance(self.AUTH_PROPS, (list, tuple)):
+      if self.AUTH_PROPS and not isinstance(self.AUTH_PROPS, (list, tuple)):
         self.AUTH_PROPS = [p.strip() for p in self.AUTH_PROPS.split(",") if p.strip()]
       return self.AUTH_PROPS
 
