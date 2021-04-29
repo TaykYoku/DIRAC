@@ -34,6 +34,7 @@ from io import open
 import errno
 import requests
 import six
+import json
 from six.moves import http_client
 
 
@@ -225,8 +226,9 @@ class TornadoBaseClient(object):
 
     if not self.__useCertificates:
       if os.environ.get('DIRAC_TOKEN') and os.environ.get('DIRAC_TRY_USE_TOKEN'):
-        self.client = IdProviderFactory().getIdProviderForToken(os.environ['DIRAC_TOKEN'])
-        self.client.token = os.environ['DIRAC_TOKEN']
+        token = json.loads(os.environ['DIRAC_TOKEN'])
+        self.client = IdProviderFactory().getIdProviderForToken(token)
+        self.client.token = token
 
     # Rewrite a little bit from here: don't need the proxy string, we use the file
     if self.KW_PROXY_CHAIN in self.kwargs:

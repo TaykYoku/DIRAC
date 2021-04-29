@@ -335,37 +335,24 @@ class ProxyInit(object):
     from DIRAC.FrameworkSystem.Utilities.halo import Halo, qrterminal
     from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
-    idpObj = None
+    result = IdProviderFactory().getIdProvider(self.__piParams.provider)
+    if not result['OK']:
+      sys.exit(result['Message'])
+    idpObj = result['Value']
     spinner = Halo()
     proxyAPI = getProxyAPI()
+    reqGroup = None
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
     with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
       # Get IdP
-      if Script.enableCS()['OK']:
-        params = {}
+      if not Script.enableCS()['OK']:
+        result = idpObj.submitDeviceCodeAuthorizationFlow()
+        reqGroup = self.__piParams.diracGroup
       else:
-        try:
-          r = requests.post('{api}/device?group={group}'.format(
-              api=getAuthAPI(),
-              group = self.__piParams.diracGroup or ''
-          ), verify=False)
-          r.raise_for_status()
-          params = r.json()
-        except requests.exceptions.Timeout:
-          sys.exit('Authentication server is not answer, timeout.')
-        except requests.exceptions.RequestException as ex:
-          sys.exit(r.content or repr(ex))
-        except Exception as ex:
-          sys.exit('Cannot read authentication response: %s' % repr(ex))
-
-      result = IdProviderFactory().getIdProvider(self.__piParams.provider, **params)
-      if not result['OK']:
-        sys.exit(result['Message'])
-      idpObj = result['Value']
-      result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+        result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
       if not result['OK']:
         sys.exit(result['Message'])
       response = result['Value']
@@ -404,11 +391,15 @@ class ProxyInit(object):
       idpObj.token = result['Value']
 
       spin.color = 'green'
-      spin.text = 'Saving token.. to env DIRAC_TOKEN..'
 
+      if reqGroup:
+        spin.text = 'Exchange token for %s group..' % reqGroup
+        idpObj.exchange_token(reqGroup)
+
+      spin.text = 'Saving token to env DIRAC_TOKEN..'
       os.environ["DIRAC_TOKEN"] = json.dumps(idpObj.token)
 
-      spin.text = 'Download proxy..'
+    with Halo('Download proxy..') as spin:
       url = '%s?lifetime=%s' % (proxyAPI, self.__piParams.proxyLifeTime)
       addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
       if addVOMS:

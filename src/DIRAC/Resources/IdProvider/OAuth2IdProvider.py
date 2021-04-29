@@ -168,7 +168,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if not token:
         return S_ERROR('Resived token is empty!')
       if 'error' not in token:
-        # os.environ['DIRAC_TOKEN'] = r.text
+        self.token = token
         return S_OK(token)
       if token['error'] != 'authorization_pending':
         return S_ERROR(token['error'] + ' : ' + token.get('description', ''))
