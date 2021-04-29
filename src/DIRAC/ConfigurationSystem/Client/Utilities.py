@@ -578,3 +578,12 @@ def getDIRACGOCDictionary():
 
   log.debug('End function.')
   return S_OK(dictionary)
+
+
+def isDownloadablePersonalProxy():
+  """ Get downloadablePersonalProxy flag
+
+      :return: S_OK(bool)/S_ERROR()
+  """
+  cs_path = '/Systems/Framework/%s/APIs/Proxy' % getSystemInstance("Framework")
+  return gConfig.getOption(cs_path + '/downloadablePersonalProxy')
