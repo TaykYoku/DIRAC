@@ -752,7 +752,7 @@ class BaseRequestHandler(RequestHandler):
     # Depending on where this is call, it may be that credDict is not yet filled.
     # (reminder: AuthQuery fills part of it..)
     try:
-      peerId = "[%s:%s]" % (self.credDict['group'], self.credDict['username'])
+      peerId = "[%s:%s]" % (self.credDict.get('group', 'visitor'), self.credDict.get('username', 'anonymous'))
     except AttributeError:
       pass
 
