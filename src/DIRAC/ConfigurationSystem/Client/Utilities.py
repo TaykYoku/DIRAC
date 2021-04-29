@@ -17,11 +17,10 @@ from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Helpers.Path import cfgPath
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs, getVOOption
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getDIRACSiteName
-from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
+from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection, getSystemInstance
 from DIRAC.Core.Utilities.Glue2 import getGlue2CEInfo
 from DIRAC.Core.Utilities.SiteSEMapping import getSEHosts
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers
-
 
 def getGridVOs():
   """ Get all the VOMS VO names served by this DIRAC service
