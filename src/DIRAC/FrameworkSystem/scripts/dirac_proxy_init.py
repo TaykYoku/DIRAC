@@ -390,7 +390,9 @@ class ProxyInit(object):
       if not result['OK']:
         sys.exit(result['Message'])
       idpObj.token = result['Value']
-
+      result = Script.enableCS()
+      if not result['OK']:
+        sys.exit(result['Message'])
       spin.color = 'green'
 
       if reqGroup:
