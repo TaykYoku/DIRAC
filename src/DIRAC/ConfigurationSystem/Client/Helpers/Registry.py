@@ -24,12 +24,10 @@ def getDNForID(uid):
 
       :return: S_OK(str)/S_ERROR()
   """
-  if not usersList:
-    result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
-    if not result['OK']:
-      return result
-    usersList = result['Value']
-  for username in usersList:
+  result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
+  if not result['OK']:
+    return result
+  for username in result['Value']:
     if uid in gConfig.getValue("%s/Users/%s/ID" % (gBaseRegistrySection, username), []):
       dns = gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), [])
       if not dns:
