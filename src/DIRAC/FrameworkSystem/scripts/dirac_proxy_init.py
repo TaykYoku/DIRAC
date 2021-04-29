@@ -394,7 +394,7 @@ class ProxyInit(object):
 
       if reqGroup:
         spin.text = 'Exchange token for %s group..' % reqGroup
-        idpObj.exchange_token(reqGroup)
+        print(idpObj.exchangeGroup(reqGroup))
 
       spin.text = 'Saving token to env DIRAC_TOKEN..'
       os.environ["DIRAC_TOKEN"] = json.dumps(idpObj.token)

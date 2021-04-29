@@ -174,6 +174,17 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if token['error'] != 'authorization_pending':
         return S_ERROR(token['error'] + ' : ' + token.get('description', ''))
 
+  def exchangeGroup(self, group):
+    """
+    """
+    idPRole = getGroupOption(group, 'IdPRole')
+    if not idPRole:
+      return S_ERROR('Cannot find role for %s' % group)
+    group_scopes = [self.PARAM_SCOPE + idPRole]
+    return self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
+                               subject_token_type='urn:ietf:params:oauth:token-type:access_token',
+                               scope=list_to_scope(self.scope + group_scopes))
+
   def exchange_token(self, url, subject_token=None, subject_token_type=None, body='',
                      refresh_token=None, access_token=None, auth=None, headers=None, **kwargs):
     """ Fetch a new access token using a refresh token.
