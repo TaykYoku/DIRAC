@@ -16,39 +16,89 @@ from __future__ import print_function
 
 import os
 import sys
+import stat
 import glob
 import time
+import pickle
 import datetime
 
 import DIRAC
-
-from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base import Script
+from DIRAC.Core.Security import X509Chain, ProxyInfo, Properties, VOMS  # pylint: disable=import-error
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
-from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
-from DIRAC.Core.Security import X509Chain, ProxyInfo, Properties, VOMS
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
 
 __RCSID__ = "$Id$"
 
 
-
 class Params(ProxyGeneration.CLIParams):
 
+  session = None
+  provider = ''
+  addEmail = False
+  addQRcode = False
   addVOMSExt = False
+  addProvider = False
   uploadProxy = True
   uploadPilot = False
 
+  def setEmail(self, arg):
+    """ Set email
+
+        :param str arg: email
+
+        :return: S_OK()
+    """
+    self.Email = arg
+    self.addEmail = True
+    return S_OK()
+
+  def setQRcode(self, _arg):
+    """ Use QRcode
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
+    self.addQRcode = True
+    return S_OK()
+
+  def setProvider(self, arg):
+    """ Set provider
+
+        :param str arg: provider
+
+        :return: S_OK()
+    """
+    self.provider = arg
+    self.addProvider = True
+    return S_OK()
+
   def setVOMSExt(self, _arg):
+    """ Set VOMS extention
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
     self.addVOMSExt = True
     return S_OK()
 
   def disableProxyUpload(self, _arg):
+    """ Do not upload proxy
+
+        :param _arg: unuse
+
+        :return: S_OK()
+    """
     self.uploadProxy = False
     return S_OK()
 
   def registerCLISwitches(self):
+    """ Register CLI switches """
     ProxyGeneration.CLIParams.registerCLISwitches(self)
     Script.registerSwitch(
         "U",
@@ -59,18 +109,26 @@ class Params(ProxyGeneration.CLIParams):
         "no-upload",
         "Do not upload a long lived proxy to the ProxyManager",
         self.disableProxyUpload)
+    Script.registerSwitch("e:", "email=", "Send oauth authentification url on email", self.setEmail)
+    Script.registerSwitch("P:", "provider=", "Set provider name for authentification", self.setProvider)
+    Script.registerSwitch("Q", "qrcode", "Print link as QR code", self.setQRcode)
     Script.registerSwitch("M", "VOMS", "Add voms extension", self.setVOMSExt)
 
 
 class ProxyInit(object):
 
   def __init__(self, piParams):
+    """ Constructor """
     self.__piParams = piParams
     self.__issuerCert = False
     self.__proxyGenerated = False
     self.__uploadedInfo = {}
 
   def getIssuerCert(self):
+    """ Get certificate issuer
+
+        :return: str
+    """
     if self.__issuerCert:
       return self.__issuerCert
     proxyChain = X509Chain.X509Chain()
@@ -86,6 +144,8 @@ class ProxyInit(object):
     return self.__issuerCert
 
   def certLifeTimeCheck(self):
+    """ Check certificate live time
+    """
     minLife = Registry.getGroupOption(self.__piParams.diracGroup, "SafeCertificateLifeTime", 2592000)
     resultIssuerCert = self.getIssuerCert()
     resultRemainingSecs = resultIssuerCert.getRemainingSecs()  # pylint: disable=no-member
@@ -97,10 +157,13 @@ class ProxyInit(object):
       daysLeft = int(lifeLeft / 86400)
       msg = "Your certificate will expire in less than %d days. Please renew it!" % daysLeft
       sep = "=" * (len(msg) + 4)
-      msg = "%s\n  %s  \n%s" % (sep, msg, sep)
-      gLogger.notice(msg)
+      gLogger.notice("%s\n  %s  \n%s" % (sep, msg, sep))
 
   def addVOMSExtIfNeeded(self):
+    """ Add VOMS extension if needed
+
+        :return: S_OK()/S_ERROR()
+    """
     addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
     if not addVOMS:
       return S_OK()
@@ -118,13 +181,12 @@ class ProxyInit(object):
 
     gLogger.notice("Added VOMS attribute %s" % vomsAttr)
     chain = resultVomsAttributes['Value']
-    result = chain.dumpAllToFile(self.__proxyGenerated)
-    if not result["OK"]:
-      return result
-    return S_OK()
+    return chain.dumpAllToFile(self.__proxyGenerated)
 
   def createProxy(self):
     """ Creates the proxy on disk
+
+        :return: S_OK()/S_ERROR()
     """
     gLogger.notice("Generating proxy...")
     resultProxyGenerated = ProxyGeneration.generateProxy(piParams)
@@ -136,6 +198,8 @@ class ProxyInit(object):
 
   def uploadProxy(self):
     """ Upload the proxy to the proxyManager service
+
+        :return: S_OK()/S_ERROR()
     """
     issuerCert = self.getIssuerCert()
     resultUserDN = issuerCert.getSubjectDN()  # pylint: disable=no-member
@@ -177,19 +241,22 @@ class ProxyInit(object):
     if self.__uploadedInfo:
       gLogger.notice("\nProxies uploaded:")
       maxDNLen = 0
-      maxGroupLen = 0
-      for userDN in self.__uploadedInfo:
+      maxProviderLen = len('ProxyProvider')
+      for userDN, data in self.__uploadedInfo.items():
         maxDNLen = max(maxDNLen, len(userDN))
-        for group in self.__uploadedInfo[userDN]:
-          maxGroupLen = max(maxGroupLen, len(group))
-      gLogger.notice(" %s | %s | Until (GMT)" % ("DN".ljust(maxDNLen), "Group".ljust(maxGroupLen)))
-      for userDN in self.__uploadedInfo:
-        for group in self.__uploadedInfo[userDN]:
-          gLogger.notice(" %s | %s | %s" % (userDN.ljust(maxDNLen),
-                                            group.ljust(maxGroupLen),
-                                            self.__uploadedInfo[userDN][group].strftime("%Y/%m/%d %H:%M")))
+        maxProviderLen = max(maxProviderLen, len(data['provider']))
+      gLogger.notice(" %s | %s | %s | SupportedGroups" % ("DN".ljust(maxDNLen), "ProxyProvider".ljust(maxProviderLen),
+                                                          "Until (GMT)".ljust(16)))
+      for userDN, data in self.__uploadedInfo.items():
+        gLogger.notice(" %s | %s | %s | " % (userDN.ljust(maxDNLen), data['provider'].ljust(maxProviderLen),
+                                             data['expirationtime'].strftime("%Y/%m/%d %H:%M").ljust(16)),
+                       ",".join(data['groups']))
 
   def checkCAs(self):
+    """ Check CAs
+
+        :return: S_OK()
+    """
     if "X509_CERT_DIR" not in os.environ:
       gLogger.warn("X509_CERT_DIR is unset. Abort check of CAs")
       return
@@ -222,6 +289,10 @@ class ProxyInit(object):
     return S_OK()
 
   def doTheMagic(self):
+    """ Magic method
+
+        :return: S_OK()/S_ERROR()
+    """
     proxy = self.createProxy()
     if not proxy['OK']:
       return proxy
@@ -248,6 +319,133 @@ class ProxyInit(object):
 
     return S_OK()
 
+  def doOAuthMagic(self):
+    """ Magic method with tokens
+
+        :return: S_OK()/S_ERROR()
+    """
+    import urllib3
+    import threading
+    import webbrowser
+    import requests
+    import json
+
+    from DIRAC.Core.Utilities.JEncode import encode
+    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI, getDIRACClientID, getAuthAPI
+    from DIRAC.FrameworkSystem.Utilities.halo import Halo, qrterminal
+    from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+
+    spinner = Halo()
+    proxyAPI = getProxyAPI()
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    # Get IdP
+    result = IdProviderFactory().getIdProvider(self.__piParams.provider)
+    if not result['OK']:
+      return result
+
+    idpObj = result['Value']
+
+    # Submit Device authorisation flow
+    with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
+      if Script.enableCS()['OK']:
+        result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+        if not result['OK']:
+          sys.exit(result['Message'])
+        response = result['Value']
+      else:
+        try:
+          r = requests.post('{api}/device?{group}'.format(
+              api=getAuthAPI(),
+              group = ('group=%s' % self.__piParams.diracGroup) if self.__piParams.diracGroup else ''
+          ), verify=False)
+          r.raise_for_status()
+          response = r.json()
+          # Check if all main keys are present here
+          for k in ['user_code', 'device_code', 'verification_uri']:
+            if not response.get(k):
+              sys.exit('Mandatory %s key is absent in authentication response.' % k)
+        except requests.exceptions.Timeout:
+          sys.exit('Authentication server is not answer, timeout.')
+        except requests.exceptions.RequestException as ex:
+          sys.exit(r.content or repr(ex))
+        except Exception as ex:
+          sys.exit('Cannot read authentication response: %s' % repr(ex))
+      
+    deviceCode = response['device_code']
+    userCode = response['user_code']
+    verURL = response['verification_uri']
+    verURLComplete = response.get('verification_uri_complete')
+    interval = response.get('interval', 5)
+
+    # Notify user to go to authorization endpoint
+    showURL = 'Use next link to continue, your user code is "%s"\n%s' % (userCode, verURL)
+    if self.__piParams.addQRcode:
+      if not verURLComplete:
+        spinner.warn('Cannot get verification_uri_complete for authentication.')
+        spinner.info(showURL)
+      else:
+        result = qrterminal(verURLComplete)
+        if not result['OK']:
+          spinner.fail(result['Message'])
+          spinner.info(showURL)
+        else:
+          # Show QR code
+          spinner.info('Scan QR code to continue: %s' % result['Value'])
+    else:
+      spinner.info(showURL)
+
+    # Try to open in default browser
+    if webbrowser.open_new_tab(verURL):
+      spinner.text = '%s opening in default browser..' % verURL
+
+    with Halo('Waiting authorization status..') as spin:
+      result = idpObj.waitFinalStatusOfDeviceCodeAuthorizationFlow(deviceCode)
+      if not result['OK']:
+        sys.exit(result['Message'])
+      idpObj.token = result['Value']
+
+      spin.color = 'green'
+      spin.text = 'Saving token.. to env DIRAC_TOKEN..'
+
+      os.environ["DIRAC_TOKEN"] = json.dumps(idpObj.token)
+
+      spin.text = 'Download proxy..'
+      url = '%s?lifetime=%s' % (proxyAPI, self.__piParams.proxyLifeTime)
+      addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
+      if addVOMS:
+        url += '&voms=%s' % addVOMS
+      if not idpObj.token.get('refresh_token'):
+        sys.exit('Refresh token is absent in response.')
+      url += '&refresh_token=%s' % idpObj.token['refresh_token']
+      r = idpObj.get(url)
+      r.raise_for_status()
+      proxy = r.text
+      if not proxy:
+        sys.exit("Something went wrong, the proxy is empty.")
+
+      if not self.__piParams.proxyLoc:
+        self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
+
+      spin.color = 'green'
+      spin.text = 'Saving proxy.. to %s..' % self.__piParams.proxyLoc
+      try:
+        with open(self.__piParams.proxyLoc, 'w+') as fd:
+          fd.write(proxy.encode("UTF-8"))
+        os.chmod(self.__piParams.proxyLoc, stat.S_IRUSR | stat.S_IWUSR)
+      except Exception as e:
+        return S_ERROR("%s :%s" % (self.__piParams.proxyLoc, repr(e).replace(',)', ')')))
+      self.__piParams.certLoc = self.__piParams.proxyLoc
+      spin.text = 'Proxy is saved to %s.' % self.__piParams.proxyLoc
+
+    result = Script.enableCS()
+    if not result['OK']:
+      return S_ERROR("Cannot contact CS to get user list")
+    threading.Thread(target=self.checkCAs).start()
+    gConfig.forceRefresh(fromMaster=True)
+    return S_OK(self.__piParams.proxyLoc)
+
 
 @DIRACScript()
 def main():
@@ -260,9 +458,13 @@ def main():
   DIRAC.gConfig.setOptionValue("/DIRAC/Security/UseServerCertificate", "False")
 
   pI = ProxyInit(piParams)
-  resultDoTheMagic = pI.doTheMagic()
-  if not resultDoTheMagic['OK']:
-    gLogger.fatal(resultDoTheMagic['Message'])
+  gLogger.info(gConfig.getConfigurationTree())
+  if piParams.addProvider:
+    resultDoMagic = pI.doOAuthMagic()
+  else:
+    resultDoMagic = pI.doTheMagic()
+  if not resultDoMagic['OK']:
+    gLogger.fatal(resultDoMagic['Message'])
     sys.exit(1)
 
   pI.printInfo()

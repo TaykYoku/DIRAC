@@ -100,6 +100,8 @@ class TornadoBaseClient(object):
       raise TypeError("Service name expected to be a string. Received %s type %s" %
                       (str(serviceName), type(serviceName)))
 
+    self.client = None
+
     self._destinationSrv = serviceName
     self._serviceName = serviceName
     self.__ca_location = False
@@ -220,6 +222,11 @@ class TornadoBaseClient(object):
         self.kwargs[self.KW_SKIP_CA_CHECK] = False
       else:
         self.kwargs[self.KW_SKIP_CA_CHECK] = skipCACheck()
+
+    if not self.__useCertificates:
+      if os.environ.get('DIRAC_TOKEN') and os.environ.get('DIRAC_TRY_USE_TOKEN'):
+        self.client = IdProviderFactory().getIdProviderForToken(os.environ['DIRAC_TOKEN'])
+        self.client.token = os.environ['DIRAC_TOKEN']
 
     # Rewrite a little bit from here: don't need the proxy string, we use the file
     if self.KW_PROXY_CHAIN in self.kwargs:
@@ -504,12 +511,19 @@ class TornadoBaseClient(object):
     # getting certificate
     # Do we use the server certificate ?
     if self.kwargs[self.KW_USE_CERTIFICATES]:
-      cert = Locations.getHostCertificateAndKeyLocation()
+      auth = {'cert': Locations.getHostCertificateAndKeyLocation()}
+
+    # Use access token?
+    elif os.environ.get('DIRAC_TOKEN') and os.environ.get('DIRAC_TRY_USE_TOKEN'):
+      # TODO: idp check and refresh tokens
+      self.client.fetch_access_token()
+      auth = {'headers': {"Authorization": "Bearer %s" % self.client.token['access_token']}}
+
     # CHRIS 04.02.21
     # TODO: add proxyLocation check ?
     else:
-      cert = Locations.getProxyLocation()
-      if not cert:
+      auth = {'cert': Locations.getProxyLocation()}
+      if not auth['cert']:
         gLogger.error("No proxy found")
         return S_ERROR("No proxy found")
 
@@ -526,7 +540,7 @@ class TornadoBaseClient(object):
         if not outputFile:
           call = requests.post(url, data=kwargs,
                                timeout=self.timeout, verify=verify,
-                               cert=cert)
+                               **auth)
           # raising the exception for status here
           # means essentialy that we are losing here the information of what is returned by the server
           # as error message, since it is not passed to the exception
@@ -546,7 +560,7 @@ class TornadoBaseClient(object):
           # Stream download
           # https://requests.readthedocs.io/en/latest/user/advanced/#body-content-workflow
           with requests.post(url, data=kwargs, timeout=self.timeout, verify=verify,
-                             cert=cert, stream=True) as r:
+                             stream=True, **auth) as r:
             rawText = r.text
             r.raise_for_status()
 
