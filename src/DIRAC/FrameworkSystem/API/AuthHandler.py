@@ -24,6 +24,7 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(TornadoREST):
 
+  SYSTEM = 'Framework'
   LOCATION = "/DIRAC/auth"
 
   path_index = ['.well-known']
