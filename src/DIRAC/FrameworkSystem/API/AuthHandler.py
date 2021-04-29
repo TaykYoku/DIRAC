@@ -26,6 +26,13 @@ class AuthHandler(TornadoREST):
 
   SYSTEM = 'Framework'
   LOCATION = "/DIRAC/auth"
+@classmethod
+  def initializeHandler(cls, serviceInfo):
+    """ This method is called only one time, at the first request
+
+        :param dict ServiceInfoDict: infos about services
+    """
+    cls.idps = IdProviderFactory()
 
   path_index = ['.well-known']
 
