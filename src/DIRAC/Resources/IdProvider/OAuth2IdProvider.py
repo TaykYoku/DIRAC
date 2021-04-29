@@ -118,6 +118,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
     """
+    group_scopes = []
     if group:
       idPRole = getGroupOption(group, 'IdPRole')
       if not idPRole:
