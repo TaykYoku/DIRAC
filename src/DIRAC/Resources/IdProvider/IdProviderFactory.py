@@ -53,14 +53,12 @@ class IdProviderFactory(object):
       return result
     return self.getIdProvider(result['Value'])
 
-
   #############################################################################
   def getIdProvider(self, idProvider, **kwargs):
     """ This method returns a IdProvider instance corresponding to the supplied
         name.
 
         :param str idProvider: the name of the Identity Provider
-        :param object sessionManager: session manager
 
         :return: S_OK(IdProvider)/S_ERROR()
     """
@@ -73,7 +71,7 @@ class IdProviderFactory(object):
         return result
       pDict = result['Value']
       pDict['ProviderName'] = idProvider
-    pDict['sessionManager'] = sessionManager
+    pDict.update(kwargs)
     pType = pDict['ProviderType']
 
     self.log.verbose('Creating IdProvider of %s type with the name %s' % (pType, idProvider))
