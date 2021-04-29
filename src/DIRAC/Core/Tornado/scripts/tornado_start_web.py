@@ -48,7 +48,7 @@ def main():
     from WebAppDIRAC.Core.App import App
   except ImportError as e:
     gLogger.fatal('Web portal is not installed. %s' % repr(e))
-    sys.exit(1)
+    #sys.exit(1)
 
   # Get routes and settings for a portal
   result = App().getAppToDict(8000)
