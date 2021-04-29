@@ -24,7 +24,6 @@ def getDNForID(uid):
 
       :return: S_OK(str)/S_ERROR()
   """
-  dn = dn.strip()
   if not usersList:
     result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
     if not result['OK']:
