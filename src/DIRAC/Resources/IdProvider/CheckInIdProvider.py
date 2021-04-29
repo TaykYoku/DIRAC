@@ -10,11 +10,11 @@ import pprint
 import time
 import requests
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
+from authlib.oauth2.rfc8628 import DEVICE_CODE_GRANT_TYPE
 
 from DIRAC import S_ERROR, S_OK
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSRoleGroupMapping, getVOForGroup, getGroupOption
-from authlib.oauth2.rfc8628 import DEVICE_CODE_GRANT_TYPE
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSRoleGroupMapping, getVOForGroup, getGroupOption, getDNForID
 
 __RCSID__ = "$Id$"
 
@@ -80,7 +80,11 @@ class CheckInIdProvider(OAuth2IdProvider):
   #       scope=self.PARAM_SCOPE, namespace=self.NAMESPACE, vo=vo, role=role, sign=self.SIGN
   #   ))
 
-  
+  def researchScopeForGroup(self, group):
+    """ Research group
+    """
+    pass
+
   def researchGroup(self, payload, token):
     """ Research group
     """
@@ -110,6 +114,7 @@ class CheckInIdProvider(OAuth2IdProvider):
     if not resDict:
       return credDict
     credDict['ID'] = resDict['eduperson_unique_id']['ID']
+    credDict['DN'] = self.convertIDToDN(credDict['ID'])
     credDict['VOs'] = {}
     for voDict in resDict['eduperson_entitlement']:
       if voDict['VO'] not in credDict['VOs']:
@@ -133,3 +138,11 @@ class CheckInIdProvider(OAuth2IdProvider):
     credDict['group'] = credDict['DIRACGroups'][0] if credDict['DIRACGroups'] else None
     return credDict
 
+  def convertIDToDN(self, uid):
+    """
+    """
+    result = getDNForID(uid)
+    if result['OK']:
+      return result['Value']
+    return None
+      

@@ -8,7 +8,6 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 from DIRAC.ConfigurationSystem.Client.Utilities import isDownloadablePersonalProxy
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsernameInGroup
 
 __RCSID__ = "$Id$"
 

@@ -17,6 +17,26 @@ __RCSID__ = "$Id$"
 
 gBaseRegistrySection = "/Registry"
 
+def getDNForID(uid):
+  """ Find some DN for ID
+
+      :param str uid: user ID
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  dn = dn.strip()
+  if not usersList:
+    result = gConfig.getSections("%s/Users" % gBaseRegistrySection)
+    if not result['OK']:
+      return result
+    usersList = result['Value']
+  for username in usersList:
+    if uid in gConfig.getValue("%s/Users/%s/ID" % (gBaseRegistrySection, username), []):
+      dns = gConfig.getValue("%s/Users/%s/DN" % (gBaseRegistrySection, username), [])
+      if not dns:
+        return S_ERROR("No DN found for ID %s" % uid)
+      return S_OK(dns[0])
+  return S_ERROR("No username found for ID %s" % uid)
 
 def getUsernameForDN(dn, usersList=None):
   """ Find DIRAC user for DN

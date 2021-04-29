@@ -606,6 +606,7 @@ class BaseRequestHandler(RequestHandler):
 
     # {'ID':.., 'group':.., 'provider':..}
     credDict = self._idps[issuer].researchGroup(payload, accessToken)
+    
     credDict['token'] = accessToken
     return S_OK(credDict)
 
