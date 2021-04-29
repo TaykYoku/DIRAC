@@ -49,7 +49,7 @@ class IdProviderFactory(object):
     # Read token without verification to get issuer
     issuer = jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
     result = getIdProviderForIssuer(issuer)
-    if not result['OK']
+    if not result['OK']:
       return result
     return self.getIdProvider(result['Value'])
 
