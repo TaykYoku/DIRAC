@@ -580,6 +580,21 @@ def getDIRACGOCDictionary():
   return S_OK(dictionary)
 
 
+def getAuthAPI():
+  """ Get Auth REST API url
+
+      :return: str
+  """
+  return gConfig.getValue("/Systems/Framework/%s/URLs/Auth" % getSystemInstance("Framework"))
+
+
+def getProxyAPI():
+  """ Get Proxy REST API url
+
+      :return: str
+  """
+  return gConfig.getValue("/Systems/Framework/%s/URLs/Proxy" % getSystemInstance("Framework"))
+
 def isDownloadablePersonalProxy():
   """ Get downloadablePersonalProxy flag
 

@@ -331,47 +331,44 @@ class ProxyInit(object):
     import json
 
     from DIRAC.Core.Utilities.JEncode import encode
-    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI, getDIRACClientID, getAuthAPI
+    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI, getAuthAPI
     from DIRAC.FrameworkSystem.Utilities.halo import Halo, qrterminal
     from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
+    idpObj = None
     spinner = Halo()
     proxyAPI = getProxyAPI()
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    # Get IdP
-    result = IdProviderFactory().getIdProvider(self.__piParams.provider)
-    if not result['OK']:
-      return result
-
-    idpObj = result['Value']
-
     # Submit Device authorisation flow
     with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
+      # Get IdP
       if Script.enableCS()['OK']:
-        result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
-        if not result['OK']:
-          sys.exit(result['Message'])
-        response = result['Value']
+        params = {}
       else:
         try:
-          r = requests.post('{api}/device?{group}'.format(
+          r = requests.post('{api}/device?group={group}'.format(
               api=getAuthAPI(),
-              group = ('group=%s' % self.__piParams.diracGroup) if self.__piParams.diracGroup else ''
+              group = self.__piParams.diracGroup or ''
           ), verify=False)
           r.raise_for_status()
-          response = r.json()
-          # Check if all main keys are present here
-          for k in ['user_code', 'device_code', 'verification_uri']:
-            if not response.get(k):
-              sys.exit('Mandatory %s key is absent in authentication response.' % k)
+          params = r.json()
         except requests.exceptions.Timeout:
           sys.exit('Authentication server is not answer, timeout.')
         except requests.exceptions.RequestException as ex:
           sys.exit(r.content or repr(ex))
         except Exception as ex:
           sys.exit('Cannot read authentication response: %s' % repr(ex))
+
+      result = IdProviderFactory().getIdProvider(self.__piParams.provider, **params)
+      if not result['OK']:
+        sys.exit(result['Message'])
+      idpObj = result['Value']
+      result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+      if not result['OK']:
+        sys.exit(result['Message'])
+      response = result['Value']
       
     deviceCode = response['device_code']
     userCode = response['user_code']
