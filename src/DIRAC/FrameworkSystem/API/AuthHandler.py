@@ -26,7 +26,8 @@ class AuthHandler(TornadoREST):
 
   SYSTEM = 'Framework'
   LOCATION = "/DIRAC/auth"
-@classmethod
+
+  @classmethod
   def initializeHandler(cls, serviceInfo):
     """ This method is called only one time, at the first request
 
