@@ -24,6 +24,8 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(TornadoREST):
 
+  LOCATION = "/DIRAC/auth"
+
   path_index = ['.well-known']
 
   def web_index(self, instance):
