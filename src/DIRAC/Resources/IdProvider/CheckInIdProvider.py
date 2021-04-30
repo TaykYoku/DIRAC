@@ -51,6 +51,8 @@ def claimParser(claimDict, attributes):
           if result:
             profile[claim].append(result)
         else:
+          print('Compile: %s' % reg)
+          print('Claim: %s' % claimItem)
           result = re.compile(reg).match(claimItem)
           if result:
             profile[claim].append(result.groupdict())
