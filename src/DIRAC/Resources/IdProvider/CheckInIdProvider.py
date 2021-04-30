@@ -109,8 +109,7 @@ class CheckInIdProvider(OAuth2IdProvider):
     credDict = {}
     attributes = {
         'eduperson_unique_id': '^(?P<ID>.*)',
-        'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):\
-                                  (?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
+        'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):(?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
     }
     print('==> getUserProfile 1')
     pprint.pprint(claimDict)
