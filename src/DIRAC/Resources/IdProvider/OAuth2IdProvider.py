@@ -186,6 +186,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                subject_token_type='urn:ietf:params:oauth:token-type:access_token',
                                scope=list_to_scope(self.scope + group_scopes))
 
+  def getUserProfile(self):
+    return self.get(self.metadata['userinfo_endpoint']).json()
+
   def exchange_token(self, url, subject_token=None, subject_token_type=None, body='',
                      refresh_token=None, access_token=None, auth=None, headers=None, **kwargs):
     """ Fetch a new access token using a refresh token.

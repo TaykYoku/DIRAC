@@ -110,6 +110,8 @@ class CheckInIdProvider(OAuth2IdProvider):
         'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):\
                                   (?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
     }
+    if 'eduperson_entitlement' not in claimDict:
+      claimDict = self.getUserProfile()
     resDict = claimParser(claimDict, attributes)
     if not resDict:
       return credDict
@@ -124,8 +126,6 @@ class CheckInIdProvider(OAuth2IdProvider):
     return credDict
 
   def userDiscover(self, credDict):
-    # result = getUsernameForID(credDict['ID'])
-    # credDict['DIRACUsername'] = result['Value'] if result['OK'] else 'anonymous'
     credDict['DIRACGroups'] = []
     for vo, voData in credDict.get('VOs', {}).items():
       result = getVOMSRoleGroupMapping(vo)
@@ -135,7 +135,8 @@ class CheckInIdProvider(OAuth2IdProvider):
           groups = result['Value']['VOMSDIRAC'].get('/%s' % role)
           if groups:
             credDict['DIRACGroups'] = list(set(credDict['DIRACGroups'] + groups))
-    credDict['group'] = credDict['DIRACGroups'][0] if credDict['DIRACGroups'] else None
+    if credDict['DIRACGroups']:
+      credDict['group'] = credDict['DIRACGroups'][0]
     return credDict
 
   def convertIDToDN(self, uid):
