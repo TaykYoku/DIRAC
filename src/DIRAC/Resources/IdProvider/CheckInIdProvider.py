@@ -133,6 +133,7 @@ class CheckInIdProvider(OAuth2IdProvider):
     credDict['DIRACGroups'] = []
     for vo, voData in credDict.get('VOs', {}).items():
       result = getVOMSRoleGroupMapping(vo)
+      pprint.pprint(result)
       if result['OK']:
         avilGroups = result['Value']['VOMSDIRAC']
         for role in voData['VORoles']:
