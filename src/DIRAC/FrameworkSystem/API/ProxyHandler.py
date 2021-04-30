@@ -66,7 +66,8 @@ class ProxyHandler(TornadoREST):
       from pprint import pprint
       print('=============== PROXY =================')
       pprint(self.getRemoteCredentials())
-      result = self.__getProxy(self.getUserName(), self.getUserGroup(), voms, proxyLifeTime)
+      credDict = self.getRemoteCredentials()
+      result = self.__getProxy(credDict['DN'], credDict['group'], voms, proxyLifeTime)
       if result['OK']:
         return result['Value']
       return result

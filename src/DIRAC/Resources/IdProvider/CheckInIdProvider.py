@@ -110,9 +110,10 @@ class CheckInIdProvider(OAuth2IdProvider):
         'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):\
                                   (?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
     }
+    print('==> getUserProfile 1')
     pprint.pprint(claimDict)
     if 'eduperson_entitlement' not in claimDict:
-      print('==> getUserProfile')
+      print('==> getUserProfile 2')
       claimDict = self.getUserProfile()
     pprint.pprint(claimDict)
     resDict = claimParser(claimDict, attributes)
