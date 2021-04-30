@@ -117,6 +117,8 @@ class CheckInIdProvider(OAuth2IdProvider):
       claimDict = self.getUserProfile()
     pprint.pprint(claimDict)
     resDict = claimParser(claimDict, attributes)
+    print('++..')
+    pprint.pprint(resDict)
     if not resDict:
       return credDict
     credDict['ID'] = resDict['eduperson_unique_id']['ID']
