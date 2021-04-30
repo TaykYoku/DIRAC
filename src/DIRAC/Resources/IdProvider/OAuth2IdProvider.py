@@ -180,7 +180,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     # idPRole = getGroupOption(group, 'IdPRole')
     # if not idPRole:
     #   return S_ERROR('Cannot find role for %s' % group)
-    idPRole = 'urn:mace:egi.eu:group:registry:training.egi.eu:role=member#aai.egi.eu'
+    idPRole = 'urn:mace:egi.eu:group:checkin-integration:role=member#aai.egi.eu'
     group_scopes = [self.PARAM_SCOPE + idPRole]
     return self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
                                subject_token_type='urn:ietf:params:oauth:token-type:access_token',
