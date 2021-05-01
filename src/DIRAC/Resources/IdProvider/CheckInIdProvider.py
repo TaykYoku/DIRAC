@@ -33,7 +33,7 @@ class CheckInIdProvider(OAuth2IdProvider):
 
         :return: list
     """
-    return S_OK(['urn:mace:egi.eu:group:checkin-integration:role=member#aai.egi.eu'])
+    return S_OK(['eduperson_entitlement?value=urn:mace:egi.eu:group:checkin-integration:role=member#aai.egi.eu'])
 
   def researchGroup(self, payload, token):
     """ Research group
