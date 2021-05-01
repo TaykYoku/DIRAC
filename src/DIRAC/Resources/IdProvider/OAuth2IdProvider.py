@@ -246,7 +246,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         :return: dict -- token
     """
     result = self.getGroupScopes(group)
-    if mot result['OK']:
+    if not result['OK']:
       return result
     groupScopes = result['Value']
     try:
