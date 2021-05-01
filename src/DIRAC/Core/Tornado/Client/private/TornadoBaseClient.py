@@ -46,6 +46,7 @@ from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import skipCACheck
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import findDefaultGroupForDN
 from DIRAC.ConfigurationSystem.Client.PathFinder import getServiceURL, getServiceFailoverURL
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.Core.Security import Locations
