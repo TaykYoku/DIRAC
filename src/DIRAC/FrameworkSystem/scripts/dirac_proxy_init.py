@@ -340,7 +340,7 @@ class ProxyInit(object):
     from DIRAC.Core.Security.ProxyFile import writeToProxyFile
     from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
     from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-    from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
+    # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
     result = readTokenFromFile()
     token = result['Value'] if result['OK'] else None
@@ -370,10 +370,10 @@ class ProxyInit(object):
       return result
     gLogger.notice('Token is saved.')
     
-    # Check user tokens
-    result = gTokenManager.delegateUserToken()
-    if not result['OK']:
-      return result
+    # # Check user tokens
+    # result = gTokenManager.delegateUserToken()
+    # if not result['OK']:
+    #   return result
 
     url = '%s?lifetime=%s' % (getProxyAPI(), self.__piParams.proxyLifeTime)
     addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
