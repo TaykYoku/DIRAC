@@ -71,7 +71,7 @@ class CheckInIdProvider(OAuth2IdProvider):
     if not resDict:
       return credDict
     credDict['ID'] = resDict['eduperson_unique_id']['ID']
-    credDict['DN'] = self.convertIDToDN(credDict['ID'])
+    credDict['DN'] = getDNForID(credDict['ID'])
     credDict['VOs'] = {}
     for voDict in resDict['eduperson_entitlement']:
       if voDict['VO'] not in credDict['VOs']:
