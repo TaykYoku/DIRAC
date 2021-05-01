@@ -534,7 +534,8 @@ class BaseRequestHandler(RequestHandler):
       grant = a.upper()
       try:
         result = eval('self._authz%s' % grant)()
-      except AttributeError:
+      except AttributeError as e:
+        print(repr(e))
         raise Exception('%s authentication type is not supported.' % grant)
 
       if result['OK']:
