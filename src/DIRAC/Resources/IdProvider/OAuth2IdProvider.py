@@ -152,7 +152,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def authorization(self, group=None):
     """
     """
-    result = self.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+    result = self.submitDeviceCodeAuthorizationFlow(group)
     if not result['OK']:
       return result
     response = result['Value']
