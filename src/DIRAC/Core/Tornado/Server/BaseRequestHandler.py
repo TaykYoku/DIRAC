@@ -326,6 +326,7 @@ class BaseRequestHandler(RequestHandler):
     """
 
     try:
+      print(self.USE_AUTHZ_GRANTS)
       self.credDict = self._gatherPeerCredentials()
     except Exception as e:  # pylint: disable=broad-except
       # If an error occur when reading certificates we close connection
