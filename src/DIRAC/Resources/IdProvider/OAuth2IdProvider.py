@@ -180,6 +180,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       r = requests.post(self.metadata['device_authorization_endpoint'], data=dict(
         client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes)
       ))
+      print(list_to_scope(self.scope + groupScopes))
       r.raise_for_status()
       deviceResponse = r.json()
       if 'error' in deviceResponse:
@@ -249,6 +250,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if not result['OK']:
       return result
     groupScopes = result['Value']
+    print(list_to_scope(self.scope + groupScopes))
     try:
       token = self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
                                   subject_token_type='urn:ietf:params:oauth:token-type:access_token',
