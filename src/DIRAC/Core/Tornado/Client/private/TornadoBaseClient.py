@@ -49,6 +49,7 @@ from DIRAC.ConfigurationSystem.Client.PathFinder import getServiceURL, getServic
 
 from DIRAC.Core.DISET.ThreadConfig import ThreadConfig
 from DIRAC.Core.Security import Locations
+from DIRAC.Core.Security.TokenFile import readTokenFromFile
 from DIRAC.Core.Utilities import List, Network
 from DIRAC.Core.Utilities.JEncode import decode, encode
 
@@ -62,9 +63,12 @@ class TornadoBaseClient(object):
   """
     This class contain initialization method and all utilities method used for RPC
   """
+  idPFactory = IdProviderFactory()
   __threadConfig = ThreadConfig()
   VAL_EXTRA_CREDENTIALS_HOST = "hosts"
 
+  KW_IDENTITY_PROVIDER = "identityProvider"
+  KW_USE_ACCESS_TOKEN = "useAccessToken"
   KW_USE_CERTIFICATES = "useCertificates"
   KW_EXTRA_CREDENTIALS = "extraCredentials"
   KW_TIMEOUT = "timeout"
@@ -109,10 +113,8 @@ class TornadoBaseClient(object):
 
     self.kwargs = kwargs
     self.__useCertificates = None
-    # The CS useServerCertificate option can be overridden by explicit argument
-    self.__forceUseCertificates = self.kwargs.get(self.KW_USE_CERTIFICATES)
+    self.__useAccessToken = None
     self.__initStatus = S_OK()
-    self.__idDict = {}
     self.__extraCredentials = ""
     # by default we always have 1 url for example:
     # RPCClient('dips://volhcb38.cern.ch:9162/Framework/SystemAdministrator')
@@ -224,11 +226,19 @@ class TornadoBaseClient(object):
       else:
         self.kwargs[self.KW_SKIP_CA_CHECK] = skipCACheck()
 
-    if not self.__useCertificates:
-      if os.environ.get('DIRAC_TOKEN') and os.environ.get('DIRAC_TRY_USE_TOKEN'):
-        token = json.loads(os.environ['DIRAC_TOKEN'])
-        self.client = IdProviderFactory().getIdProviderForToken(token)
-        self.client.token = token
+    if self.KW_USE_ACCESS_TOKEN in self.kwargs:
+      self.__useAccessToken = self.kwargs[self.KW_USE_ACCESS_TOKEN]
+    else:
+      self.__useAccessToken = os.environ.get('DIRAC_USE_ACCESS_TOKEN')
+
+    if self.__useAccessToken:
+      result = readTokenFromFile()
+      if not result['OK']:
+        return S_ERROR('Please, use dirac-proxy-init to authorize with your identity provider.')
+      result = self.idPFactory.getIdProviderForToken(result['Value'])
+      if not result['OK']:
+        return result
+      self.client = result['Value']
 
     # Rewrite a little bit from here: don't need the proxy string, we use the file
     if self.KW_PROXY_CHAIN in self.kwargs:
@@ -516,9 +526,10 @@ class TornadoBaseClient(object):
       auth = {'cert': Locations.getHostCertificateAndKeyLocation()}
 
     # Use access token?
-    elif os.environ.get('DIRAC_TOKEN') and os.environ.get('DIRAC_TRY_USE_TOKEN'):
+    elif self.client:
       # TODO: idp check and refresh tokens
-      self.client.fetch_access_token()
+      if not self.client.fetch_access_token():
+        return S_ERROR('Token expired')
       auth = {'headers': {"Authorization": "Bearer %s" % self.client.token['access_token']}}
 
     # CHRIS 04.02.21
@@ -540,8 +551,7 @@ class TornadoBaseClient(object):
 
         # Default case, just return the result
         if not outputFile:
-          call = requests.post(url, data=kwargs,
-                               timeout=self.timeout, verify=verify,
+          call = requests.post(url, data=kwargs, timeout=self.timeout, verify=verify,
                                **auth)
           # raising the exception for status here
           # means essentialy that we are losing here the information of what is returned by the server

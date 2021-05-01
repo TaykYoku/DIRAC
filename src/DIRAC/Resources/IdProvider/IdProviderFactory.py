@@ -47,10 +47,11 @@ class IdProviderFactory(object):
         :return: S_OK(IdProvider)/S_ERROR()
     """
     # Read token without verification to get issuer
-    issuer = jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
+    issuer = jwt.decode(token, options=dict(verify_signature=False))['iss'].strip('/')
     result = getIdProviderForIssuer(issuer)
     if not result['OK']:
       return result
+    result['Value']['token'] = token
     return self.getIdProvider(result['Value'])
 
   #############################################################################

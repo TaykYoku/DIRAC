@@ -31,6 +31,45 @@ DEFAULT_HEADERS = {
 }
 
 
+def claimParser(claimDict, attributes):
+  """ Parse claims to write it as DIRAC profile
+
+      :param dict claimDict: claims
+      :param dict attributes: contain claim and regex to parse it
+      :param dict profile: to fill parsed data
+
+      :return: dict
+  """
+  profile = {}
+  result = None
+  for claim, reg in attributes.items():
+    if claim not in claimDict:
+      continue
+    profile[claim] = {}
+    if isinstance(claimDict[claim], dict):
+      result = claimParser(claimDict[claim], reg)
+      if result:
+        profile[claim] = result
+    elif isinstance(claimDict[claim], six.string_types):
+      result = re.compile(reg).match(claimDict[claim])
+      if result:
+        for k, v in result.groupdict().items():
+          profile[claim][k] = v
+    else:
+      profile[claim] = []
+      for claimItem in claimDict[claim]:
+        if isinstance(reg, dict):
+          result = claimParser(claimItem, reg)
+          if result:
+            profile[claim].append(result)
+        else:
+          result = re.compile(reg).match(claimItem)
+          if result:
+            profile[claim].append(result.groupdict())
+
+  return profile
+
+
 class OAuth2IdProvider(IdProvider, OAuth2Session):
   def __init__(self, name=None, token_endpoint_auth_method=None, revocation_endpoint_auth_method=None,
                scope=None, token=None, token_placement='header', update_token=None, **parameters):
@@ -105,29 +144,41 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """
     return self.get(url or self.server_metadata_url, withhold_token=True).json()
 
-  def researchScopeForGroup(self, group):
-    pass
-
   def researchGroup(self, payload, token):
     """ Research group
     """
     return {}
+
+  def authorization(self, group=None):
+    """
+    """
+    result = self.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+    if not result['OK']:
+      return result
+    response = result['Value']
+
+    # Notify user to go to authorization endpoint
+    showURL = 'Use next link to continue, your user code is "%s"\n%s' % (response['user_code'],
+                                                                         response['verification_uri'])
+    gLogger.notice(showURL)
+
+    return self.waitFinalStatusOfDeviceCodeAuthorizationFlow(response['device_code'])
 
   def submitDeviceCodeAuthorizationFlow(self, group=None):
     """ Submit authorization flow
 
         :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
     """
-    group_scopes = []
+    groupScopes = []
     if group:
-      idPRole = getGroupOption(group, 'IdPRole')
-      if not idPRole:
-        return S_ERROR('Cannot find role for %s' % group)
-      group_scopes = [self.PARAM_SCOPE + idPRole]
+      result = self.getGroupScopes(group)
+      if not result['OK']:
+        return result
+      groupScopes = result['Value']
 
     try:
       r = requests.post(self.metadata['device_authorization_endpoint'], data=dict(
-        client_id=self.client_id, scope=list_to_scope(self.scope + group_scopes)
+        client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes)
       ))
       r.raise_for_status()
       deviceResponse = r.json()
@@ -158,6 +209,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """
     __start = time.time()
 
+    gLogger.notice('Authorization pending.. (use CNTL + C to stop)')
     while True:
       time.sleep(int(interval))
       if time.time() - __start > timeout:
@@ -174,17 +226,40 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       if token['error'] != 'authorization_pending':
         return S_ERROR(token['error'] + ' : ' + token.get('description', ''))
 
+  def getGroupScopes(self, group):
+    """ Get group scopes
+
+        :param str group: DIRAC group
+
+        :return: list
+    """
+    idPScope = getGroupOption(group, 'IdPScope')
+    if not idPScope:
+      return S_ERROR('Cannot find role for %s' % group)
+    return S_OK(scope_to_list(idPScope))
+
   def exchangeGroup(self, group):
+    """ Get new tokens for group scope
+
+        :param str group: requested group
+
+        :return: dict -- token
     """
-    """
-    # idPRole = getGroupOption(group, 'IdPRole')
-    # if not idPRole:
-    #   return S_ERROR('Cannot find role for %s' % group)
-    idPRole = 'urn:mace:egi.eu:group:checkin-integration:role=member#aai.egi.eu'
-    group_scopes = [self.PARAM_SCOPE + idPRole]
-    return self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
-                               subject_token_type='urn:ietf:params:oauth:token-type:access_token',
-                               scope=list_to_scope(self.scope + group_scopes))
+    result = self.getGroupScopes(group)
+    if mot result['OK']:
+      return result
+    groupScopes = result['Value']
+    try:
+      token = self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
+                                  subject_token_type='urn:ietf:params:oauth:token-type:access_token',
+                                  scope=list_to_scope(self.scope + groupScopes))
+      if not token:
+        return S_ERROR('Cannot exchange token with %s group.' % group)
+      self.token = token
+      return S_OK(token)
+      
+    except Exception as e:
+      return S_ERROR(repr(e))
 
   def getUserProfile(self):
     return self.get(self.metadata['userinfo_endpoint']).json()

@@ -157,7 +157,8 @@ class ProxyInit(object):
       daysLeft = int(lifeLeft / 86400)
       msg = "Your certificate will expire in less than %d days. Please renew it!" % daysLeft
       sep = "=" * (len(msg) + 4)
-      gLogger.notice("%s\n  %s  \n%s" % (sep, msg, sep))
+      msg = "%s\n  %s  \n%s" % (sep, msg, sep)
+      gLogger.notice(msg)
 
   def addVOMSExtIfNeeded(self):
     """ Add VOMS extension if needed
@@ -181,7 +182,10 @@ class ProxyInit(object):
 
     gLogger.notice("Added VOMS attribute %s" % vomsAttr)
     chain = resultVomsAttributes['Value']
-    return chain.dumpAllToFile(self.__proxyGenerated)
+    result = chain.dumpAllToFile(self.__proxyGenerated)
+    if not result["OK"]:
+      return result
+    return S_OK()
 
   def createProxy(self):
     """ Creates the proxy on disk
@@ -241,16 +245,17 @@ class ProxyInit(object):
     if self.__uploadedInfo:
       gLogger.notice("\nProxies uploaded:")
       maxDNLen = 0
-      maxProviderLen = len('ProxyProvider')
-      for userDN, data in self.__uploadedInfo.items():
+      maxGroupLen = 0
+      for userDN in self.__uploadedInfo:
         maxDNLen = max(maxDNLen, len(userDN))
-        maxProviderLen = max(maxProviderLen, len(data['provider']))
-      gLogger.notice(" %s | %s | %s | SupportedGroups" % ("DN".ljust(maxDNLen), "ProxyProvider".ljust(maxProviderLen),
-                                                          "Until (GMT)".ljust(16)))
-      for userDN, data in self.__uploadedInfo.items():
-        gLogger.notice(" %s | %s | %s | " % (userDN.ljust(maxDNLen), data['provider'].ljust(maxProviderLen),
-                                             data['expirationtime'].strftime("%Y/%m/%d %H:%M").ljust(16)),
-                       ",".join(data['groups']))
+        for group in self.__uploadedInfo[userDN]:
+          maxGroupLen = max(maxGroupLen, len(group))
+      gLogger.notice(" %s | %s | Until (GMT)" % ("DN".ljust(maxDNLen), "Group".ljust(maxGroupLen)))
+      for userDN in self.__uploadedInfo:
+        for group in self.__uploadedInfo[userDN]:
+          gLogger.notice(" %s | %s | %s" % (userDN.ljust(maxDNLen),
+                                            group.ljust(maxGroupLen),
+                                            self.__uploadedInfo[userDN][group].strftime("%Y/%m/%d %H:%M")))
 
   def checkCAs(self):
     """ Check CAs
@@ -331,110 +336,65 @@ class ProxyInit(object):
     import json
 
     from DIRAC.Core.Utilities.JEncode import encode
-    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI, getAuthAPI
-    from DIRAC.FrameworkSystem.Utilities.halo import Halo, qrterminal
+    from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
+    from DIRAC.Core.Security.ProxyFile import writeToProxyFile
+    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
     from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+    from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
-    result = IdProviderFactory().getIdProvider(self.__piParams.provider)
+    result = readTokenFromFile()
+    token = result['Value'] if result['OK'] else None
+    result = IdProviderFactory().getIdProvider(self.__piParams.provider, token=token)
     if not result['OK']:
-      sys.exit(result['Message'])
+      return result
     idpObj = result['Value']
-    spinner = Halo()
-    proxyAPI = getProxyAPI()
     reqGroup = None
-    tokenLoc = '/tmp/token'
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
-    with Halo('Authentification from %s.' % self.__piParams.provider) as spin:
-      # Get IdP
-      if not Script.enableCS()['OK']:
-        result = idpObj.submitDeviceCodeAuthorizationFlow()
-        reqGroup = self.__piParams.diracGroup
-      else:
-        result = idpObj.submitDeviceCodeAuthorizationFlow(self.__piParams.diracGroup)
+    # Get IdP
+    if not Script.enableCS()['OK']:
+      result = idpObj.authorization()
+      if result['OK']:
+        result = idpObj.exchangeGroup(self.__piParams.diracGroup)
       if not result['OK']:
-        sys.exit(result['Message'])
-      response = result['Value']
-      
-    deviceCode = response['device_code']
-    userCode = response['user_code']
-    verURL = response['verification_uri']
-    verURLComplete = response.get('verification_uri_complete')
-    interval = response.get('interval', 5)
-
-    # Notify user to go to authorization endpoint
-    showURL = 'Use next link to continue, your user code is "%s"\n%s' % (userCode, verURL)
-    if self.__piParams.addQRcode:
-      if not verURLComplete:
-        spinner.warn('Cannot get verification_uri_complete for authentication.')
-        spinner.info(showURL)
-      else:
-        result = qrterminal(verURLComplete)
-        if not result['OK']:
-          spinner.fail(result['Message'])
-          spinner.info(showURL)
-        else:
-          # Show QR code
-          spinner.info('Scan QR code to continue: %s' % result['Value'])
+        return result
     else:
-      spinner.info(showURL)
+      result = idpObj.authorization(self.__piParams.diracGroup)
+    if not result['OK']:
+      return result
+    
+    result = writeTokenDictToTokenFile(idpObj.token)
+    if not result['OK']:
+      return result
+    gLogger.notice('Token is saved.')
+    
+    # Check user tokens
+    result = gTokenManager.delegateUserToken()
+    if not result['OK']:
+      return result
 
-    # Try to open in default browser
-    if webbrowser.open_new_tab(verURL):
-      spinner.text = '%s opening in default browser..' % verURL
+    url = '%s?lifetime=%s' % (getProxyAPI(), self.__piParams.proxyLifeTime)
+    addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
+    if addVOMS:
+      url += '&voms=%s' % addVOMS
+    if not idpObj.token.get('refresh_token'):
+      sys.exit('Refresh token is absent in response.')
+    url += '&refresh_token=%s' % idpObj.token['refresh_token']
+    r = idpObj.get(url)
+    r.raise_for_status()
+    proxy = r.text
+    if not proxy:
+      sys.exit("Something went wrong, the proxy is empty.")
 
-    with Halo('Waiting authorization status..') as spin:
-      result = idpObj.waitFinalStatusOfDeviceCodeAuthorizationFlow(deviceCode)
-      if not result['OK']:
-        sys.exit(result['Message'])
-      idpObj.token = result['Value']
-      result = Script.enableCS()
-      if not result['OK']:
-        sys.exit(result['Message'])
-      spin.color = 'green'
+    if not self.__piParams.proxyLoc:
+      self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
 
-      if reqGroup:
-        spin.text = 'Exchange token for %s group..' % reqGroup
-        idpObj.token = idpObj.exchangeGroup(reqGroup)
-
-      spin.text = 'Saving token.. to %s..' % tokenLoc
-      try:
-        with open(tokenLoc, 'w+') as fd:
-          fd.write(json.dumps(idpObj.token).encode("UTF-8"))
-        os.chmod(tokenLoc, stat.S_IRUSR | stat.S_IWUSR)
-      except Exception as e:
-        return S_ERROR("%s :%s" % (tokenLoc, repr(e).replace(',)', ')')))
-      spin.text = 'Token is saved to %s.' % tokenLoc
-
-    with Halo('Download proxy..') as spin:
-      url = '%s?lifetime=%s' % (proxyAPI, self.__piParams.proxyLifeTime)
-      addVOMS = self.__piParams.addVOMSExt or Registry.getGroupOption(self.__piParams.diracGroup, "AutoAddVOMS", False)
-      if addVOMS:
-        url += '&voms=%s' % addVOMS
-      if not idpObj.token.get('refresh_token'):
-        sys.exit('Refresh token is absent in response.')
-      url += '&refresh_token=%s' % idpObj.token['refresh_token']
-      r = idpObj.get(url)
-      r.raise_for_status()
-      proxy = r.text
-      if not proxy:
-        sys.exit("Something went wrong, the proxy is empty.")
-
-      if not self.__piParams.proxyLoc:
-        self.__piParams.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
-
-      spin.color = 'green'
-      spin.text = 'Saving proxy.. to %s..' % self.__piParams.proxyLoc
-      try:
-        with open(self.__piParams.proxyLoc, 'w+') as fd:
-          fd.write(proxy.encode("UTF-8"))
-        os.chmod(self.__piParams.proxyLoc, stat.S_IRUSR | stat.S_IWUSR)
-      except Exception as e:
-        return S_ERROR("%s :%s" % (self.__piParams.proxyLoc, repr(e).replace(',)', ')')))
-      self.__piParams.certLoc = self.__piParams.proxyLoc
-      spin.text = 'Proxy is saved to %s.' % self.__piParams.proxyLoc
+    gLogger.notice('Saving proxy.. to %s..' % self.__piParams.proxyLoc)
+    result = writeToProxyFile(proxy.encode("UTF-8"), self.__piParams.proxyLoc)
+    self.__piParams.certLoc = self.__piParams.proxyLoc
+    gLogger.notice('Proxy is saved to %s.' % self.__piParams.proxyLoc)
 
     result = Script.enableCS()
     if not result['OK']:
