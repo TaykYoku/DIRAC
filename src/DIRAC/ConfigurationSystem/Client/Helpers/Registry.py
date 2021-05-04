@@ -17,6 +17,23 @@ __RCSID__ = "$Id$"
 
 gBaseRegistrySection = "/Registry"
 
+def getDNForID(uid):
+  """ Get DN for user ID
+
+      :param str uid: user ID
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  return "/O=DIRAC/CN={uid}".format(uid=uid)
+
+def getIDFromDN(dn):
+  """ Get user ID from DN
+
+      :param str dn: user DN
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  return dn.strip("/O=DIRAC/CN=")
 
 def getUsernameForDN(dn, usersList=None):
   """ Find DIRAC user for DN
@@ -426,6 +443,16 @@ def getVOForGroup(group):
       :return: str
   """
   return getVO() or gConfig.getValue("%s/Groups/%s/VO" % (gBaseRegistrySection, group), "")
+
+
+def getIdPForGroup(group):
+  """ Get identity provider for group VO
+
+      :param str group: group name
+
+      :return: str
+  """
+  return getVOOption(getVOForGroup(group), 'IdP')
 
 
 def getDefaultVOMSAttribute():

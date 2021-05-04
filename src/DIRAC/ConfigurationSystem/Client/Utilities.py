@@ -17,11 +17,10 @@ from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Helpers.Path import cfgPath
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs, getVOOption
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getDIRACSiteName
-from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection
+from DIRAC.ConfigurationSystem.Client.PathFinder import getDatabaseSection, getSystemInstance
 from DIRAC.Core.Utilities.Glue2 import getGlue2CEInfo
 from DIRAC.Core.Utilities.SiteSEMapping import getSEHosts
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers
-
 
 def getGridVOs():
   """ Get all the VOMS VO names served by this DIRAC service
@@ -578,3 +577,27 @@ def getDIRACGOCDictionary():
 
   log.debug('End function.')
   return S_OK(dictionary)
+
+
+def getAuthAPI():
+  """ Get Auth REST API url
+
+      :return: str
+  """
+  return gConfig.getValue("/Systems/Framework/%s/URLs/Auth" % getSystemInstance("Framework"))
+
+
+def getProxyAPI():
+  """ Get Proxy REST API url
+
+      :return: str
+  """
+  return gConfig.getValue("/Systems/Framework/%s/URLs/Proxy" % getSystemInstance("Framework"))
+
+def isDownloadablePersonalProxy():
+  """ Get downloadablePersonalProxy flag
+
+      :return: S_OK(bool)/S_ERROR()
+  """
+  cs_path = '/Systems/Framework/%s/APIs/Proxy' % getSystemInstance("Framework")
+  return gConfig.getOption(cs_path + '/downloadablePersonalProxy')

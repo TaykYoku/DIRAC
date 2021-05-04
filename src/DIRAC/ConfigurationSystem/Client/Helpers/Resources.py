@@ -428,6 +428,22 @@ def getFilterConfig(filterID):
   return gConfig.getOptionsDict('Resources/LogFilters/%s' % filterID)
 
 
+def getIdProviderForIssuer(issuer):
+  """ Get identity provider for issuer
+
+      :param str issuer: issuer
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  result = getProvidersForInstance('Id')
+  if not result['OK']:
+    return result
+  for prov in result['Value']:
+    if issuer.strip('/') == gConfig.getValue('%s/IdProviders/%s/issuer' % (gBaseResourcesSection, prov)).strip('/'):
+      return S_OK(prov)
+  return S_ERROR('Not found provider wwith %s issuer.' % issuer)
+
+
 def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
   """ Get the information about providers
 
@@ -470,3 +486,77 @@ def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
     return S_OK(gConfig.getValue(
         '%s/%sProviders/%s/%s/%s' % (gBaseResourcesSection, of, providerName,
                                      section, option)))
+
+
+def getProvidersForInstance(instance, providerType=None):
+  """ Get providers for instance
+
+      :param str instance: instance of what this providers
+      :param str providerType: provider type
+
+      :return: S_OK(list)/S_ERROR()
+  """
+  data = []
+  instance = "%sProviders" % instance
+  result = gConfig.getSections(gBaseResourcesSection)
+  if result['OK']:
+    if instance not in result['Value']:
+      return S_OK(data)
+    result = gConfig.getSections('%s/%s' % (gBaseResourcesSection, instance))
+
+  # Return an empty list if the section does not exist
+  if not result['OK'] or not result['Value'] or not providerType:
+    return result
+
+  for prov in result['Value']:
+    if providerType == gConfig.getValue('%s/%s/%s/ProviderType' % (gBaseResourcesSection, instance, prov)):
+      data.append(prov)
+  return S_OK(data)
+
+
+def getProviderByAlias(alias, instance=None):
+  """ Find provider name by alias
+
+      :param str alias: other registered provider name
+      :param str instance: provider of what
+
+      :return: S_OK(str)/S_ERROR()
+  """
+  instances = [instance] or []
+  if not instances:
+    result = gConfig.getSections(gBaseResourcesSection)
+    if not result['OK']:
+      return result
+    for section in result['Value']:
+      if section.endswith('Providers'):
+        instances.append(section.rsplit('Providers', 1)[0])
+  for instance in instances:
+    result = getProvidersForInstance(instance)
+    if not result['OK']:
+      return result
+    for provider in result['Value']:
+      if alias in gConfig.getValue("%s/%sProviders/%s/Aliases" % (gBaseResourcesSection,
+                                                                  instance, provider), []):
+        return S_OK(provider)
+  return S_ERROR('Did not find any provider for %s' % alias)
+
+
+def getProviderInfo(provider):
+  """ Get provider info
+
+      :param str provider: provider
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  result = gConfig.getSections(gBaseResourcesSection)
+  if not result['OK']:
+    return result
+  for section in result['Value']:
+    if section.endswith('Providers'):
+      result = getProvidersForInstance(section[:-9])
+      if not result['OK']:
+        return result
+      if provider in result['Value']:
+        return gConfig.getOptionsDictRecursively("%s/%s/%s/" % (gBaseResourcesSection,
+                                                                section, provider))
+  return S_ERROR('%s provider not found.' % provider)
