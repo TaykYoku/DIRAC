@@ -175,6 +175,54 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     url, state = self.create_authorization_url(self.metadata['authorization_endpoint'], state=self.generateState(session))
     return S_OK((url, state, {}))
 
+  def parseAuthResponse(self, response, session=None):
+    """ Make user info dict:
+
+        :param dict response: response on request to get user profile
+        :param object session: session
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    response = createOAuth2Request(response)
+
+    self.log.debug('Try to parse authentication response:', pprint.pformat(response.data))
+
+    if not session:
+      session = {}  # Session(response.args['state'])
+
+    self.log.debug('Current session is:\n', pprint.pformat(dict(session)))
+    # self.log.debug('Current metadata is:\n', pprint.pformat(self.metadata))
+
+    self.fetch_access_token(authorization_response=response.uri,
+                            code_verifier=session.get('code_verifier'))
+
+    # Get user info
+    result = self.__getUserInfo()
+    if not result['OK']:
+      return result
+    credDict = parseBasic(result['Value'])
+    credDict.update(parseEduperson(result['Value']))
+    cerdDict = userDiscover(credDict)
+    result = self.parser(result['Value'])
+    if not result['OK']:
+      return result
+    username, userID, userProfile = result['Value']
+    userProfile['credDict'] = credDict
+
+    self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
+
+    # Store token
+    self.token['client_id'] = self.client_id
+    self.token['provider'] = self.name
+    self.token['user_id'] = userID
+    self.log.debug('Store token to the database:\n', pprint.pformat(dict(self.token)))
+
+    result = self.store_token(self.token)
+    if not result['OK']:
+      return result
+
+    return S_OK((username, userID, userProfile))
+
   def submitDeviceCodeAuthorizationFlow(self, group=None):
     """ Submit authorization flow
 
