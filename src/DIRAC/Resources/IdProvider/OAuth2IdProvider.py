@@ -165,6 +165,16 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     return self.waitFinalStatusOfDeviceCodeAuthorizationFlow(response['device_code'])
 
+  def submitNewSession(self, session=None):
+    """ Submit new authorization session
+
+        :param str session: session number
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    url, state = self.create_authorization_url(self.metadata['authorization_endpoint'], state=self.generateState(session))
+    return S_OK((url, state, {}))
+
   def submitDeviceCodeAuthorizationFlow(self, group=None):
     """ Submit authorization flow
 
