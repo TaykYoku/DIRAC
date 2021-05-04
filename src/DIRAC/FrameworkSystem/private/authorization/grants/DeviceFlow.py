@@ -16,7 +16,7 @@ from authlib.oauth2.rfc8628 import (
 )
 
 from DIRAC import gLogger, S_OK, S_ERROR
-# from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI, getDIRACClientID
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI, getDIRACClientID
 
 log = gLogger.getSubLogger(__name__)
 
