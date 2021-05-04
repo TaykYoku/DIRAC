@@ -328,3 +328,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       self.update_token(self.token, refresh_token=refresh_token)
 
     return self.token
+
+  def generateState(self, session=None):
+    return session or generate_token(10)
