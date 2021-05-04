@@ -618,6 +618,25 @@ class BaseRequestHandler(RequestHandler):
         :return: S_OK(dict)
     """
     return S_OK({})
+  
+  @property
+  def log(self):
+    return sLog
+
+  def getDN(self):
+    return self.credDict.get('DN', '')
+
+  def getUserName(self):
+    return self.credDict.get('username', '')
+
+  def getUserGroup(self):
+    return self.credDict.get('group', '')
+
+  def getProperties(self):
+    return self.credDict.get('properties', [])
+
+  def isRegisteredUser(self):
+    return self.credDict.get('username', 'anonymous') != 'anonymous' and self.credDict.get('group')
 
   auth_ping = ['all']
 
