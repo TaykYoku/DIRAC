@@ -535,16 +535,6 @@ def getElasticDBParameters(fullname):
   return S_OK(parameters)
 
 
-def getOAuthAPI(instance='Production'):
-  """ Get OAuth API url
-
-      :param str instance: instance
-
-      :return: str
-  """
-  return gConfig.getValue("/Systems/Framework/%s/URLs/OAuthAPI" % instance)
-
-
 def getDIRACGOCDictionary():
   """
   Create a dictionary containing DIRAC site names and GOCDB site names
@@ -593,6 +583,112 @@ def getProxyAPI():
       :return: str
   """
   return gConfig.getValue("/Systems/Framework/%s/URLs/Proxy" % getSystemInstance("Framework"))
+
+
+def getDIRACClientID():
+  """ Get DIRAC client public ID
+
+      :return: str
+  """
+  return gConfig.getValue("/DIRAC/ClientID")
+
+
+def getWebClient():
+  """ Get registred in the configuration Web authentication client
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  return getAuthClients(clientName='WEBAPPDIRACCLI')
+
+
+def getDIRACClient():
+  """ Get registred in the configuration DIRAC authentication client
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  return getAuthClients(clientName='DIRACCLI')
+
+
+def getAuthClients(clientID=None, clientName=None):
+  """ Get all registred in the configuration authentication clients
+
+      :param str clientID: client ID
+      :param str clientName: client name
+
+      :return: S_OK(dict)/S_ERROR() -- dictionary contain all registred clients in the configuration
+  """
+  clients = {}
+  path = '/Systems/Framework/%s/APIs/Auth' % getSystemInstance("Framework")
+  result = gConfig.getSections(path)
+  if not result['OK']:
+    return result
+
+  if 'Clients' in result['Value']:
+    result = gConfig.getOptionsDictRecursively('%s/Clients' % path)
+    if not result['OK']:
+      return result
+    clients = result['Value']
+
+  for cliName, cliDict in clients.items():
+    cliDict['issuer'] = cliDict.get('issuer', getAuthAPI())
+    cliDict['authority'] = cliDict.get('authority', getAuthAPI())
+    if cliName == 'DIRACCLI':
+      if not cliDict.get('client_metadata'):
+        cliDict['client_metadata'] = {'response_types': ['device'],
+                                      'grant_types': ['urn:ietf:params:oauth:grant-type:device_code']}
+    elif cliName == 'WEBAPPDIRACCLI':
+      cliDict['token_endpoint_auth_method'] = cliDict.get('token_endpoint_auth_method', 'client_secret_basic')
+      if not cliDict.get('client_metadata'):
+        cliDict['client_metadata'] = {'response_types': ['code', 'id_token token', 'token'],
+                                      'redirect_uris': [cliDict['redirect_uri']],
+                                      'token_endpoint_auth_method': cliDict['token_endpoint_auth_method'],
+                                      'grant_types': ['device', 'authorization_code', 'refresh_token',
+                                                      'urn:ietf:params:oauth:grant-type:token-exchange']}
+    if clientName and clientName == cliName:
+      return S_OK(cliDict)
+
+    if clientID and clientID == cliDict['client_id']:
+      return S_OK(cliDict)
+  return S_OK({} if clientID else clients)
+
+
+def getAuthorisationServerMetadata():
+  """ Get authoraisation server metadata
+
+      :return: S_OK(dict)/S_ERROR()
+  """
+  path = '/Systems/Framework/%s/APIs/Auth' % getSystemInstance("Framework")
+  result = gConfig.getSections(path)
+  if not result['OK']:
+    return result
+
+  data = {}
+  if 'AuthorizationServer' in result['Value']:
+    result = gConfig.getOptionsDictRecursively('%s/AuthorizationServer' % path)
+    if not result['OK']:
+      return result
+    data = result['Value']
+
+  data['issuer'] = data.get('issuer', getAuthAPI())
+  if not data['issuer']:
+    return S_ERROR('Cannot found the Auth RESTful API base URL in the configuration.')
+  data['jwks_uri'] = data.get('jwks_uri', data['issuer'] + '/jwk')
+  data['token_endpoint'] = data.get('token_endpoint', data['issuer'] + '/token')
+  data['userinfo_endpoint'] = data.get('userinfo_endpoint', data['issuer'] + '/userinfo')
+  data['registration_endpoint'] = data.get('registration_endpoint', data['issuer'] + '/register')
+  data['authorization_endpoint'] = data.get('authorization_endpoint', data['issuer'] + '/authorization')
+  data['grant_types_supported'] = data.get('grant_types_supported', [
+      'code', 'authorization_code', 'urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'
+  ])
+  data['response_types_supported'] = data.get('response_types_supported', [
+      'code', 'device', 'id_token token', 'id_token', 'token'
+  ])
+  data['code_challenge_methods_supported'] = data.get('code_challenge_methods_supported', ['S256'])
+  # Search values with type list
+  for key, v in data.items():
+    data[key] = [e for e in v.replace(', ', ',').split(',') if e] if ',' in v else v
+  return S_OK(data)
+
 
 def isDownloadablePersonalProxy():
   """ Get downloadablePersonalProxy flag
