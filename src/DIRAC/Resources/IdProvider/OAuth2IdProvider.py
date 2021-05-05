@@ -99,19 +99,19 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.name = parameters['ProviderName']
 
     # Add hooks to raise HTTP errors
-    self.metadata_class = AuthorizationServerMetadata
+    # self.metadata_class = AuthorizationServerMetadata
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
-    try:
-      self.metadata_class(self.metadata).validate()
-    except ValueError:
-      metadata = self.metadata_class(self.fetch_metadata())
-      self.metadata.update(dict((k, v) for k, v in metadata.items() if k not in self.metadata))
-      self.metadata_class(self.metadata).validate()
+    # try:
+    #   self.metadata_class(self.metadata).validate()
+    # except ValueError:
+    #   metadata = self.metadata_class(self.fetch_metadata())
+    #   self.metadata.update(dict((k, v) for k, v in metadata.items() if k not in self.metadata))
+    #   self.metadata_class(self.metadata).validate()
     
-    # Set JWKs
-    self.jwks = parameters.get('jwks', self.fetch_metadata(self.metadata['jwks_uri']))
-    if not self.jwks:
-      raise Exception('Cannot load JWKs for %s' % self.name)
+    # # Set JWKs
+    # self.jwks = parameters.get('jwks', self.fetch_metadata(self.metadata['jwks_uri']))
+    # if not self.jwks:
+    #   raise Exception('Cannot load JWKs for %s' % self.name)
 
     self.log.debug('"%s" OAuth2 IdP initialization done:' % self.name,
                    '\nclient_id: %s\nclient_secret: %s\nmetadata:\n%s' % (self.client_id,
@@ -144,7 +144,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     pass
 
   def request(self, *args, **kwargs):
-    self.token_endpoint_auth_methods_supported = self.metadata.get('token_endpoint_auth_methods_supported')
+    self.token_endpoint_auth_methods_supported = self.get_metadata('token_endpoint_auth_methods_supported')
     if self.token_endpoint_auth_methods_supported:
       if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
         self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
@@ -165,6 +165,13 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   #   """
   #   """
   #   return jwt.decode(token, JsonWebKey.import_key_set(self.jwks))
+
+  def get_metadata(self, option=None):
+    """
+    """
+    if not self.metadata.get(option):
+      self.metadata.update(self.fetch_metadata())
+    return self.metadata.get(option)
 
   def fetch_metadata(self, url=None):
     """
@@ -198,7 +205,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(str)/S_ERROR()
     """
-    url, state = self.create_authorization_url(self.metadata['authorization_endpoint'], state=self.generateState(session))
+    url, state = self.create_authorization_url(self.get_metadata('authorization_endpoint'), state=self.generateState(session))
     return S_OK((url, state, {}))
 
   def parseAuthResponse(self, response, session=None):
@@ -217,7 +224,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       session = {}  # Session(response.args['state'])
 
     self.log.debug('Current session is:\n', pprint.pformat(dict(session)))
-    # self.log.debug('Current metadata is:\n', pprint.pformat(self.metadata))
 
     self.fetch_access_token(authorization_response=response.uri,
                             code_verifier=session.get('code_verifier'))
@@ -257,8 +263,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.log.debug('Sent request to userinfo endpoint..')
     r = None
     try:
-      r = self.request('GET', self.metadata['userinfo_endpoint'],
-                       withhold_token=useToken)
+      r = self.request('GET', self.get_metadata('userinfo_endpoint'), withhold_token=useToken)
       r.raise_for_status()
       return S_OK(r.json())
     except (self.exceptions.RequestException, ValueError) as e:
@@ -322,7 +327,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       groupScopes = result['Value']
 
     try:
-      r = requests.post(self.metadata['device_authorization_endpoint'], data=dict(
+      r = requests.post(self.get_metadata('device_authorization_endpoint'), data=dict(
         client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes)
       ))
       print(list_to_scope(self.scope + groupScopes))
@@ -360,7 +365,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       time.sleep(int(interval))
       if time.time() - __start > timeout:
         return S_ERROR('Time out.')
-      r = requests.post(self.metadata['token_endpoint'], data=dict(client_id=self.client_id,
+      r = requests.post(self.get_metadata('token_endpoint'), data=dict(client_id=self.client_id,
                                                                    grant_type=DEVICE_CODE_GRANT_TYPE,
                                                                    device_code=deviceCode))
       token = r.json()
@@ -397,7 +402,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     groupScopes = result['Value']
     print(list_to_scope(self.scope + groupScopes))
     try:
-      token = self.exchange_token(self.metadata['token_endpoint'], subject_token=self.token['access_token'],
+      token = self.exchange_token(self.get_metadata('token_endpoint'), subject_token=self.token['access_token'],
                                   subject_token_type='urn:ietf:params:oauth:token-type:access_token',
                                   scope=list_to_scope(self.scope + groupScopes))
       if not token:
@@ -409,7 +414,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return S_ERROR(repr(e))
 
   def getUserProfile(self):
-    return self.get(self.metadata['userinfo_endpoint']).json()
+    return self.get(self.get_metadata('userinfo_endpoint')).json()
 
   def exchange_token(self, url, subject_token=None, subject_token_type=None, body='',
                      refresh_token=None, access_token=None, auth=None, headers=None, **kwargs):
