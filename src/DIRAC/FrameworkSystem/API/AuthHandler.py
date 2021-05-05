@@ -86,11 +86,15 @@ class AuthHandler(TornadoREST):
     """
     cls.server = AuthServer()
     cls.idps = IdProviderFactory()
-    cls.css = {}
     cls.css_align_center = 'display:block;justify-content:center;align-items:center;'
     cls.css_center_div = 'height:700px;width:100%;position:absolute;top:50%;left:0;margin-top:-350px;'
     cls.css_big_text = 'font-size:28px;'
     cls.css_main = ' '.join([cls.css_align_center, cls.css_center_div, cls.css_big_text])
+    cls.server.css_align_center = cls.css_align_center
+    cls.server.css_center_div = cls.css_center_div
+    cls.server.css_big_text = cls.css_big_text
+    cls.server.css_main = cls.css_main
+    cls.server.CSS = cls.CSS
 
   def initializeRequest(self):
     """ Called at every request """

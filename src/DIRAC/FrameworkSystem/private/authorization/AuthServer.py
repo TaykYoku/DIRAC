@@ -67,6 +67,11 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
   metadata_class = AuthorizationServerMetadata
 
   def __init__(self):
+    self.CSS = None
+    self.css_align_center = None
+    self.css_center_div = None
+    self.css_big_text = None
+    self.css_main = None
     self.db = AuthDB()
     self.idps = IdProviderFactory()
     ClientManager.__init__(self, self.db)
@@ -308,14 +313,19 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
       if len(idPs) == 1:
         return idPs[0], None
       # Choose IdP interface
-      with self.doc:
+      doc = document('DIRAC authentication')
+      with doc.head:
+        dom.link(rel='stylesheet',
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css")
+        dom.style(self.CSS)
+      with doc:
         with dom.div(style=self.css_main):
           with dom.div('Choose identity provider', style=self.css_align_center):
             for idP in idPs:
               # data: Status, Comment, Action
               dom.button(dom.a(idP, href='/authorization/%s?%s' % (idP, request.query)),
                                cls='button')
-      return None, self.handle_response(payload=Template(self.doc.render()).generate())
+      return None, self.handle_response(payload=Template(doc.render()).generate())
 
     # Check IdP
     if provider not in idPs:
