@@ -619,23 +619,24 @@ class BaseRequestHandler(RequestHandler):
     
     # Read token without verification to get issuer
     issuer = jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
-
+    print('===> 1')
     if not self._idps.get(issuer):
       return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
-    
+    print('===> 2')
     # payload = self._idps[issuer].verifyToken(accessToken)
 
     if not self._idps[issuer].get('jwks_uri'):
       self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
     if not self._idps[issuer].get('jwks'):
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-
+    print('===> 3')
     try:
+      print('===> 4')
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
     except Exception:
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-
+    print('===> 5')
     # {'ID':.., 'group':.., 'provider':..}
     print('++++++++++++ %s' % payload)
     credDict = self._idps[issuer].researchGroup(payload, accessToken)
