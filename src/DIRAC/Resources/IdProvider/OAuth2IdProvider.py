@@ -331,7 +331,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     try:
       r = requests.post(self.get_metadata('device_authorization_endpoint'), data=dict(
         client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes)
-      ))
+      ), verify=self.verify)
       print(list_to_scope(self.scope + groupScopes))
       r.raise_for_status()
       deviceResponse = r.json()
@@ -369,7 +369,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         return S_ERROR('Time out.')
       r = requests.post(self.get_metadata('token_endpoint'), data=dict(client_id=self.client_id,
                                                                    grant_type=DEVICE_CODE_GRANT_TYPE,
-                                                                   device_code=deviceCode))
+                                                                   device_code=deviceCode), verify=self.verify)
       token = r.json()
       if not token:
         return S_ERROR('Resived token is empty!')
