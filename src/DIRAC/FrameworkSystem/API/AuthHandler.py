@@ -350,7 +350,7 @@ class AuthHandler(TornadoREST):
       if userCode:
         # If received a request with a user code, then prepare a request to authorization endpoint
         self.log.verbose('User code verification.')
-        session, data = self.server.db.getSessionByOption('user_code', userCode)
+        session, data = self.server.db.getSessionByUserCode(userCode)
         if not session:
           return 'Device flow authorization session %s expired.' % session
         # Get original request from session
