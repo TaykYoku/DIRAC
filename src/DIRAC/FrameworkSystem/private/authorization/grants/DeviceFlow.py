@@ -139,7 +139,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
       raise OAuth2Error('user_code is absent.')
 
     # Get session from cookie
-    if not self.getSession(user_code=userCode):
+    if not self.server.db.getSessionByUserCode(userCode):
       raise OAuth2Error('Session with %s user code is expired.' % userCode)
     # self.execute_hook('after_validate_authorization_request')
     return None
