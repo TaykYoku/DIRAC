@@ -81,7 +81,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   jwks_uri = None
   jwks = None
 
-  def __init__(self, name=None, token_endpoint_auth_method=None, revocation_endpoint_auth_method=None,
+  def __init__(self, name=None, token_endpoint_auth_method='client_secret_post', revocation_endpoint_auth_method=None,
                scope=None, token=None, token_placement='header', update_token=None, **parameters):
     """ OIDCClient constructor
     """
@@ -97,6 +97,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.scope = [s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')]
     self.parameters = parameters
     self.name = parameters['ProviderName']
+    self.verify = False
 
     # Add hooks to raise HTTP errors
     # self.metadata_class = AuthorizationServerMetadata
@@ -143,12 +144,12 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   def update_token(self, token, refresh_token):
     pass
 
-  def request(self, *args, **kwargs):
-    self.token_endpoint_auth_methods_supported = self.get_metadata('token_endpoint_auth_methods_supported')
-    if self.token_endpoint_auth_methods_supported:
-      if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
-        self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
-    return OAuth2Session.request(self, verify=False, *args, **kwargs)
+  # def request(self, *args, **kwargs):
+  #   self.token_endpoint_auth_methods_supported = self.get_metadata('token_endpoint_auth_methods_supported')
+  #   if self.token_endpoint_auth_methods_supported:
+  #     if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
+  #       self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
+  #   return OAuth2Session.request(self, verify=False, *args, **kwargs)
 
   # def verifyToken(self, token):
   #   """ Token verification
