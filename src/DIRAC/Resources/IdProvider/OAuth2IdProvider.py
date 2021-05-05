@@ -316,7 +316,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       credDict['group'] = credDict['DIRACGroups'][0]
     return credDict
 
-  def submitDeviceCodeAuthorizationFlow(self, group=None):
+  def submitDeviceCodeAuthorizationFlow(self, group=None, scopes=None):
     """ Submit authorization flow
 
         :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
@@ -330,7 +330,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     try:
       r = requests.post(self.get_metadata('device_authorization_endpoint'), data=dict(
-        client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes)
+        client_id=self.client_id, scope=list_to_scope(self.scope + groupScopes + scopes or [])
       ))
       print(list_to_scope(self.scope + groupScopes))
       r.raise_for_status()

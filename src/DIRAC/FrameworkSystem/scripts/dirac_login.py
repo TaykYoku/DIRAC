@@ -30,6 +30,7 @@ from DIRAC.Core.Utilities.DIRACScript import DIRACScript
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 
 __RCSID__ = "$Id$"
 
@@ -120,6 +121,7 @@ class Params(object):
     from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
     from DIRAC.Core.Security.ProxyFile import writeToProxyFile
     from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
+    from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
     from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
     # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
@@ -130,21 +132,34 @@ class Params(object):
     else:
       token = result['Value']
 
-    result = IdProviderFactory().getIdProvider(self.provider, token=token)
+    result = getAuthorisationServerMetadata()
+    if not result['OK']:
+      issuer = input("Enter DIRAC Authorisation server URL:")
+      result = getAuthorisationServerMetadata(issuer)
     if not result['OK']:
       return result
-    idpObj = result['Value']
+
+    clientConfig = result['Value']
+    clientConfig['client_id'] = 'DIRAC_CLI'
+    clientConfig['redirect_uri'] = 'https://diracclient'
+    clientConfig['ProviderName'] = 'DIRAC_CLI'
+
+    idpObj = OAuth2IdProvider(**clientConfig)
+    
+    # result = IdProviderFactory().getIdProvider(self.provider, token=token)
+    # if not result['OK']:
+    #   return result
+    # idpObj = result['Value']
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
     # Get IdP
-    if not Script.enableCS()['OK']:
-      result = idpObj.authorization()
-      if result['OK']:
-        result = idpObj.exchangeGroup(self.group)
-    else:
-      result = idpObj.authorization(self.group)
+    result = idpObj.authorization(scopes=self.group and 'g:%s' % self.group)
+    #   if result['OK']:
+    #     result = idpObj.exchangeGroup(self.group)
+    # else:
+    #   result = idpObj.authorization(self.group)
     if not result['OK']:
       return result
     
