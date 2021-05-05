@@ -228,6 +228,17 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     return S_OK((username, userID, userProfile))
 
+  def __getUserInfo(self, useToken=None):
+    self.log.debug('Sent request to userinfo endpoint..')
+    r = None
+    try:
+      r = self.request('GET', self.metadata['userinfo_endpoint'],
+                       withhold_token=useToken)
+      r.raise_for_status()
+      return S_OK(r.json())
+    except (self.exceptions.RequestException, ValueError) as e:
+      return S_ERROR("%s: %s" % (repr(e), r.text if r else ''))
+
   def submitDeviceCodeAuthorizationFlow(self, group=None):
     """ Submit authorization flow
 
