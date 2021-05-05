@@ -34,7 +34,9 @@ from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-er
 from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
+from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+from DIRAC.ConfigurationSystem.Client.Utilities import getDIRACClient, getAuthorisationServerMetadata
 
 sLog = gLogger.getSubLogger(__name__.split('.')[-1])
 
@@ -186,7 +188,19 @@ class BaseRequestHandler(RequestHandler):
           cls._idps[idpObj.metadata['issuer'].strip('/')] = idpObj
       if not result['OK']:
         raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
-
+      
+      # Add DIRAC AS
+      result = getDIRACClient()
+      if not result['OK']:
+        raise Exception("Can't load web portal settings: %s" % result['Message'])
+      clientConfig = result['Value']
+      result = getAuthorisationServerMetadata()
+      if not result['OK']:
+        raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
+      clientConfig.update(result['Value'])
+      clientConfig['ProviderName'] = 'DIRACClient'
+      client = OAuth2IdProvider(**clientConfig)
+      self._idps[client.issuer.strip('/')] = client
 
       # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
       absoluteUrl = request.path
