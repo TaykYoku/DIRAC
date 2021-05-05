@@ -189,6 +189,7 @@ class AuthDB(SQLAlchemyDB):
 
         :return: S_OK(dict)/S_ERROR()
     """
+    attrts = {}
     print('============ addSession ============')
     pprint(data)
     for k, v in data.items():
