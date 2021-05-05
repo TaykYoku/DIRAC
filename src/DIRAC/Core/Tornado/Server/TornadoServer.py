@@ -80,7 +80,7 @@ class TornadoServer(object):
             If ``None``, the port is resolved following the logic described in the class documentation
     """
     # Application metadata, routes and settings mapping on the ports
-    self.__appsSettings = {}
+    self.__appsSettings = dict(cookie_secret='secret')
     # Default port, if enother is not discover
     if port is None:
       port = gConfig.getValue("/Systems/Tornado/%s/Port" % PathFinder.getSystemInstance('Tornado'), 8443)
