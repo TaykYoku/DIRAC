@@ -45,7 +45,6 @@ from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.FrameworkSystem.API.AuthHandler import AuthHandler
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
@@ -66,6 +65,9 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
 
         server = AuthServer()
   """
+  css = {}
+  LOCATION = None
+
   metadata_class = AuthorizationServerMetadata
 
   def __init__(self):
@@ -314,13 +316,13 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
       with doc.head:
         dom.link(rel='stylesheet',
                 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css")
-        dom.style(AuthHandler.CSS)
+        dom.style(self.css['CSS'])
       with doc:
-        with dom.div(style=AuthHandler.css_main):
-          with dom.div('Choose identity provider', style=AuthHandler.css_align_center):
+        with dom.div(style=self.css['css_main']):
+          with dom.div('Choose identity provider', style=self.css['css_align_center']):
             for idP in idPs:
               # data: Status, Comment, Action
-              dom.button(dom.a(idP, href='%s/authorization/%s?%s' % (AuthHandler.LOCATION, idP, request.query)),
+              dom.button(dom.a(idP, href='%s/authorization/%s?%s' % (self.LOCATION, idP, request.query)),
                                cls='button')
       return None, self.handle_response(payload=Template(doc.render()).generate())
 

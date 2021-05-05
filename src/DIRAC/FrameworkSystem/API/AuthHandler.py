@@ -89,6 +89,8 @@ class AuthHandler(TornadoREST):
         :param dict ServiceInfoDict: infos about services
     """
     cls.server = AuthServer()
+    cls.server.css = dict(CSS=cls.CSS, css_align_center=cls.css_align_center, css_main=cls.css_main)
+    cls.server.LOCATION = cls.LOCATION
     cls.idps = IdProviderFactory()
     
   def initializeRequest(self):
