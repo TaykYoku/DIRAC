@@ -20,6 +20,7 @@ from six import string_types
 from six.moves import http_client
 from six.moves.urllib.parse import unquote
 from authlib.jose import JsonWebKey, jwt
+from authlib.oauth2.rfc6749.util import scope_to_list
 
 
 import tornado
