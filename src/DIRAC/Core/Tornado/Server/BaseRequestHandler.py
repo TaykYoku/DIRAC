@@ -190,11 +190,15 @@ class BaseRequestHandler(RequestHandler):
         raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
       
       # Add DIRAC AS
+      print('load getDIRACClient')
       result = getDIRACClient()
+      print('load getDIRACClient 1')
       if not result['OK']:
         raise Exception("Can't load web portal settings: %s" % result['Message'])
       clientConfig = result['Value']
+      print('load getDIRACClient 2')
       result = getAuthorisationServerMetadata()
+      print('load getDIRACClient 3')
       if not result['OK']:
         raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
       clientConfig.update(result['Value'])
