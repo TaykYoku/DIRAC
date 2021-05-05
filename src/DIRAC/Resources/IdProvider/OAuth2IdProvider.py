@@ -77,6 +77,10 @@ def claimParser(claimDict, attributes):
 
 
 class OAuth2IdProvider(IdProvider, OAuth2Session):
+
+  jwks_uri = None
+  jwks = None
+
   def __init__(self, name=None, token_endpoint_auth_method=None, revocation_endpoint_auth_method=None,
                scope=None, token=None, token_placement='header', update_token=None, **parameters):
     """ OIDCClient constructor
@@ -114,6 +118,23 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
+  @classmethod
+  def verifyToken(cls, token):
+    """ Token verification
+
+        :param token: token
+    """
+    if not cls.jwks_uri:
+      cls.jwks_uri = requests.get(get_well_known_url(issuer, True)).json()['jwks_uri'], verify=False)
+    if not cls.jwks:
+      cls.jwks = requests.get(cls.jwks_uri, verify=False)
+
+    try:
+      return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
+    except Exception:
+      cls.jwks = requests.get(cls.jwks_uri, verify=False)
+      return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
+
   def store_token(self, token):
     """ need to implement
     """
@@ -129,21 +150,21 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
     return OAuth2Session.request(self, verify=False, *args, **kwargs)
 
-  def verifyToken(self, token):
-    """ Token verification
+  # def verifyToken(self, token):
+  #   """ Token verification
 
-        :param token: token
-    """
-    try:
-      return self._verify_jwt(token)
-    except Exception:
-      self.jwks = self.fetch_metadata(self.metadata['jwks_uri'])
-      return self._verify_jwt(token)
+  #       :param token: token
+  #   """
+  #   try:
+  #     return self._verify_jwt(token)
+  #   except Exception:
+  #     self.jwks = self.fetch_metadata(self.metadata['jwks_uri'])
+  #     return self._verify_jwt(token)
   
-  def _verify_jwt(self, token):
-    """
-    """
-    return jwt.decode(token, JsonWebKey.import_key_set(self.jwks))
+  # def _verify_jwt(self, token):
+  #   """
+  #   """
+  #   return jwt.decode(token, JsonWebKey.import_key_set(self.jwks))
 
   def fetch_metadata(self, url=None):
     """

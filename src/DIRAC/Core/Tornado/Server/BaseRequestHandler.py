@@ -33,10 +33,11 @@ from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getDIRACClient, getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
 sLog = gLogger.getSubLogger(__name__.split('.')[-1])
 
@@ -174,37 +175,37 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      cls._idps = {}
+      cls._idps = dict(getAuthAPI().strip('/')={'jwks_uri': getAuthAPI().strip('/') + '/jwk'})
 
       # Set Identity Providers
-      idps = IdProviderFactory()
       result = getProvidersForInstance('Id')
       if result['OK']:
         for providerName in result['Value']:
-          result = idps.getIdProvider(providerName)
+          result = getProviderInfo(providerName)
           if not result['OK']:
             break
-          idpObj = result['Value']
-          cls._idps[idpObj.metadata['issuer'].strip('/')] = idpObj
+          cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
       if not result['OK']:
         raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
       
-      # Add DIRAC AS
-      print('load getDIRACClient')
-      result = getDIRACClient()
-      print('load getDIRACClient 1')
-      if not result['OK']:
-        raise Exception("Can't load web portal settings: %s" % result['Message'])
-      clientConfig = result['Value']
-      print('load getDIRACClient 2')
-      result = getAuthorisationServerMetadata()
-      print('load getDIRACClient 3')
-      if not result['OK']:
-        raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
-      clientConfig.update(result['Value'])
-      clientConfig['ProviderName'] = 'DIRACClient'
-      client = OAuth2IdProvider(**clientConfig)
-      self._idps[client.issuer.strip('/')] = client
+      # # Add DIRAC AS
+      # print('load getDIRACClient')
+      # result = getDIRACClient()
+      # print('load getDIRACClient 1')
+      # if not result['OK']:
+      #   raise Exception("Can't load web portal settings: %s" % result['Message'])
+      # clientConfig = result['Value']
+      # print('load getDIRACClient 2')
+      # result = getAuthorisationServerMetadata()
+      # print('load getDIRACClient 3')
+      # if not result['OK']:
+      #   raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
+      # clientConfig.update(result['Value'])
+      # clientConfig['ProviderName'] = 'DIRACClient'
+      # print('load getDIRACClient 4')
+      # client = OAuth2IdProvider(**clientConfig)
+      # print('load getDIRACClient 5')
+      # self._idps[client.issuer.strip('/')] = client
 
       # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
       absoluteUrl = request.path
@@ -622,9 +623,21 @@ class BaseRequestHandler(RequestHandler):
     if not self._idps.get(issuer):
       return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
     
-    payload = self._idps[issuer].verifyToken(accessToken)
+    # payload = self._idps[issuer].verifyToken(accessToken)
+
+    if not self._idps[issuer].get('jwks_uri'):
+      self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
+    if not self._idps[issuer].get('jwks'):
+      self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
+
+    try:
+      payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
+    except Exception:
+      self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
+      payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
 
     # {'ID':.., 'group':.., 'provider':..}
+    print('++++++++++++ %s' % payload)
     credDict = self._idps[issuer].researchGroup(payload, accessToken)
     print('Research group..')
 
