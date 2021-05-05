@@ -678,6 +678,7 @@ def getAuthorisationServerMetadata(issuer=None):
   data['userinfo_endpoint'] = data['issuer'] + '/userinfo'
   data['registration_endpoint'] = data['issuer'] + '/register'
   data['authorization_endpoint'] = data['issuer'] + '/authorization'
+  data['device_authorization_endpoint'] = data['issuer'] + '/device'
   data['grant_types_supported'] = data.get('grant_types_supported', [
       'code', 'authorization_code', 'urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'
   ])
