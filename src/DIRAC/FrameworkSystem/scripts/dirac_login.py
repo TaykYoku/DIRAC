@@ -135,8 +135,6 @@ class Params(object):
     args = Script.getPositionalArgs()
     if args:
       issuer = args[0]
-    else:
-      issuer = input("Enter DIRAC Authorisation server URL:")
 
     result = getAuthorisationServerMetadata(issuer)
     if not result['OK']:
