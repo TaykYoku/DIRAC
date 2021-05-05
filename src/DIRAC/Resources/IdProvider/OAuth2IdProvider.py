@@ -225,8 +225,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       session = {}  # Session(response.args['state'])
 
     self.log.debug('Current session is:\n', pprint.pformat(dict(session)))
-
-    self.fetch_access_token(authorization_response=response.uri,
+    
+    self.fetch_access_token(self.get_metadata('token_endpoint'),
+                            authorization_response=response.uri,
                             code_verifier=session.get('code_verifier'))
 
     # Get user info
