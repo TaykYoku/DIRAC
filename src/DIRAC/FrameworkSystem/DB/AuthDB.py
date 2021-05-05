@@ -182,7 +182,7 @@ class AuthDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
 
-  def _addSession(self, data):
+  def addSession(self, data):
     """ Add new session
 
         :param dict data: session metadata
@@ -191,35 +191,39 @@ class AuthDB(SQLAlchemyDB):
     """
     print('============ addSession ============')
     pprint(data)
-    session = self.session()
-    # newAuthSession = Session(**data)
-    try:
-      session.add(Session(**data))
-    except Exception as e:
-      return self.__result(session, S_ERROR('Could not add Session: %s' % e))
-    return self.__result(session, S_OK())
-
-  def addSession(self, data):
-    result = self._addSession(data)
-    if not result['OK']:
-      result = self.updateSession(data)
-    return result
-
-  def updateSession(self, data):
-    """ Update session
-
-        :param dict data: session data with 'id' key
-
-        :return: S_OK(object)/S_ERROR()
-    """
+    for k, v in data.items():
+      if k not in AuthSession.__dict__.keys():
+        self.log.warn('%s is not expected as authentication session attribute.' % k)
+      else:
+        attrts[k] = v
     session = self.session()
     try:
-      session.update(AuthSession(**data)).where(AuthSession.id == data['id'])
-    except MultipleResultsFound:
-      return self.__result(session, S_ERROR("%s is not unique." % sessionID))
+      session.add(AuthSession(**attrts))
     except Exception as e:
-      return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK())
+      return self.__result(session, S_ERROR('Could not add Token: %s' % e))
+    return self.__result(session, S_OK('Token successfully added'))
+
+  # def addSession(self, data):
+  #   result = self._addSession(data)
+  #   if not result['OK']:
+  #     result = self.updateSession(data)
+  #   return result
+
+  # def updateSession(self, data):
+  #   """ Update session
+
+  #       :param dict data: session data with 'id' key
+
+  #       :return: S_OK(object)/S_ERROR()
+  #   """
+  #   session = self.session()
+  #   try:
+  #     session.update(AuthSession(**data)).where(AuthSession.id == data['id'])
+  #   except MultipleResultsFound:
+  #     return self.__result(session, S_ERROR("%s is not unique." % sessionID))
+  #   except Exception as e:
+  #     return self.__result(session, S_ERROR(str(e)))
+  #   return self.__result(session, S_OK())
 
   def removeSession(self, sessionID):
     """ Remove session
