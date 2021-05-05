@@ -350,14 +350,14 @@ class AuthHandler(TornadoREST):
       if userCode:
         # If received a request with a user code, then prepare a request to authorization endpoint
         self.log.verbose('User code verification.')
-        session, data = self.server.db.getSessionByUserCode(userCode)
+        session = self.server.db.getSessionByUserCode(userCode)
         if not session:
           return 'Device flow authorization session %s expired.' % session
         # Get original request from session
-        req = createOAuth2Request(dict(method='GET', uri=data['uri']))
+        req = createOAuth2Request(dict(method='GET', uri=session['uri']))
         authURL = '/authorization/%s?%s&user_code=%s' % (provider, req.query, userCode)
         # Save session to cookie
-        return self.server.handle_response(302, {}, [("Location", authURL)], data)
+        return self.server.handle_response(302, {}, [("Location", authURL)], session)
 
       # If received a request without a user code, then send a form to enter the user code
       with self.doc:
