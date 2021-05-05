@@ -62,7 +62,7 @@ class ClientManager(object):
       result = getAuthClients(clientID)
       if not result['OK'] or not result['Value']:
         diracCliDict = getDIRACClient()
-        if clienID == diracCliDict['client_id']:
+        if clientID == diracCliDict['client_id']:
           result = S_OK(diracCliDict)
       print('getClient result: %s' % result)
       if result['OK']:
