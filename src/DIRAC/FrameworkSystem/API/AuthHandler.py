@@ -366,7 +366,7 @@ class AuthHandler(TornadoREST):
                          action=self.currentPath, method="GET"), style=self.css_main)
       return Template(self.doc.render()).generate()
 
-  path_authorization = ['([A-z0-9]*)']
+  path_authorization = ['([A-z0-9-_]*)']
 
   def web_authorization(self, provider=None):
     """ Authorization endpoint
