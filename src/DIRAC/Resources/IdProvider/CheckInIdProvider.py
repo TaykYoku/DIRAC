@@ -38,13 +38,11 @@ class CheckInIdProvider(OAuth2IdProvider):
   def researchGroup(self, payload, token):
     """ Research group
     """
-    if not payload.get('eduperson_unique_id') or not payload.get('eduperson_entitlement'):
-      r = requests.get(self.metadata['userinfo_endpoint'], headers=dict(Authorization="Bearer %s" % token))
-      r.raise_for_status()
-      # payload = self.get(self.metadata['userinfo_endpoint'],
-      #                    auth=dict(headers=dict(Authorization="Bearer %s" % token))).json()
-      payload = r.json()
-    credDict = self.parseEduperson(payload)
-    credDict = self.userDiscover(credDict)
+    self.token = token
+    claims = self.getUserProfile()
+    credDict = self.parseBasic(claims)
+    credDict.update(self.parseEduperson(claims))
+    cerdDict = self.userDiscover(credDict)
     credDict['provider'] = self.name
+    
     return credDict
