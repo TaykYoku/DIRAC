@@ -13,7 +13,7 @@ from authlib.common.security import generate_token
 from DIRAC import S_OK
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthClients
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthClients, getDIRACClient
 
 __RCSID__ = "$Id$"
 
