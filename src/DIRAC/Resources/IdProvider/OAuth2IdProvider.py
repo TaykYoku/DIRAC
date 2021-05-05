@@ -265,7 +265,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if not resDict:
       return credDict
     credDict['ID'] = resDict['eduperson_unique_id']['ID']
-    credDict['DN'] = getDNForID(credDict['ID'])
     credDict['VOs'] = {}
     for voDict in resDict['eduperson_entitlement']:
       if voDict['VO'] not in credDict['VOs']:
