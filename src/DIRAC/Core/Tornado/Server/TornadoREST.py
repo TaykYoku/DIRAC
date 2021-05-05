@@ -57,7 +57,7 @@ class TornadoREST(BaseRequestHandler):  # pylint: disable=abstract-method
         :return: str
     """
     print(self.request.path)
-    method = self.request.path.replace(self.LOCATION, '').strip('/').split('/')[0]
+    method = self.request.path.replace(self.LOCATION, '', 1).strip('/').split('/')[0]
     print(method)
     if method and hasattr(self, ''.join([self.METHOD_PREFIX, method])):
       return method
