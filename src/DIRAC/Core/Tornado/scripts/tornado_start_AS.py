@@ -41,24 +41,9 @@ def main():
 
   gLogger.initialize('Tornado', "/")
 
-  services = ['DataManagement/TornadoFileCatalog']
-  # endpoints = ['Framework/Auth', 'Framework/Proxy']
-  endpoints = ['Framework/Proxy']
+  endpoints = ['Framework/Auth']
 
-  serverToLaunch = TornadoServer(services, endpoints, port=8000)
-
-  try:
-    from WebAppDIRAC.Core.App import App
-    # Get routes and settings for a portal
-    result = App().getAppToDict(8000)
-    if not result['OK']:
-      gLogger.fatal(result['Message'])
-      sys.exit(1)
-    app = result['Value']
-    serverToLaunch.addHandlers(app['routes'], app['settings'])
-  except ImportError as e:
-    gLogger.fatal('Web portal is not installed. %s' % repr(e))
-    #sys.exit(1)
+  serverToLaunch = TornadoServer(False, endpoints, port=8010)
 
   serverToLaunch.startTornado()
 
