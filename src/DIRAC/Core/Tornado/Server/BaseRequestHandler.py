@@ -175,7 +175,7 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      cls._idps = dict(getAuthAPI().strip('/')={'jwks_uri': getAuthAPI().strip('/') + '/jwk'})
+      cls._idps = {getAuthAPI().strip('/'): {'jwks_uri': getAuthAPI().strip('/') + '/jwk'}}
 
       # Set Identity Providers
       result = getProvidersForInstance('Id')
