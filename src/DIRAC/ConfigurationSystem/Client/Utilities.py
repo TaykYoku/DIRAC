@@ -606,10 +606,7 @@ def getDIRACClient():
 
       :return: S_OK(dict)/S_ERROR()
   """
-  result = getAuthClients(clientName='DIRACCLI')
-  if not result['OK']:
-    return result
-  return result if result['Value'] else S_OK(dict(client_id='DIRAC_CLI', redirect_uri='https://diracclient'))
+  return getAuthClients(clientName='DIRACCLI')
 
 
 def getAuthClients(clientID=None, clientName=None):
@@ -631,6 +628,9 @@ def getAuthClients(clientID=None, clientName=None):
     if not result['OK']:
       return result
     clients = result['Value']
+  
+  if 'DIRACCLI' not in clients:
+    clients['DIRACCLI'] = dict(client_id='DIRAC_CLI', redirect_uri='https://diracclient')
 
   for cliName, cliDict in clients.items():
     cliDict['issuer'] = cliDict.get('issuer', getAuthAPI())
