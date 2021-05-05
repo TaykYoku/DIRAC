@@ -10,6 +10,7 @@ from authlib.oauth2.rfc7591 import ClientRegistrationEndpoint as _ClientRegistra
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
 from authlib.common.security import generate_token
 
+from DIRAC import S_OK
 from DIRAC.Core.Utilities import ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthClients
@@ -60,7 +61,9 @@ class ClientManager(object):
     if not client:
       result = getAuthClients(clientID)
       if not result['OK'] or not result['Value']:
-        result = self.__db.getClient(clientID)
+        diracCliDict = getDIRACClient()
+        if clienID == diracCliDict['client_id']:
+          result = S_OK(diracCliDict)
       print('getClient result: %s' % result)
       if result['OK']:
         cliDict = result['Value']
