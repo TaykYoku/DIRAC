@@ -150,20 +150,11 @@ class Params(object):
     if self.group:
       idpObj.scope += 'g:%s' % self.group
     
-    # result = IdProviderFactory().getIdProvider(self.provider, token=token)
-    # if not result['OK']:
-    #   return result
-    # idpObj = result['Value']
-
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
     # Get IdP
     result = idpObj.authorization()
-    #   if result['OK']:
-    #     result = idpObj.exchangeGroup(self.group)
-    # else:
-    #   result = idpObj.authorization(self.group)
     if not result['OK']:
       return result
     

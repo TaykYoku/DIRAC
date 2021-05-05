@@ -161,6 +161,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
 
   def query_device_credential(self, device_code):
     result = self.server.db.getSession(device_code)
+    print('.......>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
     data = result['Value']
