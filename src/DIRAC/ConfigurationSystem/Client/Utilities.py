@@ -649,7 +649,7 @@ def getAuthClients(clientID=None, clientName=None):
 
     if clientID and clientID == cliDict['client_id']:
       return S_OK(cliDict)
-  return S_OK({} if clientID else clients)
+  return S_OK({} if clientID or clientName else clients)
 
 
 def getAuthorisationServerMetadata(issuer=None):
