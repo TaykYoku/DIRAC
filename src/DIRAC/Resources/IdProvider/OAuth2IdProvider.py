@@ -202,31 +202,35 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                             code_verifier=session.get('code_verifier'))
 
     # Get user info
-    result = self.__getUserInfo()
-    if not result['OK']:
-      return result
-    credDict = parseBasic(result['Value'])
-    credDict.update(parseEduperson(result['Value']))
-    cerdDict = userDiscover(credDict)
-    result = self.parser(result['Value'])
-    if not result['OK']:
-      return result
-    username, userID, userProfile = result['Value']
-    userProfile['credDict'] = credDict
+    claims = self.getUserProfile()
+    credDict = self.parseBasic(claims)
+    credDict.update(self.parseEduperson(claims))
+    cerdDict = self.userDiscover(credDict)
 
-    self.log.debug('Got response dictionary:\n', pprint.pformat(userProfile))
+    self.log.debug('Got response dictionary:\n', pprint.pformat(cerdDict))
 
     # Store token
     self.token['client_id'] = self.client_id
     self.token['provider'] = self.name
-    self.token['user_id'] = userID
+    self.token['user_id'] = credDict['ID']
     self.log.debug('Store token to the database:\n', pprint.pformat(dict(self.token)))
 
     result = self.store_token(self.token)
     if not result['OK']:
       return result
 
-    return S_OK((username, userID, userProfile))
+    return S_OK(credDict)
+
+  def parseBasic(self, claimDict):
+    """ Parse basic claims
+
+        :param dict claimDict: claims
+
+        :return: S_OK(dict)/S_ERROR()
+    """
+    credDict = {}
+    credDict['ID'] = claimDict['sub']
+    return credDict
 
   def __getUserInfo(self, useToken=None):
     self.log.debug('Sent request to userinfo endpoint..')
@@ -238,6 +242,52 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return S_OK(r.json())
     except (self.exceptions.RequestException, ValueError) as e:
       return S_ERROR("%s: %s" % (repr(e), r.text if r else ''))
+
+  def parseEduperson(self, claimDict):
+    """ Parse eduperson claims
+
+        :return: dict
+    """
+    credDict = {}
+    attributes = {
+        'eduperson_unique_id': '^(?P<ID>.*)',
+        'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):(?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
+    }
+    print('==> getUserProfile 1')
+    pprint.pprint(claimDict)
+    if 'eduperson_entitlement' not in claimDict:
+      print('==> getUserProfile 2')
+      claimDict = self.getUserProfile()
+    pprint.pprint(claimDict)
+    resDict = claimParser(claimDict, attributes)
+    print('++..')
+    pprint.pprint(resDict)
+    if not resDict:
+      return credDict
+    credDict['ID'] = resDict['eduperson_unique_id']['ID']
+    credDict['DN'] = getDNForID(credDict['ID'])
+    credDict['VOs'] = {}
+    for voDict in resDict['eduperson_entitlement']:
+      if voDict['VO'] not in credDict['VOs']:
+        credDict['VOs'][voDict['VO']] = {'VORoles': []}
+      if voDict['VORole'] not in credDict['VOs'][voDict['VO']]['VORoles']:
+        credDict['VOs'][voDict['VO']]['VORoles'].append(voDict['VORole'])
+    return credDict
+
+  def userDiscover(self, credDict):
+    credDict['DN'] = '/O=DIRAC/CN=%s' % credDict['ID']
+    credDict['DIRACGroups'] = []
+    for vo, voData in credDict.get('VOs', {}).items():
+      result = getVOMSRoleGroupMapping(vo)
+      pprint.pprint(result)
+      if result['OK']:
+        for role in voData['VORoles']:
+          groups = result['Value']['VOMSDIRAC'].get('/%s' % role)
+          if groups:
+            credDict['DIRACGroups'] = list(set(credDict['DIRACGroups'] + groups))
+    if credDict['DIRACGroups']:
+      credDict['group'] = credDict['DIRACGroups'][0]
+    return credDict
 
   def submitDeviceCodeAuthorizationFlow(self, group=None):
     """ Submit authorization flow
