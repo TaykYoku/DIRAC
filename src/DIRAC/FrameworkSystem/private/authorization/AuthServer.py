@@ -170,8 +170,8 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
       else:
         comment += ' Please, contact the DIRAC administrators.'
       return S_ERROR(comment)
-    username = result['Value']
-    return S_OK((username, credDict['DN']))
+    credDict['username'] = result['Value']
+    return S_OK(credDict)
 
   def access_token_generator(self, client, grant_type, user, scope):
     """ A function to generate ``access_token``

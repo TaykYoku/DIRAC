@@ -496,45 +496,32 @@ class AuthHandler(TornadoREST):
     # Read requested groups by DIRAC client or user
     firstRequest.addScopes(self.get_arguments('chooseScope', []))
     # Read already authed user
-    username, userID = extSession['authed']
+    username = extSession['authed']['username']
     self.log.debug('Next groups has been found for %s:' % username, ', '.join(firstRequest.groups))
 
     # Researche Group
-    result = gProxyManager.getGroupsStatusByUsername(username, firstRequest.groups)
+    result = getGroupsForUser(username, firstRequest.groups)
     if not result['OK']:
       return None, result
-    groupStatuses = result['Value']
-    if not groupStatuses:
-      return None, S_ERROR('No groups found.')
-    self.log.debug('The state of %s user groups has been checked:' % username, pprint.pformat(groupStatuses))
+    validGroups = result['Value']
+    if not validGroups:
+      return None, S_ERROR('No groups found for %s.' % username)
+
+    self.log.debug('The state of %s user groups has been checked:' % username, pprint.pformat(validGroups))
 
     if not firstRequest.groups:
-      if len(groupStatuses) == 1:
-        firstRequest.addScopes(['g:%s' % groupStatuses[0]])
+      if len(validGroups) == 1:
+        firstRequest.addScopes(['g:%s' % validGroups[0]])
       else:
         # Choose group interface
         with self.doc:
           with dom.div(style=self.css_main):
             with dom.div('Choose group', style=self.css_align_center):
-              for group, data in groupStatuses.items():
-                # data: Status, Comment, Action
+              for group in validGroups:
                 dom.button(dom.a(group, href='%s?state=%s&chooseScope=g:%s' % (self.currentPath,
                                                                                self.get_argument('state'), group)),
                            cls='button')
         return None, self.server.handle_response(payload=Template(self.doc.render()).generate(), newSession=extSession)
 
-    for group in firstRequest.groups:
-      status = groupStatuses[group]['Status']
-      action = groupStatuses[group].get('Action')
-      comment = groupStatuses[group].get('Comment')
-
-      if status == 'needToAuth':
-        # Submit second auth flow through IdP
-        idP = action[1][0]
-        return None, self.server.getIdPAuthorization(idP, firstRequest)
-
-      if status not in ['ready', 'unknown']:
-        self.log.verbose('%s group has bad status: %s; %s' % (group, status, comment))
-
     # Return grant user
-    return {'username': username, 'user_id': userID}, firstRequest
+    return credDict, firstRequest

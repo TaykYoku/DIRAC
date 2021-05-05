@@ -123,7 +123,7 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     print('-----------------------------------------------')
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
-    code = OAuth2Code({'user_id': self.request.user['user_id'],
+    code = OAuth2Code({'user_id': self.request.user['ID'],
                        # These scopes already contain DIRAC groups
                        'scope': self.request.data['scope'],
                        'redirect_uri': self.request.args['redirect_uri'],
