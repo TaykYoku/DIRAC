@@ -347,7 +347,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     except requests.exceptions.Timeout:
       return S_ERROR('Authentication server is not answer, timeout.')
     except requests.exceptions.RequestException as ex:
-      return S_ERROR(r.content or repr(ex))
+      return S_ERROR(repr(ex))
     except Exception as ex:
       return S_ERROR('Cannot read authentication response: %s' % repr(ex))
 
