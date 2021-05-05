@@ -42,8 +42,8 @@ def main():
   gLogger.initialize('Tornado', "/")
 
   services = ['DataManagement/TornadoFileCatalog']
-  endpoints = ['Framework/Auth:8010', 'Framework/Proxy']
-  # endpoints = ['Framework/Proxy']
+  # endpoints = ['Framework/Auth:8010', 'Framework/Proxy']
+  endpoints = ['Framework/Proxy']
 
   serverToLaunch = TornadoServer(services, endpoints, port=8000)
 
