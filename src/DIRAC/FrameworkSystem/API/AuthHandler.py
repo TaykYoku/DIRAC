@@ -500,7 +500,7 @@ class AuthHandler(TornadoREST):
     self.log.debug('Next groups has been found for %s:' % username, ', '.join(firstRequest.groups))
 
     # Researche Group
-    result = getGroupsForUser(username, firstRequest.groups)
+    result = Registry.getGroupsForUser(username, firstRequest.groups)
     if not result['OK']:
       return None, result
     validGroups = result['Value']
