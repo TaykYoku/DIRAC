@@ -131,11 +131,14 @@ class Params(object):
       gLogger.warn(result['Message'])
     else:
       token = result['Value']
-
-    result = getAuthorisationServerMetadata()
-    if not result['OK']:
+    
+    args = Script.getPositionalArgs()
+    if args:
+      issuer = args[0]
+    else:
       issuer = input("Enter DIRAC Authorisation server URL:")
-      result = getAuthorisationServerMetadata(issuer)
+
+    result = getAuthorisationServerMetadata(issuer)
     if not result['OK']:
       return result
 
