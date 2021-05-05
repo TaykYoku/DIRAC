@@ -524,4 +524,4 @@ class AuthHandler(TornadoREST):
         return None, self.server.handle_response(payload=Template(self.doc.render()).generate(), newSession=extSession)
 
     # Return grant user
-    return credDict, firstRequest
+    return extSession['authed'], firstRequest
