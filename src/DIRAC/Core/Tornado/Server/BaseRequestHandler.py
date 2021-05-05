@@ -622,35 +622,39 @@ class BaseRequestHandler(RequestHandler):
     
     # Read token without verification to get issuer
     issuer = _jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
-    print('===> 1')
     if not self._idps.get(issuer):
       return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
-    print('===> 2')
-    # payload = self._idps[issuer].verifyToken(accessToken)
+
+    gLogger.debug("Token issuer is %s" % issuer)
 
     if not self._idps[issuer].get('jwks_uri'):
       self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
     if not self._idps[issuer].get('jwks'):
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-    print('===> 3')
+
+    gLogger.debug("Token jwks is %s" % self._idps[issuer]['jwks'])
+
     try:
-      print('===> 4')
+      gLogger.debug("Try to decode token..")
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
     except Exception:
+      gLogger.debug("Try to update %s jwks.." % issuer)
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-    print('===> 5')
-    # {'ID':.., 'group':.., 'provider':..}
-    print('++++++++++++ %s' % payload)
-    credDict = self._idps[issuer].researchGroup(payload, accessToken)
-    print('Research group..')
 
-    groups = [s.split(':')[1] for s in scope_to_list(payload['scope']) if s.startswith('g:')]
-    if not groups:
-      groups = credDict['DIRACGroups']
-    
+    credDict = {}
+    credDict['DN'] = '/O=DIRAC/CN=%s' % payload['sub']
+
+    # Scope based authz
+    gLogger.debug("Research group for %s" % payload)
+
+    if payload.get('scope'):
+      groups = [s.split(':')[1] for s in scope_to_list(payload['scope']) if s.startswith('g:')]
+
     if groups:
-      credDict['group'] = groups
+      credDict['group'] = groups[0]
+    
+    gLogger.debug("Find %s group" % credDict['group'])
     
     print(credDict)
 
