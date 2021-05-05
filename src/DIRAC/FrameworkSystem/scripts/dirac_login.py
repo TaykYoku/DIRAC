@@ -188,7 +188,7 @@ def main():
   DIRAC.gConfig.setOptionValue("/DIRAC/Security/UseServerCertificate", "False")
 
   gLogger.info(gConfig.getConfigurationTree())
-  resultDoMagic = pI.doOAuthMagic()
+  resultDoMagic = piParams.doOAuthMagic()
   if not resultDoMagic['OK']:
     gLogger.fatal(resultDoMagic['Message'])
     sys.exit(1)

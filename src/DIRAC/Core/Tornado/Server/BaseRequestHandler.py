@@ -186,30 +186,10 @@ class BaseRequestHandler(RequestHandler):
       if result['OK']:
         for providerName in result['Value']:
           result = getProviderInfo(providerName)
-          if not result['OK']:
-            break
-          cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
+          if result['OK']:
+            cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
       if not result['OK']:
         raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
-      
-      # # Add DIRAC AS
-      # print('load getDIRACClient')
-      # result = getDIRACClient()
-      # print('load getDIRACClient 1')
-      # if not result['OK']:
-      #   raise Exception("Can't load web portal settings: %s" % result['Message'])
-      # clientConfig = result['Value']
-      # print('load getDIRACClient 2')
-      # result = getAuthorisationServerMetadata()
-      # print('load getDIRACClient 3')
-      # if not result['OK']:
-      #   raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
-      # clientConfig.update(result['Value'])
-      # clientConfig['ProviderName'] = 'DIRACClient'
-      # print('load getDIRACClient 4')
-      # client = OAuth2IdProvider(**clientConfig)
-      # print('load getDIRACClient 5')
-      # self._idps[client.issuer.strip('/')] = client
 
       # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
       absoluteUrl = request.path
@@ -228,12 +208,24 @@ class BaseRequestHandler(RequestHandler):
       cls._serviceInfoDict = serviceInfo
 
       cls.__monitorLastStatsUpdate = time.time()
-
+      
+      # Some pre-initialization
+      cls._initializeHandler()
+      
       cls.initializeHandler(serviceInfo)
 
       cls.__init_done = True
 
       return S_OK()
+
+  @classmethod
+  def _initializeHandler(cls):
+    """
+      If you are writing your own framework that follows this class
+      and you need to add something before initializing the service,
+      such as initializing the OAuth client, then you need to change this method.
+    """
+    pass
 
   @classmethod
   def initializeHandler(cls, serviceInfo):
