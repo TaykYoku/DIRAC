@@ -73,6 +73,16 @@ class Params(object):
     self.provider = arg
     return S_OK()
   
+  def setIssuer(self, arg):
+    """ Set email
+
+        :param str arg: issuer
+
+        :return: S_OK()
+    """
+    self.issuer = arg
+    return S_OK()
+  
   def setLivetime(self, arg):
     """ Set email
 
@@ -101,6 +111,11 @@ class Params(object):
         "set identity provider",
         self.setProvider)
     Script.registerSwitch(
+        "I",
+        "issuer",
+        "set issuer",
+        self.setIssuer)
+    Script.registerSwitch(
         "T",
         "lifetime",
         "set proxy lifetime",
@@ -126,18 +141,13 @@ class Params(object):
     # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
     token = None
-    issuer = None
     result = readTokenFromFile()
     if not result['OK']:
       gLogger.warn(result['Message'])
     else:
       token = result['Value']
     
-    args = Script.getPositionalArgs()
-    if args:
-      issuer = args[0]
-
-    result = getAuthorisationServerMetadata(issuer)
+    result = getAuthorisationServerMetadata(self.issuer)
     if not result['OK']:
       return result
 
