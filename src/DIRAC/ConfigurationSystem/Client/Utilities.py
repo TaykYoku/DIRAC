@@ -663,8 +663,8 @@ def getAuthorisationServerMetadata(issuer=None):
     result = gConfig.getSections('/DIRAC')
     if not result['OK']:
       return result
-    if 'AuthorizationServer' in result['Value']:
-      result = gConfig.getOptionsDictRecursively('/DIRAC/AuthorizationServer')
+    if 'Authorization' in result['Value']:
+      result = gConfig.getOptionsDictRecursively('/DIRAC/Authorization')
       if not result['OK']:
         return result
       data.update(result['Value'])
