@@ -152,7 +152,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
 
         :return: result of `handle_response`
     """
-    result = self.server.db.getSessionByUserCode(user_code)
+    result = self.server.db.getSessionByUserCode(self.request.data['user_code'])
     print('... 2 ...>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
