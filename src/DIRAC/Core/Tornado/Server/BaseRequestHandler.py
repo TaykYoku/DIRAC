@@ -19,6 +19,8 @@ from datetime import datetime
 from six import string_types
 from six.moves import http_client
 from six.moves.urllib.parse import unquote
+from authlib.jose import JsonWebKey, jwt
+
 
 import tornado
 from tornado import gen
