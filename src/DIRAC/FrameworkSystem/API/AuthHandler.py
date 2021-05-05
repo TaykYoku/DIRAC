@@ -38,7 +38,7 @@ class AuthHandler(TornadoREST):
   USE_AUTHZ_GRANTS = ['VISITOR']
   SYSTEM = 'Framework'
   AUTH_PROPS = 'all'
-  LOCATION = "/auth"
+  LOCATION = "/DIRAC/auth"
   CSS = """
 .button {
   border-radius: 4px;
