@@ -606,7 +606,7 @@ def getDIRACClient():
 
       :return: S_OK(dict)/S_ERROR()
   """
-  return getAuthClients(clientName='DIRACCLI')
+  return getAuthClients(clientName='DIRACCLI') or dict(client_id='DIRAC_CLI', redirect_uri='https://diracclient')
 
 
 def getAuthClients(clientID=None, clientName=None):
@@ -652,31 +652,32 @@ def getAuthClients(clientID=None, clientName=None):
   return S_OK({} if clientID else clients)
 
 
-def getAuthorisationServerMetadata():
+def getAuthorisationServerMetadata(issuer=None):
   """ Get authoraisation server metadata
 
       :return: S_OK(dict)/S_ERROR()
   """
-  path = '/Systems/Framework/%s/APIs/Auth' % getSystemInstance("Framework")
-  result = gConfig.getSections(path)
-  if not result['OK']:
-    return result
-
   data = {}
-  if 'AuthorizationServer' in result['Value']:
-    result = gConfig.getOptionsDictRecursively('%s/AuthorizationServer' % path)
+
+  if not issuer:
+    result = gConfig.getSections('/DIRAC')
     if not result['OK']:
       return result
-    data = result['Value']
+    if 'AuthorizationServer' in result['Value']:
+      result = gConfig.getOptionsDictRecursively('/DIRAC/AuthorizationServer')
+      if not result['OK']:
+        return result
+      data.update(result['Value'])
+      issuer = result['Value']['issuer']
 
-  data['issuer'] = data.get('issuer', getAuthAPI())
+  data['issuer'] = issuer or getAuthAPI()
   if not data['issuer']:
     return S_ERROR('Cannot found the Auth RESTful API base URL in the configuration.')
-  data['jwks_uri'] = data.get('jwks_uri', data['issuer'] + '/jwk')
-  data['token_endpoint'] = data.get('token_endpoint', data['issuer'] + '/token')
-  data['userinfo_endpoint'] = data.get('userinfo_endpoint', data['issuer'] + '/userinfo')
-  data['registration_endpoint'] = data.get('registration_endpoint', data['issuer'] + '/register')
-  data['authorization_endpoint'] = data.get('authorization_endpoint', data['issuer'] + '/authorization')
+  data['jwks_uri'] = data['issuer'] + '/jwk'
+  data['token_endpoint'] = data['issuer'] + '/token'
+  data['userinfo_endpoint'] = data['issuer'] + '/userinfo'
+  data['registration_endpoint'] = data['issuer'] + '/register'
+  data['authorization_endpoint'] = data['issuer'] + '/authorization'
   data['grant_types_supported'] = data.get('grant_types_supported', [
       'code', 'authorization_code', 'urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'
   ])

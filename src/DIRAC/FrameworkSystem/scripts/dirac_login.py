@@ -41,6 +41,7 @@ class Params(object):
     self.group = None
     self.lifetime = None
     self.provider = 'DIRAC_AS'
+    self.issuer = None
     self.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
 
   def returnProxy(self, _arg):
