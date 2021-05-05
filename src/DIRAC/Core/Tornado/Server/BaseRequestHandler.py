@@ -9,7 +9,7 @@ __RCSID__ = "$Id$"
 
 from io import open
 
-import jwt
+import jwt as _jwt
 
 import os
 import time
@@ -621,7 +621,7 @@ class BaseRequestHandler(RequestHandler):
       return S_ERROR('Found a not bearer access token.')
     
     # Read token without verification to get issuer
-    issuer = jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
+    issuer = _jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
     print('===> 1')
     if not self._idps.get(issuer):
       return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
