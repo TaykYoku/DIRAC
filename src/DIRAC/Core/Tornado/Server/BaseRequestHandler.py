@@ -331,6 +331,7 @@ class BaseRequestHandler(RequestHandler):
     self.method = self._getMethodName()
 
     self._monitorRequest()
+    print('====>>> prepare %s' % self.request.path)
 
   def _prepare(self):
     """
@@ -339,6 +340,7 @@ class BaseRequestHandler(RequestHandler):
       regardless of the HTTP method used
 
     """
+    print('====>>> ___prepare %s' % self.request.path)
 
     try:
       print(self.USE_AUTHZ_GRANTS)
