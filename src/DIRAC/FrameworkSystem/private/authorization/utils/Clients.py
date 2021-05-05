@@ -68,6 +68,7 @@ class ClientManager(object):
       print('getClient result: %s' % result)
       if result['OK']:
         cliDict = result['Value']
+        cliDict['client_metadata'] = cliDict.get('client_metadata', {})
         cliDict['client_id_issued_at'] = cliDict.get('client_id_issued_at', int(time.time()))
         cliDict['client_secret_expires_at'] = cliDict.get('client_secret_expires_at', 0)
         client = Client(cliDict)
