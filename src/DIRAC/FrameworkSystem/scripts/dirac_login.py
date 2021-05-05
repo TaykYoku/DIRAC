@@ -147,6 +147,8 @@ class Params(object):
     clientConfig['ProviderName'] = 'DIRAC_CLI'
 
     idpObj = OAuth2IdProvider(**clientConfig)
+    if self.group:
+      idpObj.scope += 'g:%s' % self.group
     
     # result = IdProviderFactory().getIdProvider(self.provider, token=token)
     # if not result['OK']:
@@ -157,7 +159,7 @@ class Params(object):
 
     # Submit Device authorisation flow
     # Get IdP
-    result = idpObj.authorization(scopes=self.group and 'g:%s' % self.group)
+    result = idpObj.authorization()
     #   if result['OK']:
     #     result = idpObj.exchangeGroup(self.group)
     # else:
