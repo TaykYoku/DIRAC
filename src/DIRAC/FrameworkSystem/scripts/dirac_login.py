@@ -126,6 +126,7 @@ class Params(object):
     # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
     token = None
+    issuer = None
     result = readTokenFromFile()
     if not result['OK']:
       gLogger.warn(result['Message'])
