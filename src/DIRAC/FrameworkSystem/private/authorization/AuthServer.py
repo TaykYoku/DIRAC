@@ -46,7 +46,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForID, getEmailsForGroup
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
 # from DIRAC.Core.Web.SessionData import SessionStorage
 
 import logging
