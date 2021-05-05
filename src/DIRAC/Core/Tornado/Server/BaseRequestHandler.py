@@ -608,6 +608,7 @@ class BaseRequestHandler(RequestHandler):
 
     # {'ID':.., 'group':.., 'provider':..}
     credDict = self._idps[issuer].researchGroup(payload, accessToken)
+    print('Research group..')
 
     groups = [s.split(':')[1] for s in scope_to_list(payload['scope']) if s.startswith('g:')]
     if not groups:
@@ -615,6 +616,8 @@ class BaseRequestHandler(RequestHandler):
     
     if groups:
       credDict['group'] = groups
+    
+    print(credDict)
 
     credDict['token'] = accessToken
     return S_OK(credDict)
