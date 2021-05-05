@@ -7,6 +7,7 @@ import io
 import json
 from time import time
 import pprint
+from dominate import document, tags as dom
 import urlparse
 from tornado.httpclient import HTTPResponse
 from tornado.httputil import HTTPHeaders
