@@ -152,8 +152,12 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
 
         :return: result of `handle_response`
     """
+    result = self.server.db.getSessionByUserCode(user_code)
+    print('... 2 ...>>  %s' % result)
+    if not result['OK']:
+      raise OAuth2Error(result['Message'])
     # Save session with user
-    result = self.server.db.addSession(dict(id=self.request.data['user_code'], user_id=user['ID'], uri=self.request.uri,
+    result = self.server.db.addSession(dict(id=result['Value']['id'], user_id=user['ID'], uri=self.request.uri,
                                             username=user['username'], scope=self.request.scope))
     if not result['OK']:
       raise OAuth2Error('Cannot save authorization result', result['Message'])
