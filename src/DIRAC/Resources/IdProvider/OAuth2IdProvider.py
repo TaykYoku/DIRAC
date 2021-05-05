@@ -118,22 +118,22 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
-  @classmethod
-  def verifyToken(cls, token):
-    """ Token verification
+  # @classmethod
+  # def verifyToken(cls, token):
+  #   """ Token verification
 
-        :param token: token
-    """
-    if not cls.jwks_uri:
-      cls.jwks_uri = requests.get(get_well_known_url(issuer, True)).json()['jwks_uri'], verify=False)
-    if not cls.jwks:
-      cls.jwks = requests.get(cls.jwks_uri, verify=False)
+  #       :param token: token
+  #   """
+  #   if not cls.jwks_uri:
+  #     cls.jwks_uri = requests.get(get_well_known_url(issuer, True)).json()['jwks_uri'], verify=False)
+  #   if not cls.jwks:
+  #     cls.jwks = requests.get(cls.jwks_uri, verify=False)
 
-    try:
-      return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
-    except Exception:
-      cls.jwks = requests.get(cls.jwks_uri, verify=False)
-      return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
+  #   try:
+  #     return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
+  #   except Exception:
+  #     cls.jwks = requests.get(cls.jwks_uri, verify=False)
+  #     return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
 
   def store_token(self, token):
     """ need to implement
