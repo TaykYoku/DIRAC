@@ -94,7 +94,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
         :return: str
     """
-    return self.req.protocol + "://" + self.req.host + self.req.path
+    return self.URL
 
   def save_device_credential(self, client_id, scope, data):
     """ Save device credentials
