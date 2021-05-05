@@ -356,7 +356,7 @@ class AuthHandler(TornadoREST):
         session = result['Value']
         # Get original request from session
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
-        authURL = '/authorization/%s?%s&user_code=%s' % (provider, req.query, userCode)
+        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, provider, req.query, userCode)
         # Save session to cookie
         return self.server.handle_response(302, {}, [("Location", authURL)], session)
 
