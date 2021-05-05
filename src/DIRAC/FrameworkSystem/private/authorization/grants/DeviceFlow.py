@@ -105,7 +105,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     """
     data.update(dict(uri='{api}?{query}&response_type=device&client_id={client_id}&scope={scope}'.format(
         api=data['verification_uri'], query=self.req.query, client_id=client_id, scope=scope,
-    ), id=data['device_code']))
+    ), id=data['device_code'], client_id=client_id, scope=scope))
     result = self.server.db.addSession(data)
     if not result['OK']:
       raise OAuth2Error('Cannot save device credentials', result['Message'])
