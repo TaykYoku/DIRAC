@@ -212,7 +212,7 @@ class AuthDB(SQLAlchemyDB):
 
         :return: S_OK(object)/S_ERROR()
     """
-    self.removeSession(sessionID=uid)
+    self.removeSession(sessionID=sessionID)
     return self.addSession(data)
 
   # def addSession(self, data):
