@@ -24,7 +24,7 @@ def readTokenFromFile(fileName=None):
         - fileName : filename to read
   """
   if not fileName:
-    fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "JWTup_u%d" % os.getuid())
+    fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "/tmp/JWTup_u%d" % os.getuid())
   try:
     with open(fileName, 'r') as f:
       data = f.read()
@@ -68,7 +68,7 @@ def writeTokenDictToTokenFile(tokenDict, fileName=None):
     - fileName : filename to dump to
   """
   if not fileName:
-    fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "JWTup_u%d" % os.getuid())
+    fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "/tmp/JWTup_u%d" % os.getuid())
   try:
     retVal = json.dumps(tokenDict)
   except Exception as e:
