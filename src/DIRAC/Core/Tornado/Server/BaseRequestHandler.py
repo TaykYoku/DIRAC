@@ -478,6 +478,9 @@ class BaseRequestHandler(RequestHandler):
     # Wait result only if it's a Future object
     self.result = retVal.result() if isinstance(retVal, Future) else retVal
 
+    print('FUTURE RESULT >>>')
+    print(self.result)
+
     # Here it is safe to write back to the client, because we are not
     # in a thread anymore
 
