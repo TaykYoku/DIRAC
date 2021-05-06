@@ -15,12 +15,11 @@ g_SecurityConfPath = "/DIRAC/Security"
 def getTokenLocation():
   """ Get the path of the currently active grid proxy file
   """
-
-  for envVar in ['DIRAC_TOKEN']:
-    if envVar in os.environ:
-      tokenPath = os.path.realpath(os.environ[envVar])
-      if os.path.isfile(tokenPath):
-        return tokenPath
+  envVar = 'DIRAC_TOKEN_FILE'
+  if envVar in os.environ:
+    tokenPath = os.path.realpath(os.environ[envVar])
+    if os.path.isfile(tokenPath):
+      return tokenPath
   # /tmp/JWTup_u<uid>
   tokenName = "JWTup_u%d" % os.getuid()
   if os.path.isfile("/tmp/%s" % tokenName):
