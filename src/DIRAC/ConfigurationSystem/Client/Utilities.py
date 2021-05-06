@@ -574,7 +574,7 @@ def getAuthAPI():
 
       :return: str
   """
-  return gConfig.getValue("/Systems/Framework/%s/URLs/Auth" % getSystemInstance("Framework"))
+  return gConfig.getValue("/Systems/Framework/%s/URLs/AuthAPI" % getSystemInstance("Framework"))
 
 
 def getProxyAPI():
@@ -582,7 +582,7 @@ def getProxyAPI():
 
       :return: str
   """
-  return gConfig.getValue("/Systems/Framework/%s/URLs/Proxy" % getSystemInstance("Framework"))
+  return gConfig.getValue("/Systems/Framework/%s/URLs/ProxyAPI" % getSystemInstance("Framework"))
 
 
 def getDIRACClientID():
