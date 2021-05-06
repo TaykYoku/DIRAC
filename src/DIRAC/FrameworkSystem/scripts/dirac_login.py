@@ -172,7 +172,11 @@ class Params(object):
     if not result['OK']:
       return result
     gLogger.notice('Token is saved in %s.' % result['Value'])
-    
+
+    result = Script.enableCS()
+    if not result['OK']:
+      return S_ERROR("Cannot contact CS to get user list")
+
     if not self.proxy:
       return S_OK()
 
@@ -186,9 +190,6 @@ class Params(object):
     result = writeToProxyFile(proxy.encode("UTF-8"), self.proxyLoc)
     gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
 
-    result = Script.enableCS()
-    if not result['OK']:
-      return S_ERROR("Cannot contact CS to get user list")
     threading.Thread(target=self.checkCAs).start()
     gConfig.forceRefresh(fromMaster=True)
     return S_OK(self.proxyLoc)
