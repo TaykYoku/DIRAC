@@ -204,7 +204,7 @@ class AuthDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR('Could not add Token: %s' % e))
     return self.__result(session, S_OK('Token successfully added'))
 
-    def updateSession(self, data, sessionID):
+  def updateSession(self, data, sessionID):
     """ Update session data
 
         :param dict data: data info
