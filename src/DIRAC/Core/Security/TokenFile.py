@@ -69,6 +69,7 @@ def writeTokenDictToTokenFile(tokenDict, fileName=None):
     retVal = json.dumps(tokenDict)
   except Exception as e:
     return S_ERROR('Cannot read token.')
+  print(fileName or getTokenLocation())
   return writeToTokenFile(retVal, fileName or getTokenLocation())
 
 
