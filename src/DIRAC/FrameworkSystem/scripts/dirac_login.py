@@ -171,13 +171,8 @@ class Params(object):
     result = writeTokenDictToTokenFile(idpObj.token)
     if not result['OK']:
       return result
-    gLogger.notice('Token is saved.')
+    gLogger.notice('Token is saved in %s.' % result['Value'])
     
-    # # Check user tokens
-    # result = gTokenManager.delegateUserToken()
-    # if not result['OK']:
-    #   return result
-
     if not self.proxy:
       return S_OK()
 
