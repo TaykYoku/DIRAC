@@ -34,6 +34,7 @@ from io import open
 import errno
 import requests
 import six
+import os
 from six.moves import http_client
 
 
