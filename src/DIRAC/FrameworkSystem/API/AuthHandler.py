@@ -222,6 +222,9 @@ class AuthHandler(TornadoREST):
             ]
           }
     """
+    import time
+    print('>> JWK')
+    time.sleep(5)
     if self.request.method == "GET":
       with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
