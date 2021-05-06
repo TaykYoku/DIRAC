@@ -136,9 +136,8 @@ class Params(object):
     from DIRAC.Core.Utilities.JEncode import encode
     from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
     from DIRAC.Core.Security.ProxyFile import writeToProxyFile
-    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
     from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
-    from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+    # from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
     # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
 
     token = None
@@ -181,6 +180,8 @@ class Params(object):
 
     if not self.proxy:
       return S_OK()
+
+    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
 
     r = idpObj.get('%s?lifetime=%s' % (getProxyAPI(), self.lifetime))
     r.raise_for_status()
