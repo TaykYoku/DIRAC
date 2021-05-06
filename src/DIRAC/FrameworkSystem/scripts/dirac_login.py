@@ -132,6 +132,7 @@ class Params(object):
     import requests
     import json
 
+    from DIRAC import gConfig
     from DIRAC.Core.Utilities.JEncode import encode
     from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
     from DIRAC.Core.Security.ProxyFile import writeToProxyFile
@@ -176,6 +177,7 @@ class Params(object):
     result = Script.enableCS()
     if not result['OK']:
       return S_ERROR("Cannot contact CS to get user list")
+    gConfig.forceRefresh()
 
     if not self.proxy:
       return S_OK()
@@ -191,7 +193,6 @@ class Params(object):
     gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
 
     threading.Thread(target=self.checkCAs).start()
-    gConfig.forceRefresh(fromMaster=True)
     return S_OK(self.proxyLoc)
 
 
