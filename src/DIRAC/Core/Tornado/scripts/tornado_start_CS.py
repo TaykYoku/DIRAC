@@ -54,7 +54,7 @@ def main():
   except TypeError:
     csPort = None
 
-  serverToLaunch = TornadoServer(services='Configuration/Server', port=csPort)
+  serverToLaunch = TornadoServer(services=['Configuration/Server'], port=csPort)
   serverToLaunch.startTornado()
 
 
