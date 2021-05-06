@@ -156,9 +156,11 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     print('... 2 ...>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
+    data = result['Value']
+    data.update(dict(user_id=user['ID'], uri=self.request.uri,
+                     username=user['username'], scope=self.request.scope))
     # Save session with user
-    result = self.server.db.addSession(dict(id=result['Value']['id'], user_id=user['ID'], uri=self.request.uri,
-                                            username=user['username'], scope=self.request.scope))
+    result = self.server.db.addSession(data)
     if not result['OK']:
       raise OAuth2Error('Cannot save authorization result', result['Message'])
     return 200, 'Authorization complite.'
