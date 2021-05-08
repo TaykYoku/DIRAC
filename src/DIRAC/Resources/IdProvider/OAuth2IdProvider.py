@@ -266,6 +266,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
     """
+    print('scopes: %s' % self.scope)
     groupScopes = []
     if group:
       result = self.getGroupScopes(group)

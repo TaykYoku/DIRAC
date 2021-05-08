@@ -142,9 +142,9 @@ class Params(object):
 
     idpObj = OAuth2IdProvider(**clientConfig)
     if self.group:
-      idpObj.scope += 'g:%s' % self.group
+      idpObj.scope += ' g:%s' % self.group
     if self.proxy:
-      idpObj.scope += 'proxy'
+      idpObj.scope += ' proxy'
     # idpObj.scope += 'origin_token'
     
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
