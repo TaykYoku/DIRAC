@@ -34,6 +34,7 @@ from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMet
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
+from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 
 import logging
 import sys
@@ -57,6 +58,7 @@ class AuthServer(_AuthorizationServer):
 
   def __init__(self):
     self.db = AuthDB()
+    self.proxyCli = ProxyManagerClient()
     self.idps = IdProviderFactory()
     # Privide two authlib methods query_client and save_token
     _AuthorizationServer.__init__(self, query_client=self.getClient, save_token=self.saveToken)
@@ -188,6 +190,14 @@ class AuthServer(_AuthorizationServer):
 
         :return: jwt object
     """
+    if 'proxy' in scope:
+      group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
+      lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
+      result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
+      if not result['OK']:
+        raise Exception(result['Message'])
+      gLogger.info('Proxy was created.')
+      return result['Value'].dumpAllToString()
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
     header = {'alg': 'RS256'}
     payload = {'sub': user,
