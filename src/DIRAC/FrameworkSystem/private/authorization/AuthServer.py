@@ -30,7 +30,7 @@ from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Re
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthClients
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
