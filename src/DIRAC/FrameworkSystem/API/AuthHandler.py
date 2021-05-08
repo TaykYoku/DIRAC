@@ -349,7 +349,7 @@ class AuthHandler(TornadoREST):
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
 
         providers = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
-        gLogger.debug('Use provider:', providers)
+        print('Use provider:', providers)
 
         authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, providers[0] if providers else provider, req.query, userCode)
         # Save session to cookie
