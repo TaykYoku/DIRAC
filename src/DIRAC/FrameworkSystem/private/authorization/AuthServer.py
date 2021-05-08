@@ -292,10 +292,9 @@ class AuthServer(_AuthorizationServer):
       if not hasattr(grant, 'prompt'):
         grant.prompt = None
       
-      providers = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
-      gLogger.debug('Use provider:', providers)
+      
       # Check Identity Provider
-      provider, providerChooser = self.validateIdentityProvider(req, providers[0] if providers else provider)
+      provider, providerChooser = self.validateIdentityProvider(req, provider)
       if not provider:
         return providerChooser
 

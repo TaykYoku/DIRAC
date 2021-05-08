@@ -347,7 +347,11 @@ class AuthHandler(TornadoREST):
         session = result['Value']
         # Get original request from session
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
-        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, provider, req.query, userCode)
+
+        providers = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
+        gLogger.debug('Use provider:', providers)
+
+        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, providers[0] if providers else provider, req.query, userCode)
         # Save session to cookie
         return self.server.handle_response(302, {}, [("Location", authURL)], session)
 
