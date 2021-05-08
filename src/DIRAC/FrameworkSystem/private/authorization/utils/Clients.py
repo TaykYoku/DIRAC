@@ -16,17 +16,15 @@ __RCSID__ = "$Id$"
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
     super(Client, self).__init__()
-    self.client_metadata = params.get('client_metadata', {})
-    self.client_id_issued_at = params.get('client_id_issued_at', int(time.time()))
-    self.client_secret_expires_at = params.get('client_secret_expires_at', 0)
+    client_metadata = params.get('client_metadata', {})
     self.client_id = params['client_id']
     self.client_secret = params.get('client_secret', '')
-    self.client_id_issued_at = params['client_id_issued_at']
-    self.client_secret_expires_at = params['client_secret_expires_at']
-    if isinstance(params['client_metadata'], dict):
-      self._client_metadata = json.dumps(params['client_metadata'])
+    self.client_id_issued_at = params.get('client_id_issued_at', int(time.time()))
+    self.client_secret_expires_at = params.get('client_secret_expires_at', 0)
+    if isinstance(client_metadata, dict):
+      self._client_metadata = json.dumps(client_metadata)
     else:
-      self._client_metadata = params['client_metadata']
+      self._client_metadata = client_metadata
 
   def get_allowed_scope(self, scope):
     if not scope:
