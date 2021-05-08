@@ -80,7 +80,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
   jwks = None
 
   def __init__(self, name=None, token_endpoint_auth_method='client_secret_post', revocation_endpoint_auth_method=None,
-               scope=None, token=None, token_placement='header', update_token=None, **parameters):
+               scope='', token=None, token_placement='header', update_token=None, **parameters):
     """ OIDCClient constructor
     """
     if 'ProviderName' not in parameters:
@@ -91,7 +91,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            scope=scope, token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
     # Convert scope to list
-    # scope = scope or ''
+    # self.scope = self.scope or ''
     # self.scope = [s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')]
     self.parameters = parameters
     self.name = parameters['ProviderName']
