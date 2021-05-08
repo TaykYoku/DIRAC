@@ -141,7 +141,7 @@ class Params(object):
     clientConfig['ProviderName'] = 'DIRAC_CLI'
 
     idpObj = OAuth2IdProvider(**clientConfig)
-    print('grop: %s' % group)
+    print('grop: %s' % self.group)
     if self.group:
       idpObj.scope += '+g:%s' % self.group
     if self.proxy:
