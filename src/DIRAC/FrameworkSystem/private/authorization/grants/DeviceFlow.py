@@ -6,6 +6,7 @@ import os
 import time
 import requests
 from authlib.oauth2 import OAuth2Error
+from authlib.oauth2.rfc6749.util import scope_to_list
 from authlib.oauth2.rfc6749.grants import AuthorizationEndpointMixin
 from authlib.oauth2.rfc6749.errors import InvalidClientError, UnauthorizedClientError
 from authlib.oauth2.rfc8628 import (DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
@@ -44,6 +45,12 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     """
     print('save device credentials')
     print(scope)
+    groups = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')]
+    group = groups[0] if groups else None
+    if group:
+      provider = Registry.getIdPForGroup(group)
+      if provider:
+        scope += '+provider:%s' % provider
     data.update(dict(uri='{api}?{query}&response_type=device&client_id={client_id}&scope={scope}'.format(
         api=data['verification_uri'], query=self.req.query, client_id=client_id, scope=scope,
     ), id=data['device_code'], client_id=client_id, scope=scope))

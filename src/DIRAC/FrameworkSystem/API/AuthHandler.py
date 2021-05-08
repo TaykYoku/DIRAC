@@ -333,21 +333,6 @@ class AuthHandler(TornadoREST):
           HTTP/1.1 200 OK
     """
     if self.request.method == 'POST':
-      # scope = self.get_argument('scope', '')
-      # groups = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')]
-      # group = self.get_argument('group', grousp[0] if groups else None)
-      # if group:
-      #   provider = Registry.getIdPForGroup(group)
-      #   if not provider:
-      #     return S_ERROR('No provider found for %s' % group)
-      #   result = self.idps.getIdProvider(provider)
-      #   if result['OK']:
-      #     idPObj = result['Value']
-      #     result = idPObj.submitDeviceCodeAuthorizationFlow(group)
-      #   if not result['OK']:
-      #     return result
-      #   return result['Value']
-
       self.log.verbose('Initialize a Device authentication flow.')
       return self.server.create_endpoint_response(DeviceAuthorizationEndpoint.ENDPOINT_NAME, self.request)
 

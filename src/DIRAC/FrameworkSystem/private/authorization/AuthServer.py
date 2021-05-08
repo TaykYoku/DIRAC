@@ -290,9 +290,11 @@ class AuthServer(_AuthorizationServer):
       grant.validate_consent_request()
       if not hasattr(grant, 'prompt'):
         grant.prompt = None
+      
+      provider = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
 
       # Check Identity Provider
-      provider, providerChooser = self.validateIdentityProvider(req, provider)
+      provider, providerChooser = self.validateIdentityProvider(req, provider[0] if provider else None)
       if not provider:
         return providerChooser
 
