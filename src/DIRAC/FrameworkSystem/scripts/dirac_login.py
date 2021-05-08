@@ -99,8 +99,8 @@ class Params(object):
         "return with an access token also a proxy certificate with DIRAC group extension",
         self.returnProxy)
     Script.registerSwitch(
-        "g",
-        "group",
+        "g:",
+        "group=",
         "set DIRAC group",
         self.setGroup)
     Script.registerSwitch(
