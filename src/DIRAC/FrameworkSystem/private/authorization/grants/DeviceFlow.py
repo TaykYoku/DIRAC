@@ -45,15 +45,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
     """
     print('save device credentials')
     print(scope)
-    groups = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')]
-    group = groups[0] if groups else None
-
-    if group:
-      print(group)
-      provider = Registry.getIdPForGroup(group)
-      if provider:
-        print(provider)
-        scope += '+provider:%s' % provider
+    
     data.update(dict(uri='{api}?{query}&response_type=device&client_id={client_id}&scope={scope}'.format(
         api=data['verification_uri'], query=self.req.query, client_id=client_id, scope=scope,
     ), id=data['device_code'], client_id=client_id, scope=scope))

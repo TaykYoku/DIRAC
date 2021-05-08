@@ -348,11 +348,16 @@ class AuthHandler(TornadoREST):
         # Get original request from session
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
 
-        providers = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
-        print('Use provider:', providers)
-        print(session)
+        groups = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('g:')]
+        group = groups[0] if groups else None
 
-        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, providers[0] if providers else provider, req.query, userCode)
+        if group and not provider:
+          print(group)
+          provider = Registry.getIdPForGroup(group)
+
+        print('Use provider:', provider)
+
+        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, provider, req.query, userCode)
         # Save session to cookie
         return self.server.handle_response(302, {}, [("Location", authURL)], session)
 
