@@ -24,7 +24,6 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
-from DIRAC.FrameworkSystem.private.authorization.utils.Clients import ClientRegistrationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
