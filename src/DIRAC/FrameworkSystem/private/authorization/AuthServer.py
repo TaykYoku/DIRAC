@@ -293,7 +293,7 @@ class AuthServer(_AuthorizationServer):
         grant.prompt = None
       
       provider = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
-
+      gLogger.debug('Use provider:', provider)
       # Check Identity Provider
       provider, providerChooser = self.validateIdentityProvider(req, provider[0] if provider else None)
       if not provider:
