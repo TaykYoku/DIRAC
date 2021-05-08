@@ -42,6 +42,8 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
         :param str scope: request scopes
         :param dict data: device credentials
     """
+    print('save device credentials')
+    print(scope)
     data.update(dict(uri='{api}?{query}&response_type=device&client_id={client_id}&scope={scope}'.format(
         api=data['verification_uri'], query=self.req.query, client_id=client_id, scope=scope,
     ), id=data['device_code'], client_id=client_id, scope=scope))
