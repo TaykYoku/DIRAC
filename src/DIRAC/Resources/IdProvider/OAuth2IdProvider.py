@@ -91,8 +91,8 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            scope=scope, token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
     # Convert scope to list
-    # self.scope = self.scope or ''
-    # self.scope = [s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')]
+    scope = scope or ''
+    self.scope = list_to_scope([s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')])
     self.parameters = parameters
     self.name = parameters['ProviderName']
     self.verify = False
