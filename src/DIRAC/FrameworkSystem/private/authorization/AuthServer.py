@@ -15,6 +15,7 @@ from authlib.oauth2.base import OAuth2Error
 from authlib.oauth2.rfc6750 import BearerToken
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
+from authlib.oauth2.rfc6749.util import scope_to_list
 
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (DeviceAuthorizationEndpoint,
                                                                            DeviceCodeGrant,
