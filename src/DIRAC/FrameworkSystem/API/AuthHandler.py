@@ -350,6 +350,7 @@ class AuthHandler(TornadoREST):
 
         providers = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('provider:')]
         print('Use provider:', providers)
+        print(session)
 
         authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, providers[0] if providers else provider, req.query, userCode)
         # Save session to cookie
