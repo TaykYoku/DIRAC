@@ -5,6 +5,7 @@ from __future__ import print_function
 import re
 
 from tornado.escape import json_decode
+from authlib.common.encoding import to_unicode
 from authlib.oauth2 import OAuth2Request as _OAuth2Request
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
 
@@ -24,7 +25,7 @@ class OAuth2Request(_OAuth2Request):
     # Add "scope" argument to uri with new scopes
     self.uri += "&scope=%s" % list_to_scope(list(set(scope_to_list(self.scope) + scopes))) or ''
     # Reinit all attributes with new uri
-    self.__init__(self.method, self.uri)
+    self.__init__(self.method, to_unicode(self.uri))
 
   @property
   def groups(self):
