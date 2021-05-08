@@ -97,42 +97,12 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.name = parameters['ProviderName']
     self.verify = False
 
-    # Add hooks to raise HTTP errors
-    # self.metadata_class = AuthorizationServerMetadata
     self.server_metadata_url = parameters.get('server_metadata_url', get_well_known_url(self.metadata['issuer'], True))
-    # try:
-    #   self.metadata_class(self.metadata).validate()
-    # except ValueError:
-    #   metadata = self.metadata_class(self.fetch_metadata())
-    #   self.metadata.update(dict((k, v) for k, v in metadata.items() if k not in self.metadata))
-    #   self.metadata_class(self.metadata).validate()
-    
-    # # Set JWKs
-    # self.jwks = parameters.get('jwks', self.fetch_metadata(self.metadata['jwks_uri']))
-    # if not self.jwks:
-    #   raise Exception('Cannot load JWKs for %s' % self.name)
 
     self.log.debug('"%s" OAuth2 IdP initialization done:' % self.name,
                    '\nclient_id: %s\nclient_secret: %s\nmetadata:\n%s' % (self.client_id,
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
-
-  # @classmethod
-  # def verifyToken(cls, token):
-  #   """ Token verification
-
-  #       :param token: token
-  #   """
-  #   if not cls.jwks_uri:
-  #     cls.jwks_uri = requests.get(get_well_known_url(issuer, True)).json()['jwks_uri'], verify=False)
-  #   if not cls.jwks:
-  #     cls.jwks = requests.get(cls.jwks_uri, verify=False)
-
-  #   try:
-  #     return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
-  #   except Exception:
-  #     cls.jwks = requests.get(cls.jwks_uri, verify=False)
-  #     return jwt.decode(token, JsonWebKey.import_key_set(cls.jwks))
 
   def store_token(self, token):
     """ need to implement
@@ -141,29 +111,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
   def update_token(self, token, refresh_token):
     pass
-
-  # def request(self, *args, **kwargs):
-  #   self.token_endpoint_auth_methods_supported = self.get_metadata('token_endpoint_auth_methods_supported')
-  #   if self.token_endpoint_auth_methods_supported:
-  #     if self.token_endpoint_auth_method not in self.token_endpoint_auth_methods_supported:
-  #       self.token_endpoint_auth_method = self.token_endpoint_auth_methods_supported[0]
-  #   return OAuth2Session.request(self, verify=False, *args, **kwargs)
-
-  # def verifyToken(self, token):
-  #   """ Token verification
-
-  #       :param token: token
-  #   """
-  #   try:
-  #     return self._verify_jwt(token)
-  #   except Exception:
-  #     self.jwks = self.fetch_metadata(self.metadata['jwks_uri'])
-  #     return self._verify_jwt(token)
-  
-  # def _verify_jwt(self, token):
-  #   """
-  #   """
-  #   return jwt.decode(token, JsonWebKey.import_key_set(self.jwks))
 
   def get_metadata(self, option=None):
     """

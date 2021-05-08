@@ -16,21 +16,19 @@ from __future__ import print_function
 
 import os
 import sys
-import stat
-import glob
-import time
-import pickle
-import datetime
+import urllib3
+import requests
+import threading
 
 import DIRAC
-from DIRAC import gConfig, gLogger, S_OK, S_ERROR
+from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base import Script
-from DIRAC.Core.Security import X509Chain, ProxyInfo, Properties, VOMS  # pylint: disable=import-error
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
-from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
+from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
+from DIRAC.Core.Security.ProxyFile import writeToProxyFile
+from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getProxyAPI
 
 __RCSID__ = "$Id$"
 
@@ -126,20 +124,6 @@ class Params(object):
 
         :return: S_OK()/S_ERROR()
     """
-    import urllib3
-    import threading
-    import webbrowser
-    import requests
-    import json
-
-    from DIRAC import gConfig
-    from DIRAC.Core.Utilities.JEncode import encode
-    from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
-    from DIRAC.Core.Security.ProxyFile import writeToProxyFile
-    from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
-    # from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-    # from DIRAC.FrameworkSystem.Client.TokenManagerClient import gTokenManager
-
     token = None
     result = readTokenFromFile()
     if not result['OK']:
@@ -159,6 +143,9 @@ class Params(object):
     idpObj = OAuth2IdProvider(**clientConfig)
     if self.group:
       idpObj.scope += 'g:%s' % self.group
+    if self.proxy:
+      idpObj.scope += 'proxy'
+    # idpObj.scope += 'origin_token'
     
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -176,15 +163,13 @@ class Params(object):
     result = Script.enableCS()
     if not result['OK']:
       return S_ERROR("Cannot contact CS to get user list")
-    gConfig.forceRefresh()
+    DIRAC.gConfig.forceRefresh()
 
     if not self.proxy:
       return S_OK()
 
-    from DIRAC.ConfigurationSystem.Client.Utilities import getProxyAPI
-
     r = idpObj.get('%s?lifetime=%s' % (getProxyAPI(), self.lifetime))
-    r.raise_for_status()
+    r.raise_for_us()
     proxy = r.text
     if not proxy:
       return S_ERROR("Something went wrong, the proxy is empty.")
@@ -202,11 +187,10 @@ def main():
   piParams = Params()
   piParams.registerCLISwitches()
 
-  # Script.disableCS()
+  Script.disableCS()
   Script.parseCommandLine(ignoreErrors=True)
   DIRAC.gConfig.setOptionValue("/DIRAC/Security/UseServerCertificate", "False")
 
-  gLogger.info(gConfig.getConfigurationTree())
   resultDoMagic = piParams.doOAuthMagic()
   if not resultDoMagic['OK']:
     gLogger.fatal(resultDoMagic['Message'])

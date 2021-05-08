@@ -11,7 +11,7 @@ __RCSID__ = "$Id$"
 
 class IdProvider(object):
 
-  def __init__(self, *args, **kwargs):  # parameters=None, sessionManager=None):
+  def __init__(self, *args, **kwargs):
     """ C'or
 
         :param dict parameters: parameters of the identity Provider
@@ -19,7 +19,6 @@ class IdProvider(object):
     """
     self.log = gLogger.getSubLogger(self.__class__.__name__)
     self.parameters = kwargs.get('parameters', {})
-    self.sessionManager = kwargs.get('sessionManager')
     self._initialization()
 
   def loadMetadata(self):
@@ -40,34 +39,9 @@ class IdProvider(object):
     """
     self.parameters = parameters
 
-  def setManager(self, sessionManager):
-    """ Set session manager
-
-        :param object sessionManager: session manager
-    """
-    self.sessionManager = sessionManager
-
   def setLogger(self, logger):
     """ Set logger
 
         :param object logger: logger
     """
     self.log = logger
-
-  def isSessionManagerAble(self):
-    """ Check if session manager is available
-
-        :return: S_OK()/S_ERROR()
-    """
-    if not self.sessionManager:
-      try:
-        from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
-        self.sessionManager = gSessionManager
-      except Exception as e:
-        return S_ERROR('Session manager is not available: %s' % e)
-    return S_OK()
-
-  def getTokenWithAuth(self, *args, **kwargs):
-    """ Method to provide autherization flow on client side
-    """
-    return S_ERROR('getTokenWithAuth not implemented.')

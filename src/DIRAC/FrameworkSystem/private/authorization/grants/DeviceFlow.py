@@ -14,7 +14,7 @@ from authlib.oauth2.rfc8628 import DeviceAuthorizationEndpoint as _DeviceAuthori
                                    DEVICE_CODE_GRANT_TYPE
 
 from DIRAC import gLogger, S_OK, S_ERROR
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI, getDIRACClientID
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
 log = gLogger.getSubLogger(__name__)
 
