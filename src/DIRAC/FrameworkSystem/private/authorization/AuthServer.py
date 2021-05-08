@@ -3,20 +3,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import io
 import json
 from time import time
 import pprint
 from dominate import document, tags as dom
-import urlparse
-from tornado.httpclient import HTTPResponse
-from tornado.httputil import HTTPHeaders
 from tornado.template import Template
 
-from authlib.deprecate import deprecate
 from authlib.jose import jwt
 from authlib.oauth2 import HttpRequest, AuthorizationServer as _AuthorizationServer
-from authlib.oauth2.rfc6749.grants import ImplicitGrant
+from authlib.oauth2.base import OAuth2Error
+from authlib.oauth2.rfc6750 import BearerToken
+from authlib.oauth2.rfc7636 import CodeChallenge
+from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
+
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (DeviceAuthorizationEndpoint,
                                                                            DeviceCodeGrant,
                                                                            SaveSessionToDB)
@@ -24,31 +23,17 @@ from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import
                                                                                   AuthorizationCodeGrant)
 from DIRAC.FrameworkSystem.private.authorization.grants.RefreshToken import RefreshTokenGrant
 from DIRAC.FrameworkSystem.private.authorization.grants.TokenExchange import TokenExchangeGrant
-from DIRAC.FrameworkSystem.private.authorization.grants.ImplicitFlow import (OpenIDImplicitGrant,
-                                                                             NotebookImplicitGrant)
-from DIRAC.FrameworkSystem.private.authorization.utils.Clients import (ClientRegistrationEndpoint,
-                                                                       ClientManager)
-from DIRAC.FrameworkSystem.private.authorization.utils.Sessions import SessionManager
+from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Request,
                                                                         createOAuth2Request)
-# from authlib.oidc.core import UserInfo
-
-from authlib.oauth2.rfc6750 import BearerToken
-from authlib.oauth2.rfc7636 import CodeChallenge
-from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
-from authlib.common.security import generate_token
-from authlib.common.encoding import to_unicode, json_dumps
-from authlib.oauth2.base import OAuth2Error
 
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.FrameworkSystem.Client.AuthManagerClient import gSessionManager
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
-# from DIRAC.Core.Web.SessionData import SessionStorage
 
 import logging
 import sys
@@ -58,7 +43,7 @@ log.setLevel(logging.DEBUG)
 log = gLogger.getSubLogger(__name__)
 
 
-class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
+class AuthServer(_AuthorizationServer):
   """ Implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
 
       Initialize::
@@ -73,20 +58,21 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
   def __init__(self):
     self.db = AuthDB()
     self.idps = IdProviderFactory()
-    ClientManager.__init__(self, self.db)
     # Privide two authlib methods query_client and save_token
     _AuthorizationServer.__init__(self, query_client=self.getClient, save_token=self.saveToken)
     self.generate_token = BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
     self.collectMetadata()
-
-    # self.register_grant(NotebookImplicitGrant)  # OpenIDImplicitGrant)
-    self.register_grant(TokenExchangeGrant)
-    self.register_grant(RefreshTokenGrant)
-    self.register_grant(DeviceCodeGrant, [SaveSessionToDB(db=self.db)])
-    self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])
-    self.register_endpoint(ClientRegistrationEndpoint)
-    self.register_endpoint(DeviceAuthorizationEndpoint)
+    # Register configured grants
+    if TokenExchangeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
+      self.register_grant(TokenExchangeGrant)
+    if RefreshTokenGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
+      self.register_grant(RefreshTokenGrant)
+    if DeviceCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
+      self.register_grant(DeviceCodeGrant, [SaveSessionToDB(db=self.db)])
+      self.register_endpoint(DeviceAuthorizationEndpoint)
+    if AuthorizationCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
+      self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
 
   def collectMetadata(self):
     """ Collect metadata """
@@ -114,6 +100,21 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
     if 'refresh_token' in token:
       return self.db.storeToken(token)
     return S_OK(None)
+  
+  def getClient(self, clientID):
+    """ Search authorization client
+
+        :param str clientID: client ID
+
+        :return: object
+    """
+    gLogger.debug('Try to query %s client' % clientID)
+    client = None
+    result = getAuthClients(clientID)
+    if result['OK']:
+      client = Client(result['Value'])
+      gLogger.debug('Found client', client)
+    return client
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number
@@ -252,7 +253,6 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
     if newSession:
       gLogger.debug('newSession:', newSession)
     return S_OK([[status_code, headers, payload, newSession, error], actions])
-    # return HTTPResponse(self.request, status_code, headers=header, buffer=io.StringIO(payload))
 
   def create_authorization_response(self, response, username):
     result = super(AuthServer, self).create_authorization_response(response, username)
@@ -274,7 +274,6 @@ class AuthServer(_AuthorizationServer, ClientManager):  #SessionManager
       return 'Use GET method to access this endpoint.'
     try:
       req = self.create_oauth2_request(request)
-      # req.data['state'] = req.state or generate_token(10)
       gLogger.info('Validate consent request for', req.state)
       grant = self.get_authorization_grant(req)
       gLogger.debug('Use grant:', grant)

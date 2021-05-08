@@ -8,17 +8,14 @@ import json
 from time import time
 from pprint import pprint
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin, OAuth2TokenMixin
-from sqlalchemy import Column, Integer, Text, BigInteger, String
+from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
+from sqlalchemy import Column, Integer, Text, String
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from sqlalchemy.types import TypeDecorator, VARCHAR
-from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.declarative import declarative_base
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthClients
 
 __RCSID__ = "$Id$"
 
@@ -214,28 +211,6 @@ class AuthDB(SQLAlchemyDB):
     """
     self.removeSession(sessionID=sessionID)
     return self.addSession(data)
-
-  # def addSession(self, data):
-  #   result = self._addSession(data)
-  #   if not result['OK']:
-  #     result = self.updateSession(data)
-  #   return result
-
-  # def updateSession(self, data):
-  #   """ Update session
-
-  #       :param dict data: session data with 'id' key
-
-  #       :return: S_OK(object)/S_ERROR()
-  #   """
-  #   session = self.session()
-  #   try:
-  #     session.update(AuthSession(**data)).where(AuthSession.id == data['id'])
-  #   except MultipleResultsFound:
-  #     return self.__result(session, S_ERROR("%s is not unique." % sessionID))
-  #   except Exception as e:
-  #     return self.__result(session, S_ERROR(str(e)))
-  #   return self.__result(session, S_OK())
 
   def removeSession(self, sessionID):
     """ Remove session

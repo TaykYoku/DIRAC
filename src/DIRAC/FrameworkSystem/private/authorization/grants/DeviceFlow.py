@@ -8,76 +8,15 @@ import requests
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.grants import AuthorizationEndpointMixin
 from authlib.oauth2.rfc6749.errors import InvalidClientError, UnauthorizedClientError
-from authlib.oauth2.rfc8628 import (
-    DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
-    DeviceCodeGrant as _DeviceCodeGrant,
-    DeviceCredentialDict,
-    DEVICE_CODE_GRANT_TYPE
-)
+from authlib.oauth2.rfc8628 import DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
+                                   DeviceCodeGrant as _DeviceCodeGrant,
+                                   DeviceCredentialDict,
+                                   DEVICE_CODE_GRANT_TYPE
 
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI, getDIRACClientID
 
 log = gLogger.getSubLogger(__name__)
-
-
-# def submitUserAuthorizationFlow(idP=None, group=None):
-#   """ Submit authorization flow
-
-#       :param str idP: identity provider
-#       :param str group: requested group
-
-#       :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
-#   """
-#   try:
-#     r = requests.post('{api}/device{provider}?client_id={client_id}{group}'.format(
-#         api=getAuthAPI(), client_id=getDIRACClientID(),
-#         provider=('/%s' % idP) if idP else '',
-#         group = ('&scope=g:%s' % group) if group else ''
-#     ), verify=False)
-#     r.raise_for_status()
-#     deviceResponse = r.json()
-
-#     # Check if all main keys are present here
-#     for k in ['user_code', 'device_code', 'verification_uri']:
-#       if not deviceResponse.get(k):
-#         return S_ERROR('Mandatory %s key is absent in authentication response.' % k)
-
-#     return S_OK(deviceResponse)
-#   except requests.exceptions.Timeout:
-#     return S_ERROR('Authentication server is not answer, timeout.')
-#   except requests.exceptions.RequestException as ex:
-#     return S_ERROR(r.content or repr(ex))
-#   except Exception as ex:
-#     return S_ERROR('Cannot read authentication response: %s' % repr(ex))
-
-
-# def waitFinalStatusOfUserAuthorizationFlow(deviceCode, interval=5, timeout=300):
-#   """ Submit waiting loop process, that will monitor current authorization session status
-
-#       :param str deviceCode: received device code
-#       :param int interval: waiting interval
-#       :param int timeout: max time of waiting
-
-#       :return: S_OK(dict)/S_ERROR() - dictionary contain access/refresh token and some metadata
-#   """
-#   __start = time.time()
-
-#   while True:
-#     time.sleep(int(interval))
-#     if time.time() - __start > timeout:
-#       return S_ERROR('Time out.')
-#     r = requests.post('{api}/token?client_id={client_id}&grant_type={grant}&device_code={device_code}'.format(
-#         api=getAuthAPI(), client_id = getDIRACClientID(), grant=DEVICE_CODE_GRANT_TYPE, device_code=deviceCode
-#     ), verify=False)
-#     token = r.json()
-#     if not token:
-#       return S_ERROR('Resived token is empty!')
-#     if 'error' not in token:
-#       os.environ['DIRAC_TOKEN'] = r.text
-#       return S_OK(token)
-#     if token['error'] != 'authorization_pending':
-#       return S_ERROR(token['error'] + ' : ' + token.get('description', ''))
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):

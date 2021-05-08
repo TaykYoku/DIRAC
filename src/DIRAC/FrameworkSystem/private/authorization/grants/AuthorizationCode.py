@@ -118,8 +118,6 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     pprint(self.request.user)
     pprint(self.request.data)
     print('Session:')
-    # sessionDict = self.server.getSession(self.request.state)
-    # pprint(sessionDict)
     print('-----------------------------------------------')
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
