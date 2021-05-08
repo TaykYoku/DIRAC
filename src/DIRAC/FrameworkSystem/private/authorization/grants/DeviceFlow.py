@@ -8,10 +8,10 @@ import requests
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.grants import AuthorizationEndpointMixin
 from authlib.oauth2.rfc6749.errors import InvalidClientError, UnauthorizedClientError
-from authlib.oauth2.rfc8628 import DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
-                                   DeviceCodeGrant as _DeviceCodeGrant,
-                                   DeviceCredentialDict,
-                                   DEVICE_CODE_GRANT_TYPE
+from authlib.oauth2.rfc8628 import (DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
+                                    DeviceCodeGrant as _DeviceCodeGrant,
+                                    DeviceCredentialDict,
+                                    DEVICE_CODE_GRANT_TYPE)
 
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
