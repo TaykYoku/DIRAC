@@ -266,7 +266,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :return: S_OK(dict)/S_ERROR() -- dictionary with device code flow response
     """
-    print('scopes: %s' % self.scope)
     groupScopes = []
     if group:
       result = self.getGroupScopes(group)
@@ -278,7 +277,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       r = requests.post(self.get_metadata('device_authorization_endpoint'), data=dict(
         client_id=self.client_id, scope=list_to_scope(scope_to_list(self.scope) + groupScopes)
       ), verify=self.verify)
-      print(list_to_scope(scope_to_list(self.scope) + groupScopes))
       r.raise_for_status()
       deviceResponse = r.json()
       if 'error' in deviceResponse:
