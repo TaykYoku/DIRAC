@@ -119,13 +119,14 @@ class AuthServer(_AuthorizationServer):
       gLogger.debug('Found client', client)
     return client
   
-  def generateProxyOrToken(self, user=None, scope=None, include_refresh_token=None):
+  def generateProxyOrToken(self, user=None, scope=None, include_refresh_token=None, **kwargs):
     """
     """
     print('generateProxyOrToken:')
     print('user: %s' % user)
     print('scope: %s' % scope)
     print('include_refresh_token: %s' % include_refresh_token)
+    print('kwargs: %s' % kwargs)
     if 'proxy' in scope_to_list(scope):
       group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
       lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
