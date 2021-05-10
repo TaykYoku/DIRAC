@@ -341,7 +341,7 @@ class BaseRequestHandler(RequestHandler):
 
     """
     print('====>>> ___prepare %s' % self.request.path)
-    print(self.get_status)
+    print(self.get_status())
 
     try:
       print(self.USE_AUTHZ_GRANTS)
@@ -481,7 +481,7 @@ class BaseRequestHandler(RequestHandler):
 
     print('FUTURE RESULT >>>')
     print(self.result)
-    print(self.get_status)
+    print(self.get_status())
 
     # Here it is safe to write back to the client, because we are not
     # in a thread anymore
