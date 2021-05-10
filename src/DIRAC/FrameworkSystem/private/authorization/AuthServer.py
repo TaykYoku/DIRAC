@@ -63,7 +63,7 @@ class AuthServer(_AuthorizationServer):
     self.idps = IdProviderFactory()
     # Privide two authlib methods query_client and save_token
     _AuthorizationServer.__init__(self, query_client=self.getClient, save_token=self.saveToken)
-    self.generate_token = BearerToken(self.access_token_generator, self.refresh_token_generator)
+    self.generate_token = self.generateProxyOrToken  # BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
     self.collectMetadata()
     # Register configured grants
@@ -118,6 +118,23 @@ class AuthServer(_AuthorizationServer):
       client = Client(result['Value'])
       gLogger.debug('Found client', client)
     return client
+  
+  def generateProxyOrToken(self, user=None, scope=None, include_refresh_token=None):
+    """
+    """
+    print('generateProxyOrToken:')
+    print('user: %s' % user)
+    print('scope: %s' % scope)
+    print('include_refresh_token: %s' % include_refresh_token)
+    if 'proxy' in scope_to_list(scope):
+      group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
+      lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
+      result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
+      if not result['OK']:
+        raise Exception(result['Message'])
+      gLogger.info('Proxy was created.')
+      return result['Value'].dumpAllToString()
+    return BearerToken(self.access_token_generator, self.refresh_token_generator)
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number
@@ -191,14 +208,14 @@ class AuthServer(_AuthorizationServer):
 
         :return: jwt object
     """
-    if 'proxy' in scope:
-      group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
-      lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
-      result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
-      if not result['OK']:
-        raise Exception(result['Message'])
-      gLogger.info('Proxy was created.')
-      return result['Value'].dumpAllToString()
+    # if 'proxy' in scope:
+    #   group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
+    #   lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
+    #   result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
+    #   if not result['OK']:
+    #     raise Exception(result['Message'])
+    #   gLogger.info('Proxy was created.')
+    #   return result['Value'].dumpAllToString()
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
     header = {'alg': 'RS256'}
     payload = {'sub': user,
