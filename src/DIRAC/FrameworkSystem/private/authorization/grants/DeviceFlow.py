@@ -120,6 +120,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     data['interval'] = DeviceAuthorizationEndpoint.INTERVAL
     data['verification_uri'] = DeviceAuthorizationEndpoint.URL
     print('query_device_credential: %s' % DeviceCredentialDict(data))
+    print('scope: %s' % DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
