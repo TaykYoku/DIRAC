@@ -139,10 +139,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
   def should_slow_down(self, credential, now):
     """ If need to slow down requests """
     return False
-  
-  def create_token_response(self, *args, **kwargs):
-    print('create_token_response: %s' % self.request.credential)
-    return super(DeviceCodeGrant, self).create_token_response(*args, **kwargs)
 
 
 class SaveSessionToDB(object):

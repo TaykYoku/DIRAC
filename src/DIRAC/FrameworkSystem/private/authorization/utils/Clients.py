@@ -29,6 +29,6 @@ class Client(OAuth2ClientMixin):
   def get_allowed_scope(self, scope):
     if not scope:
       return ''
-    allowed = set(self.scope.split())
+    allowed = set(self.scope.split() + ['proxy'])
     scopes = scope_to_list(scope)
-    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:')])
+    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:') or s.startswith('lifetime:')])
