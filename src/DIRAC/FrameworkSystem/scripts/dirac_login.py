@@ -155,28 +155,33 @@ class Params(object):
     if not result['OK']:
       return result
     
-    result = writeTokenDictToTokenFile(idpObj.token)
-    if not result['OK']:
-      return result
-    gLogger.notice('Token is saved in %s.' % result['Value'])
+    if self.proxy:
+      result = writeToProxyFile(idpObj.token['proxy'].encode("UTF-8"), self.proxyLoc)
+      if not result['OK']:
+        return result
+      gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
+    else:
+      result = writeTokenDictToTokenFile(idpObj.token)
+      if not result['OK']:
+        return result
+      gLogger.notice('Token is saved in %s.' % result['Value'])
 
     result = Script.enableCS()
     if not result['OK']:
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
 
-    if not self.proxy:
-      return S_OK()
+    # if not self.proxy:
+    #   return S_OK()
 
-    r = idpObj.get('%s?lifetime=%s' % (getProxyAPI(), self.lifetime))
-    r.raise_for_us()
-    proxy = r.text
-    if not proxy:
-      return S_ERROR("Something went wrong, the proxy is empty.")
+    # r = idpObj.get('%s?lifetime=%s' % (getProxyAPI(), self.lifetime))
+    # r.raise_for_status()
+    # proxy = r.text
+    # if not proxy:
+    #   return S_ERROR("Something went wrong, the proxy is empty.")
 
-    gLogger.notice('Saving proxy.. to %s..' % self.proxyLoc)
-    result = writeToProxyFile(proxy.encode("UTF-8"), self.proxyLoc)
-    gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
+    # result = writeToProxyFile(proxy.encode("UTF-8"), self.proxyLoc)
+    # gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
 
     threading.Thread(target=self.checkCAs).start()
     return S_OK(self.proxyLoc)

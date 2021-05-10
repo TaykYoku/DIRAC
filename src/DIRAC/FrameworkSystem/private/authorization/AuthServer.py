@@ -148,7 +148,10 @@ class AuthServer(_AuthorizationServer):
           err.append(result['Message'])
         else:
           gLogger.info('Proxy was created.')
-          return {'proxy': result['Value'].dumpAllToString()}
+          result = result['Value'].dumpAllToString()
+          if not result['OK']:
+            raise Exception(result['Message'])
+          return {'proxy': result['Value']}
       raise Exception('; '.join(err))
       
     return self.bearerToken(**kwargs)
