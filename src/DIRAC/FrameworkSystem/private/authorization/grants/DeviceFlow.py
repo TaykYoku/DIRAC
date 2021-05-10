@@ -110,7 +110,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
 
   def query_device_credential(self, device_code):
     result = self.server.db.getSession(device_code)
-    print('.......>>  %s' % result)
+    print('query_device_credential>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
     data = result['Value']
@@ -119,6 +119,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     data['expires_at'] = int(data['expires_in']) + int(time.time())
     data['interval'] = DeviceAuthorizationEndpoint.INTERVAL
     data['verification_uri'] = DeviceAuthorizationEndpoint.URL
+    print('query_device_credential: %s' % DeviceCredentialDict(data))
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
