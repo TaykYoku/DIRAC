@@ -63,7 +63,8 @@ class AuthServer(_AuthorizationServer):
     self.idps = IdProviderFactory()
     # Privide two authlib methods query_client and save_token
     _AuthorizationServer.__init__(self, query_client=self.getClient, save_token=self.saveToken)
-    self.generate_token = self.generateProxyOrToken  # BearerToken(self.access_token_generator, self.refresh_token_generator)
+    self.generate_token = self.generateProxyOrToken
+    self.bearerToken = BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
     self.collectMetadata()
     # Register configured grants
@@ -118,14 +119,14 @@ class AuthServer(_AuthorizationServer):
       client = Client(result['Value'])
       gLogger.debug('Found client', client)
     return client
-  
-  def generateProxyOrToken(self, user=None, scope=None, include_refresh_token=None, **kwargs):
+
+  def generateProxyOrToken(self, user=None, scope=None, **kwargs):
     """
     """
     print('generateProxyOrToken:')
-    print('user: %s' % user)
-    print('scope: %s' % scope)
-    print('include_refresh_token: %s' % include_refresh_token)
+    print('user: %s' % kwargs.get('user', user))
+    print('scope: %s' % kwargs.get('scope', scope))
+    print('include_refresh_token: %s' % kwargs.get('include_refresh_token'))
     print('kwargs: %s' % kwargs)
     if 'proxy' in scope_to_list(scope):
       group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
@@ -135,7 +136,7 @@ class AuthServer(_AuthorizationServer):
         raise Exception(result['Message'])
       gLogger.info('Proxy was created.')
       return {'proxy': result['Value'].dumpAllToString()}
-    return BearerToken(self.access_token_generator, self.refresh_token_generator)
+    return self.bearerToken(user=user, scope=scope, **kwargs)
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number
