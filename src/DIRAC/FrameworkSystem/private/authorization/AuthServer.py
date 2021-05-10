@@ -120,14 +120,14 @@ class AuthServer(_AuthorizationServer):
       gLogger.debug('Found client', client)
     return client
 
-  def generateProxyOrToken(self, user=None, scope=None, **kwargs):
+  def generateProxyOrToken(self, **kwargs):
     """
     """
     print('generateProxyOrToken:')
-    print('user: %s' % kwargs.get('user', user))
-    print('scope: %s' % kwargs.get('scope', scope))
-    print('include_refresh_token: %s' % kwargs.get('include_refresh_token'))
     print('kwargs: %s' % kwargs)
+    user = kwargs['user']
+    scope = kwargs['scope']
+    print('user/scope: %s/%s' % (user, scope))
     if 'proxy' in scope_to_list(scope):
       group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
       lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
@@ -136,7 +136,7 @@ class AuthServer(_AuthorizationServer):
         raise Exception(result['Message'])
       gLogger.info('Proxy was created.')
       return {'proxy': result['Value'].dumpAllToString()}
-    return self.bearerToken(user=user, scope=scope, **kwargs)
+    return self.bearerToken(**kwargs)
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number
