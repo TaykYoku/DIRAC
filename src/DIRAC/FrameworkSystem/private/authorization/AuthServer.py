@@ -134,7 +134,7 @@ class AuthServer(_AuthorizationServer):
       if not result['OK']:
         raise Exception(result['Message'])
       gLogger.info('Proxy was created.')
-      return result['Value'].dumpAllToString()
+      return {'proxy': result['Value'].dumpAllToString()}
     return BearerToken(self.access_token_generator, self.refresh_token_generator)
 
   def getIdPAuthorization(self, providerName, request):
