@@ -34,7 +34,7 @@ from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthClients
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup, getDNForUsername
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 
 import logging
@@ -131,11 +131,26 @@ class AuthServer(_AuthorizationServer):
     if 'proxy' in scope_to_list(scope):
       group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
       lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
-      result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
+      result = getUsernameForDN('/O=DIRAC/CN=%s' % user)
       if not result['OK']:
         raise Exception(result['Message'])
-      gLogger.info('Proxy was created.')
-      return {'proxy': result['Value'].dumpAllToString()}
+      result = getDNForUsername(result['Value'])
+      if not result['OK']:
+        return result
+      userDNs = result['Value']
+      err = []
+      for dn in userDNs:
+        if lifetime:
+          result = self.proxyCli.downloadProxy(dn, group, requiredTimeLeft=int(lifetime[0]))
+        else:
+          result = self.proxyCli.downloadProxy(dn, group)
+        if not result['OK']:
+          err.append(result['Message'])
+        else:
+          gLogger.info('Proxy was created.')
+          return {'proxy': result['Value'].dumpAllToString()}
+      raise Exception('; '.join(err))
+      
     return self.bearerToken(**kwargs)
 
   def getIdPAuthorization(self, providerName, request):
