@@ -19,7 +19,7 @@ class Client(OAuth2ClientMixin):
   def __init__(self, params):
     super(Client, self).__init__()
     client_metadata = params.get('client_metadata', {})
-    client_metadata['scope'] = ' '.join([client_metadata.get('scope', ''), self.DEFAULT_SCOPE])
+    client_metadata['scope'] = ' '.join([client_metadata.get('scope', ''), DEFAULT_SCOPE])
     self.client_id = params['client_id']
     self.client_secret = params.get('client_secret', '')
     self.client_id_issued_at = params.get('client_id_issued_at', int(time.time()))
