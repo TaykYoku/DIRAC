@@ -104,6 +104,7 @@ class AuthServer(_AuthorizationServer):
         :param dict token: tokens
         :param object request: http Request object, implemented for compatibility with authlib library (unuse)
     """
+    print('>>> saveToken <<<')
     if 'refresh_token' in token:
       return self.db.storeToken(token)
     return S_OK(None)
