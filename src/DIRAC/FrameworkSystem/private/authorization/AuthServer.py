@@ -30,6 +30,7 @@ from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Re
 
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
+from DIRAC.FrameworkSystem.DB.TokenDB import TokenDB
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthClients
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
@@ -60,6 +61,7 @@ class AuthServer(_AuthorizationServer):
 
   def __init__(self):
     self.db = AuthDB()
+    self.__tokenDB = TokenDB()
     self.proxyCli = ProxyManagerClient()
     self.idps = IdProviderFactory()
     # Privide two authlib methods query_client and save_token
@@ -196,7 +198,7 @@ class AuthServer(_AuthorizationServer):
     providerName = session.pop('Provider')
     gLogger.debug('Try to parse authentification response from %s:\n' % providerName, pprint.pformat(response))
     # Parse response
-    result = self.idps.getIdProvider(providerName, sessionManager=self.db)
+    result = self.idps.getIdProvider(providerName, sessionManager=self.__tokenDB)
     if not result['OK']:
       return result
     provObj = result['Value']

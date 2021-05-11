@@ -176,6 +176,24 @@ class AuthDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
 
+  def removeExpiredTokens(self):
+    """ Remove expired tokens """
+    session = self.session()
+    try:
+      session.query(Token).filter(Token.expires_at < time()).delete()
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK())
+
+  def removeExpiredSessions(self):
+    """ Remove expired sessions """
+    session = self.session()
+    try:
+      session.query(AuthSession).filter(AuthSession.expires_at < time()).delete()
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK())
+
   def addSession(self, data):
     """ Add new session
 
@@ -184,6 +202,8 @@ class AuthDB(SQLAlchemyDB):
         :return: S_OK(dict)/S_ERROR()
     """
     attrts = {}
+    if not data.get('expires_at'):
+      data['expires_at'] = data['expires_in'] + time()
     gLogger.debug('Add authorization session:', data)
     for k, v in data.items():
       if k not in AuthSession.__dict__.keys():
