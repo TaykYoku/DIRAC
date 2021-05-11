@@ -52,11 +52,6 @@ class OAuth2Code(dict):
 class OpenIDCode(_OpenIDCode):
   def exists_nonce(self, nonce, request):
     return False
-    # try:
-    #   AuthorizationCode.objects.get(client_id=request.client_id, nonce=nonce)
-    #   return True
-    # except AuthorizationCode.DoesNotExist:
-    #   return False
 
   def get_jwt_config(self, grant):
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
@@ -66,11 +61,8 @@ class OpenIDCode(_OpenIDCode):
 
   def generate_user_info(self, user, scope):
     print('== generate_user_info ==')
-    # pprint(self.__dict__)
     print(user)
     print(scope)
-    # data = self.server.getSession(self.request.state)
-    # return UserInfo(sub=user[0], profile=data['profile'], grp=user[1])
     return UserInfo(sub=user[0], grp=user[1])
 
 
@@ -91,16 +83,14 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
 
         :return: OAuth2Code or None
     """
-    print('== query_authorization_code ==')
-    pprint(code)
+    gLogger.debug('Query authorization code:', code)
     jws = JsonWebSignature(algorithms=['RS256'])
     with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
       key = f.read()
     data = jws.deserialize_compact(code, key)
     try:
       item = OAuth2Code(json_loads(urlsafe_b64decode(data['payload'])))
-      pprint(dict(item))
-      print('get_scope: %s' % item.get_scope())
+      gLogger.debug('Authorization code scope:', item.get_scope())
     except Exception as e:
       return None
     if not item.is_expired():
@@ -110,30 +100,20 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     return authorization_code.user
 
   def generate_authorization_code(self):
-    """ return code """
-    print('========= generate_authorization_code =========')
-    print('DICT:')
-    pprint(self.__dict__)
-    print('Reuest:')
-    pprint(self.request.user)
+    """ Generate authoization code """
+    gLogger.debug('Generate authorization code for credentials:', self.request.user)
     pprint(self.request.data)
-    print('Session:')
-    print('-----------------------------------------------')
     jws = JsonWebSignature(algorithms=['RS256'])
     protected = {'alg': 'RS256'}
     code = OAuth2Code({'user_id': self.request.user['ID'],
-                       # These scopes already contain DIRAC groups
+                       # These scope already contain DIRAC groups
                        'scope': self.request.data['scope'],
                        'redirect_uri': self.request.args['redirect_uri'],
                        'client_id': self.request.args['client_id'],
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
-    print('--= Payload =--')
-    pprint(dict(code))
-    # payload = json_dumps(dict(code)) #
+    gLogger.debug('Authorization code generated:', dict(code))
     payload = json_b64encode(dict(code))
-    pprint(payload)
-    print('--=         =--')
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
       key = f.read()
     return jws.serialize_compact(protected, payload, key)

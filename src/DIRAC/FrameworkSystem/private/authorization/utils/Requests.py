@@ -20,13 +20,10 @@ class OAuth2Request(_OAuth2Request):
 
         :param list scopes: scopes
     """
-    print('>>>>>> addScopes')
-    print(scopes)
     # Remove "scope" argument from uri
     self.uri = re.sub(r"&scope(=[^&]*)?|^scope(=[^&]*)?&?", "", self.uri)
     # Add "scope" argument to uri with new scopes
     self.uri += "&scope=%s" % '+'.join(list(set(scope_to_list(self.scope) + scopes))) or ''
-    print(self.uri)
     # Reinit all attributes with new uri
     self.__init__(self.method, to_unicode(self.uri))
 

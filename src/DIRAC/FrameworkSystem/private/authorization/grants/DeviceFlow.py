@@ -43,9 +43,6 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
         :param str scope: request scopes
         :param dict data: device credentials
     """
-    print('save device credentials')
-    print(scope)
-    
     data.update(dict(uri='{api}?{query}&response_type=device&client_id={client_id}&scope={scope}'.format(
         api=data['verification_uri'], query=self.req.query, client_id=client_id, scope=scope,
     ), id=data['device_code'], client_id=client_id, scope=scope))
@@ -84,7 +81,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     # Get session from cookie
     if not self.server.db.getSessionByUserCode(userCode):
       raise OAuth2Error('Session with %s user code is expired.' % userCode)
-    # self.execute_hook('after_validate_authorization_request')
     return None
 
   def create_authorization_response(self, redirect_uri, user):
@@ -96,7 +92,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
         :return: result of `handle_response`
     """
     result = self.server.db.getSessionByUserCode(self.request.data['user_code'])
-    print('... 2 ...>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
     data = result['Value']

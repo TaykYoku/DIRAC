@@ -308,7 +308,6 @@ class TokenExchangeGrant(_TokenExchangeGrant):
 
     # Check token
     token = self.validator(subject_token, self.request.scope, self.request, 'OR')
-    # token = session.token
 
     # To special flow to change group
     if not self.request.scope:

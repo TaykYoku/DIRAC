@@ -22,6 +22,7 @@ from DIRAC.Core.Utilities.Glue2 import getGlue2CEInfo
 from DIRAC.Core.Utilities.SiteSEMapping import getSEHosts
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers
 
+
 def getGridVOs():
   """ Get all the VOMS VO names served by this DIRAC service
 
@@ -577,22 +578,6 @@ def getAuthAPI():
   return gConfig.getValue("/Systems/Framework/%s/URLs/AuthAPI" % getSystemInstance("Framework"))
 
 
-def getProxyAPI():
-  """ Get Proxy REST API url
-
-      :return: str
-  """
-  return gConfig.getValue("/Systems/Framework/%s/URLs/ProxyAPI" % getSystemInstance("Framework"))
-
-
-def getDIRACClientID():
-  """ Get DIRAC client public ID
-
-      :return: str
-  """
-  return gConfig.getValue("/DIRAC/ClientID")
-
-
 def getWebClient():
   """ Get registred in the configuration Web authentication client
 
@@ -700,5 +685,5 @@ def isDownloadablePersonalProxy():
 
       :return: S_OK(bool)/S_ERROR()
   """
-  cs_path = '/Systems/Framework/%s/APIs/Proxy' % getSystemInstance("Framework")
+  cs_path = '/Systems/Framework/%s/APIs/Auth' % getSystemInstance("Framework")
   return gConfig.getOption(cs_path + '/downloadablePersonalProxy')

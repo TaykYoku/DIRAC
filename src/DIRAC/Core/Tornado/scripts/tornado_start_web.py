@@ -18,9 +18,6 @@ def main():
   # Must be define BEFORE any dirac import
   os.environ['DIRAC_USE_TORNADO_IOLOOP'] = "True"
 
-  from DIRAC import gConfig
-  from DIRAC.ConfigurationSystem.Client import PathFinder
-  from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
   from DIRAC.ConfigurationSystem.Client.LocalConfiguration import LocalConfiguration
   from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
   from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
@@ -42,8 +39,7 @@ def main():
   gLogger.initialize('Tornado', "/")
 
   services = ['DataManagement/TornadoFileCatalog']
-  # endpoints = ['Framework/Auth:8010', 'Framework/Proxy']
-  endpoints = ['Framework/Proxy']
+  endpoints = False
 
   serverToLaunch = TornadoServer(services, endpoints, port=8000)
 
@@ -58,7 +54,7 @@ def main():
     serverToLaunch.addHandlers(app['routes'], app['settings'])
   except ImportError as e:
     gLogger.fatal('Web portal is not installed. %s' % repr(e))
-    #sys.exit(1)
+    sys.exit(1)
 
   serverToLaunch.startTornado()
 

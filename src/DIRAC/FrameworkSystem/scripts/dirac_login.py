@@ -28,7 +28,7 @@ from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTok
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getProxyAPI
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 
 __RCSID__ = "$Id$"
 
@@ -170,18 +170,6 @@ class Params(object):
     if not result['OK']:
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
-
-    # if not self.proxy:
-    #   return S_OK()
-
-    # r = idpObj.get('%s?lifetime=%s' % (getProxyAPI(), self.lifetime))
-    # r.raise_for_status()
-    # proxy = r.text
-    # if not proxy:
-    #   return S_ERROR("Something went wrong, the proxy is empty.")
-
-    # result = writeToProxyFile(proxy.encode("UTF-8"), self.proxyLoc)
-    # gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
 
     threading.Thread(target=self.checkCAs).start()
     return S_OK(self.proxyLoc)

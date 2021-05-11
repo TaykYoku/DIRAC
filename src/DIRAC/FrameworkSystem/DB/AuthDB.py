@@ -62,7 +62,6 @@ class AuthSession(Model):
 class AuthDB(SQLAlchemyDB):
   """ AuthDB class is a front-end to the OAuth Database
   """
-  # TODO: provide logging instead of print
   def __init__(self):
     """ Constructor
     """
@@ -102,9 +101,7 @@ class AuthDB(SQLAlchemyDB):
         :return: S_OK(str)/S_ERROR()
     """
     attrts = {}
-    print('========= STORE TOKEN')
-    pprint(metadata)
-    print('---------------------')
+    gLogger.debug('Store token:', metadata)
     for k, v in metadata.items():
       if k not in Token.__dict__.keys():
         self.log.warn('%s is not expected as token attribute.' % k)
@@ -187,8 +184,7 @@ class AuthDB(SQLAlchemyDB):
         :return: S_OK(dict)/S_ERROR()
     """
     attrts = {}
-    print('============ addSession ============')
-    pprint(data)
+    gLogger.debug('Add authorization session:', data)
     for k, v in data.items():
       if k not in AuthSession.__dict__.keys():
         self.log.warn('%s is not expected as authentication session attribute.' % k)

@@ -42,7 +42,6 @@ class Token(Model, OAuth2TokenMixin):
 class TokenDB(SQLAlchemyDB):
   """ TokenDB class is a front-end to the OAuth Database
   """
-  # TODO: provide logging instead of print
   def __init__(self):
     """ Constructor
     """
@@ -75,9 +74,7 @@ class TokenDB(SQLAlchemyDB):
         :return: S_OK(str)/S_ERROR()
     """
     attrts = {}
-    print('========= STORE TOKEN')
-    pprint(metadata)
-    print('---------------------')
+    gLogger.debug('Store token:', metadata)
     for k, v in metadata.items():
       if k not in Token.__dict__.keys():
         self.log.warn('%s is not expected as token attribute.' % k)
@@ -151,3 +148,24 @@ class TokenDB(SQLAlchemyDB):
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
+
+  def __result(self, session, result=None):
+    try:
+      if not result['OK']:
+        session.rollback()
+      else:
+        session.commit()
+    except Exception as e:
+      session.rollback()
+      result = S_ERROR('Could not commit: %s' % (e))
+    session.close()
+    return result
+
+  def __rowToDict(self, row):
+    """ Convert sqlalchemy row to dictionary
+
+        :param object row: sqlalchemy row
+
+        :return: dict
+    """
+    return {c.name: str(getattr(row, c.name)) for c in row.__table__.columns} if row else {}

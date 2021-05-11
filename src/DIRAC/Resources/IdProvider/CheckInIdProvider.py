@@ -14,7 +14,7 @@ from authlib.oauth2.rfc8628 import DEVICE_CODE_GRANT_TYPE
 
 from DIRAC import S_ERROR, S_OK
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider, claimParser
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSRoleGroupMapping, getVOForGroup, getGroupOption, getDNForID
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOMSRoleGroupMapping, getVOForGroup, getGroupOption
 
 __RCSID__ = "$Id$"
 

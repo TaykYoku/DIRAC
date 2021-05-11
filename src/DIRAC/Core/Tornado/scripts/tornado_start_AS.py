@@ -18,9 +18,6 @@ def main():
   # Must be define BEFORE any dirac import
   os.environ['DIRAC_USE_TORNADO_IOLOOP'] = "True"
 
-  from DIRAC import gConfig
-  from DIRAC.ConfigurationSystem.Client import PathFinder
-  from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
   from DIRAC.ConfigurationSystem.Client.LocalConfiguration import LocalConfiguration
   from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
   from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
@@ -43,7 +40,7 @@ def main():
 
   endpoints = ['Framework/Auth']
 
-  serverToLaunch = TornadoServer(False, endpoints, port=8010)
+  serverToLaunch = TornadoServer(False, endpoints)
 
   serverToLaunch.startTornado()
 

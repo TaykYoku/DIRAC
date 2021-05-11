@@ -6,23 +6,18 @@ from __future__ import print_function
 
 import json
 import pprint
-import requests
 from io import open
 
 from dominate import document, tags as dom
 from tornado.template import Template
-from tornado.httputil import HTTPHeaders
-from tornado.httpclient import HTTPResponse, HTTPRequest
 
-from authlib.jose import jwk, jwt
-# from authlib.jose import JsonWebKey
+from authlib.jose import jwk
 from authlib.oauth2.base import OAuth2Error
 from authlib.oauth2.rfc6749.util import scope_to_list
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
-from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
@@ -222,58 +217,11 @@ class AuthHandler(TornadoREST):
             ]
           }
     """
-    import time
-    print('>> JWK')
-    time.sleep(5)
     if self.request.method == "GET":
-      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+      with open('/opt/dirac/etc/grid-securRS256.key.pub', 'rb') as f:
         key = f.read()
-      # # # For newer version
-      # # # key = JsonWebKey.import_key(key, {'kty': 'RSA'})
-      # # # self.finish(key.as_dict())
       return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
 
-  # auth_userinfo = ["authenticated"]
-  def web_userinfo(self):
-    """ The UserInfo endpoint can be used to retrieve identity information about a user,
-        see `spec <https://openid.net/specs/openid-connect-core-1_0.html#UserInfo>`_
-
-        GET LOCATION/userinfo
-
-        Parameters:
-        +---------------+--------+---------------------------------+--------------------------------------------------+
-        | **name**      | **in** | **description**                 | **example**                                      |
-        +---------------+--------+---------------------------------+--------------------------------------------------+
-        | Authorization | header | Provide access token            | Bearer jkagfbfd3r4ubf887gqduyqwogasd87           |
-        +---------------+--------+---------------------------------+--------------------------------------------------+
-
-        Request example::
-
-          GET LOCATION/userinfo
-          Authorization: Bearer <access_token>
-
-        Response::
-
-          HTTP/1.1 200 OK
-          Content-Type: application/json
-
-          {
-            "sub": "248289761001",
-            "name": "Bob Smith",
-            "given_name": "Bob",
-            "family_name": "Smith",
-            "group": [
-              "dirac_user",
-              "dirac_admin"
-            ]
-          }
-    """
-    # Token verification
-    token = ResourceProtector().acquire_token(self.request, '')
-    return {'sub': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
-    # return {'username': credDict['username'],
-    #         'group': credDict['group']}
-    # return self.__validateToken()
 
   path_device = ['([A-z0-9-_]*)']
 

@@ -21,7 +21,6 @@ from authlib.integrations.requests_client import OAuth2Session
 from authlib.oidc.discovery.well_known import get_well_known_url
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import OAuth2Token
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthClients
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.IdProvider.IdProvider import IdProvider
@@ -167,7 +166,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.log.debug('Try to parse authentication response:', pprint.pformat(response.data))
 
     if not session:
-      session = {}  # Session(response.args['state'])
+      session = {}
 
     self.log.debug('Current session is:\n', pprint.pformat(dict(session)))
     
@@ -346,7 +345,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if not result['OK']:
       return result
     groupScopes = result['Value']
-    print(list_to_scope(scope_to_list(self.scope) + groupScopes))
     try:
       token = self.exchange_token(self.get_metadata('token_endpoint'), subject_token=self.token['access_token'],
                                   subject_token_type='urn:ietf:params:oauth:token-type:access_token',

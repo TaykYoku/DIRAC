@@ -12,11 +12,14 @@ from DIRAC import S_OK
 
 __RCSID__ = "$Id$"
 
+DEFAULT_SCOPE = 'proxy g: lifetime:'
+
 
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
     super(Client, self).__init__()
     client_metadata = params.get('client_metadata', {})
+    client_metadata['scope'] = ' '.join([client_metadata.get('scope', ''), self.DEFAULT_SCOPE])
     self.client_id = params['client_id']
     self.client_secret = params.get('client_secret', '')
     self.client_id_issued_at = params.get('client_id_issued_at', int(time.time()))
@@ -27,8 +30,5 @@ class Client(OAuth2ClientMixin):
       self._client_metadata = client_metadata
 
   def get_allowed_scope(self, scope):
-    if not scope:
-      return ''
-    allowed = set(self.scope.split() + ['proxy'])
-    scopes = scope_to_list(scope)
-    return list_to_scope([s for s in scopes if s in allowed or s.startswith('g:') or s.startswith('lifetime:')])
+    scopes = scope_to_list(super(Client, self).get_allowed_scope(scope))
+    return list_to_scope([s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])

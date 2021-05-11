@@ -40,7 +40,7 @@ from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getDIRACClient, getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
 
 sLog = gLogger.getSubLogger(__name__.split('.')[-1])
@@ -331,7 +331,7 @@ class BaseRequestHandler(RequestHandler):
     self.method = self._getMethodName()
 
     self._monitorRequest()
-    print('====>>> prepare %s' % self.request.path)
+    self._prepare()
 
   def _prepare(self):
     """
@@ -340,11 +340,7 @@ class BaseRequestHandler(RequestHandler):
       regardless of the HTTP method used
 
     """
-    print('====>>> ___prepare %s' % self.request.path)
-    print(self.get_status())
-
     try:
-      print(self.USE_AUTHZ_GRANTS)
       self.credDict = self._gatherPeerCredentials()
     except Exception as e:  # pylint: disable=broad-except
       # If an error occur when reading certificates we close connection
@@ -446,9 +442,6 @@ class BaseRequestHandler(RequestHandler):
         This method is called in an executor, and so cannot use methods like self.write
         See https://www.tornadoweb.org/en/branch5.1/web.html#thread-safety-notes
     """
-
-    # Run AuthManager query also in thread 
-    self._prepare()
 
     sLog.notice(
         "Incoming request %s /%s: %s" %
