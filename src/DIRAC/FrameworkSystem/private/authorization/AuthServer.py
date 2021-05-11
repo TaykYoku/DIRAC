@@ -205,11 +205,11 @@ class AuthServer(_AuthorizationServer):
     result = provObj.parseAuthResponse(response, session)
     if not result['OK']:
       return result
+    # FINISHING with IdP auth result
+    credDict = result['Value']
     result = self.__tokenDB.updateToken(provObj.token, provObj.token.get('refresh_token'))
     if not result['OK']:
       return result
-    # FINISHING with IdP auth result
-    credDict = result['Value']
     gLogger.debug("Read profile:", pprint.pformat(credDict))
     # Is ID registred?
     result = getUsernameForDN(credDict['DN'])
