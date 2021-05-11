@@ -18,6 +18,8 @@ def main():
   # Must be define BEFORE any dirac import
   os.environ['DIRAC_USE_TORNADO_IOLOOP'] = "True"
 
+  from DIRAC.ConfigurationSystem.Client.PathFinder import getAPISection
+  from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
   from DIRAC.ConfigurationSystem.Client.LocalConfiguration import LocalConfiguration
   from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
   from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
@@ -39,8 +41,12 @@ def main():
   gLogger.initialize('Tornado', "/")
 
   endpoints = ['Framework/Auth']
+  try:
+    asPort = int(gConfigurationData.extractOptionFromCFG('%s/Port' % getAPISection('Framework/Auth')))
+  except TypeError:
+    asPort = None
 
-  serverToLaunch = TornadoServer(False, endpoints)
+  serverToLaunch = TornadoServer(False, endpoints, port=asPort)
 
   serverToLaunch.startTornado()
 
