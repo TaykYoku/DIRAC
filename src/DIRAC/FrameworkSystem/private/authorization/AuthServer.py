@@ -36,6 +36,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForIn
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup, getDNForUsername
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+from DIRAC.ConfigurationSystem.Client.Utilities import isDownloadablePersonalProxy
 
 import logging
 import sys
@@ -121,16 +122,18 @@ class AuthServer(_AuthorizationServer):
     return client
 
   def generateProxyOrToken(self, **kwargs):
+    """ Generate proxy or tokens after authorization
     """
-    """
-    print('generateProxyOrToken:')
-    print('kwargs: %s' % kwargs)
     user = kwargs['user']
     scope = kwargs['scope']
-    print('user/scope: %s/%s' % (user, scope))
     if 'proxy' in scope_to_list(scope):
+      # Try to return user proxy if proxy scope present in the authorization request
+      if not isDownloadablePersonalProxy():
+        raise Exception("You can't get proxy, configuration settings(downloadablePersonalProxy) not allow to do that.")
+
       group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
       lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
+      gLogger.debug('Try to query %s@%s proxy%s' % (user, group, ('with lifetime:%s' % lifetime) if lifetime else ''))
       result = getUsernameForDN('/O=DIRAC/CN=%s' % user)
       if not result['OK']:
         raise Exception(result['Message'])
@@ -229,14 +232,6 @@ class AuthServer(_AuthorizationServer):
 
         :return: jwt object
     """
-    # if 'proxy' in scope:
-    #   group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
-    #   lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
-    #   result = self.proxyCli.downloadProxy(user, group, requiredTimeLeft=lifetime[0] if lifetime else None)
-    #   if not result['OK']:
-    #     raise Exception(result['Message'])
-    #   gLogger.info('Proxy was created.')
-    #   return result['Value'].dumpAllToString()
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
     header = {'alg': 'RS256'}
     payload = {'sub': user,
@@ -245,10 +240,6 @@ class AuthServer(_AuthorizationServer):
                'exp': int(time()) + (12 * 3600),
                'scope': scope,
                'setup': getSetup()}
-    # #
-    # Return proxy with token in one response?
-    # #
-
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
@@ -329,7 +320,6 @@ class AuthServer(_AuthorizationServer):
       grant.validate_consent_request()
       if not hasattr(grant, 'prompt'):
         grant.prompt = None
-      
       
       # Check Identity Provider
       provider, providerChooser = self.validateIdentityProvider(req, provider)
