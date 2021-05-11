@@ -189,7 +189,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.log.debug('Store token to the database:\n', pprint.pformat(dict(self.token)))
 
     result = self.store_token(self.token)
-    
+
     if not result['OK']:
       return result
 
@@ -226,15 +226,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
         'eduperson_unique_id': '^(?P<ID>.*)',
         'eduperson_entitlement': '^(?P<NAMESPACE>[A-z,.,_,-,:]+):(group:registry|group):(?P<VO>[A-z,.,_,-]+):role=(?P<VORole>[A-z,.,_,-]+)[:#].*'
     }
-    print('==> getUserProfile 1')
-    pprint.pprint(claimDict)
     if 'eduperson_entitlement' not in claimDict:
-      print('==> getUserProfile 2')
       claimDict = self.getUserProfile()
-    pprint.pprint(claimDict)
     resDict = claimParser(claimDict, attributes)
-    print('++..')
-    pprint.pprint(resDict)
     if not resDict:
       return credDict
     credDict['ID'] = resDict['eduperson_unique_id']['ID']
