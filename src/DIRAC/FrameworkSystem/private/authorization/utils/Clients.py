@@ -8,7 +8,7 @@ import time
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
 
-from DIRAC import S_OK
+from DIRAC import S_OK, gLogger
 
 __RCSID__ = "$Id$"
 
@@ -30,5 +30,8 @@ class Client(OAuth2ClientMixin):
       self._client_metadata = client_metadata
 
   def get_allowed_scope(self, scope):
+    gLogger.debug('Try to allow scope:', scope)
     scopes = scope_to_list(super(Client, self).get_allowed_scope(scope))
-    return list_to_scope([s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])
+    result = list_to_scope([s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])
+    gLogger.debug('Try to allow "%s" scope:' % scope, result)
+    return result
