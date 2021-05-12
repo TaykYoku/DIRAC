@@ -217,7 +217,7 @@ class AuthHandler(TornadoREST):
           }
     """
     if self.request.method == "GET":
-      with open('/opt/dirac/etc/grid-securRS256.key.pub', 'rb') as f:
+      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
         key = f.read()
       return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
 
