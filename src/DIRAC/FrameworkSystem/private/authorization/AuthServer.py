@@ -22,8 +22,6 @@ from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (Devic
                                                                            SaveSessionToDB)
 from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (OpenIDCode,
                                                                                   AuthorizationCodeGrant)
-from DIRAC.FrameworkSystem.private.authorization.grants.RefreshToken import RefreshTokenGrant
-from DIRAC.FrameworkSystem.private.authorization.grants.TokenExchange import TokenExchangeGrant
 from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Request,
                                                                         createOAuth2Request)
@@ -71,10 +69,6 @@ class AuthServer(_AuthorizationServer):
     self.config = {}
     self.collectMetadata()
     # Register configured grants
-    if TokenExchangeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
-      self.register_grant(TokenExchangeGrant)
-    if RefreshTokenGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
-      self.register_grant(RefreshTokenGrant)
     if DeviceCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
       self.register_grant(DeviceCodeGrant, [SaveSessionToDB(db=self.db)])
       self.register_endpoint(DeviceAuthorizationEndpoint)
@@ -104,9 +98,6 @@ class AuthServer(_AuthorizationServer):
         :param dict token: tokens
         :param object request: http Request object, implemented for compatibility with authlib library (unuse)
     """
-    print('>>> saveToken <<<')
-    if 'refresh_token' in token:
-      return self.db.storeToken(token)
     return S_OK(None)
   
   def getClient(self, clientID):
@@ -208,7 +199,7 @@ class AuthServer(_AuthorizationServer):
       return result
     # FINISHING with IdP auth result
     credDict = result['Value']
-    result = self.__tokenDB.updateToken(provObj.token, provObj.token.get('refresh_token'))
+    result = self.__tokenDB.updateToken(provObj.token, user_id=provObj.token['user_id'])
     if not result['OK']:
       return result
     gLogger.debug("Read profile:", pprint.pformat(credDict))

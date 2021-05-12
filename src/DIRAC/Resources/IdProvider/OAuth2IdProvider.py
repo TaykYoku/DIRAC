@@ -103,11 +103,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
-  def store_token(self, token):
-    """ need to implement
-    """
-    return S_OK(None)
-
   def update_token(self, token, refresh_token):
     pass
 
@@ -187,11 +182,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.token['provider'] = self.name
     self.token['user_id'] = credDict['ID']
     self.log.debug('Store token to the database:\n', pprint.pformat(dict(self.token)))
-
-    result = self.store_token(self.token)
-
-    if not result['OK']:
-      return result
 
     return S_OK(credDict)
 

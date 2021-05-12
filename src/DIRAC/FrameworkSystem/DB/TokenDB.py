@@ -87,18 +87,19 @@ class TokenDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR('Could not add Token: %s' % e))
     return self.__result(session, S_OK('Token successfully added'))
 
-  def updateToken(self, token, refreshToken):
+  def updateToken(self, token, refreshToken=None, user_id=None):
     """ Update token
 
         :param dict token: token info
         :param str refreshToken: refresh token
+        :param str user_id: user ID
 
         :return: S_OK(object)/S_ERROR()
     """
-    self.removeToken(refresh_token=refreshToken)
+    self.removeToken(refresh_token=refreshToken, user_id=user_id)
     return self.storeToken(token)
 
-  def removeToken(self, access_token=None, refresh_token=None):
+  def removeToken(self, access_token=None, refresh_token=None, user_id=None):
     """ Remove token
 
         :param str access_token: access token
@@ -112,6 +113,8 @@ class TokenDB(SQLAlchemyDB):
         session.query(Token).filter(Token.access_token == access_token).delete()
       elif refresh_token:
         session.query(Token).filter(Token.refresh_token == refresh_token).delete()
+      elif user_id:
+        session.query(Token).filter(Token.user_id == user_id).delete()
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK('Token successfully removed'))
@@ -125,6 +128,26 @@ class TokenDB(SQLAlchemyDB):
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK(self.__rowToDict(token)))
+
+  def getTokensByUserID(self, userID):
+    session = self.session()
+    try:
+      token = session.query(Token).filter(Token.user_id == userID).all()
+    except NoResultFound:
+      return self.__result(session, S_OK([]))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
+  
+  def getTokensByProvider(self, provider):
+    session = self.session()
+    try:
+      token = session.query(Token).filter(Token.provider == provider).all()
+    except NoResultFound:
+      return self.__result(session, S_OK([]))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK([OAuth2Token(self.__rowToDict(t)) for t in tokens]))
 
   def getTokenByUserIDAndProvider(self, userID, provider):
     session = self.session()
