@@ -18,8 +18,7 @@ from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from authlib.oauth2.rfc6749.util import scope_to_list
 
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (DeviceAuthorizationEndpoint,
-                                                                           DeviceCodeGrant,
-                                                                           SaveSessionToDB)
+                                                                           DeviceCodeGrant)
 from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (OpenIDCode,
                                                                                   AuthorizationCodeGrant)
 from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client
@@ -70,7 +69,7 @@ class AuthServer(_AuthorizationServer):
     self.collectMetadata()
     # Register configured grants
     if DeviceCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
-      self.register_grant(DeviceCodeGrant, [SaveSessionToDB(db=self.db)])
+      self.register_grant(DeviceCodeGrant)
       self.register_endpoint(DeviceAuthorizationEndpoint)
     if AuthorizationCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
       self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
