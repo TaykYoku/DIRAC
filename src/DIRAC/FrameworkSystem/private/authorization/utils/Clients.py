@@ -34,7 +34,7 @@ class Client(OAuth2ClientMixin):
     gLogger.debug('Try to allow scope:', scope)
     if not isinstance(scope, six.string_types):
       scope = list_to_scope(scope)
-    scopes = scope_to_list(super(Client, self).get_allowed_scope(scope))
-    result = list_to_scope(scopes + [s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])
+    allowed = scope_to_list(super(Client, self).get_allowed_scope(scope))
+    result = list_to_scope(allowed + [s for s in scope_to_list(scope) if s.startswith('g:') or s.startswith('lifetime:')])
     gLogger.debug('Try to allow "%s" scope:' % scope, result)
     return result
