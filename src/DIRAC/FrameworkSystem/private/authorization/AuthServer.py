@@ -243,7 +243,7 @@ class AuthServer(_AuthorizationServer):
     payload = {'sub': user,
                'iss': self.metadata['issuer'],
                'iat': int(time()),
-               'exp': int(time()) + self.__getScope(scope, 'lifetime') or (12 * 3600),
+               'exp': int(time()) + (self.__getScope(scope, 'lifetime') or (12 * 3600)),
                'scope': scope,
                'setup': getSetup(),
                'group': self.__getScope(scope, 'g')}
