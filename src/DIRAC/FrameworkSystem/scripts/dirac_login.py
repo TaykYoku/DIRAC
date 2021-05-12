@@ -172,7 +172,6 @@ class Params(object):
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
 
-    threading.Thread(target=self.checkCAs).start()
     return S_OK(self.proxyLoc)
 
 
