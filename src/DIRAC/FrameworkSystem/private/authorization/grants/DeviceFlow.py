@@ -134,22 +134,3 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
   def should_slow_down(self, credential, now):
     """ If need to slow down requests """
     return False
-
-
-class SaveSessionToDB(object):
-  """ SaveSessionToDB extension to Device Code Grant. It is used to
-      seve authorization session of Device Code flow for public clients in MySQL database.
-
-      Then register this extension via::
-
-        server.register_grant(DeviceCodeGrant, [SaveSessionToDB(db=self.db)])
-  """
-  def __init__(self, db):
-    self.db = db
-
-  def __call__(self, grant):
-    grant.register_hook('after_validate_consent_request', self.save_session)
-
-  def save_session(self, *args, **kwargs):
-    print('SAVE-SESSION')
-    print(args)

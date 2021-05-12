@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import six
 import json
 import time
 
@@ -31,7 +32,9 @@ class Client(OAuth2ClientMixin):
 
   def get_allowed_scope(self, scope):
     gLogger.debug('Try to allow scope:', scope)
+    if not isinstance(scope, six.string_types):
+      scope = list_to_scope(scope)
     scopes = scope_to_list(super(Client, self).get_allowed_scope(scope))
-    result = list_to_scope([s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])
+    result = list_to_scope(scopes + [s for s in scopes if s.startswith('g:') or s.startswith('lifetime:')])
     gLogger.debug('Try to allow "%s" scope:' % scope, result)
     return result
