@@ -168,6 +168,7 @@ class Params(object):
 
     result = Script.enableCS()
     if not result['OK']:
+      print(result['Message'])
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
 
