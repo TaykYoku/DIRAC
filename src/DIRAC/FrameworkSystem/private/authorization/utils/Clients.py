@@ -31,10 +31,12 @@ class Client(OAuth2ClientMixin):
       self._client_metadata = client_metadata
 
   def get_allowed_scope(self, scope):
-    gLogger.debug('Try to allow scope:', scope)
     if not isinstance(scope, six.string_types):
       scope = list_to_scope(scope)
     allowed = scope_to_list(super(Client, self).get_allowed_scope(scope))
-    result = list_to_scope(allowed + [s for s in scope_to_list(scope) if s.startswith('g:') or s.startswith('lifetime:')])
-    gLogger.debug('Try to allow "%s" scope:' % scope, result)
-    return result
+    for s in scope_to_list(scope):
+      for def_scope in scope_to_list(DEFAULT_SCOPE):
+        if s.startswith(def_scope) and s not in allowed:
+          allowed.append(s)
+    gLogger.debug('Try to allow "%s" scope:' % scope, allowed)
+    return list_to_scope(allowed)

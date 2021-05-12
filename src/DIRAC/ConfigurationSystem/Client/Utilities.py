@@ -627,11 +627,10 @@ def getAuthClients(clientID=None, clientName=None):
     elif cliName == 'WEBAPPDIRACCLI':
       cliDict['token_endpoint_auth_method'] = cliDict.get('token_endpoint_auth_method', 'client_secret_basic')
       if not cliDict.get('client_metadata'):
-        cliDict['client_metadata'] = {'response_types': ['code', 'id_token token', 'token'],
+        cliDict['client_metadata'] = {'response_types': ['code'],
                                       'redirect_uris': [cliDict['redirect_uri']],
                                       'token_endpoint_auth_method': cliDict['token_endpoint_auth_method'],
-                                      'grant_types': ['device', 'authorization_code', 'refresh_token',
-                                                      'urn:ietf:params:oauth:grant-type:token-exchange']}
+                                      'grant_types': ['authorization_code']}
     if clientName and clientName == cliName:
       return S_OK(cliDict)
 

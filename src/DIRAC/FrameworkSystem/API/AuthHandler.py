@@ -28,7 +28,6 @@ __RCSID__ = "$Id$"
 
 
 class AuthHandler(TornadoREST):
-  # TODO: docs
   # Authorization access to all methods handled by AuthServer instance
   USE_AUTHZ_GRANTS = ['VISITOR']
   SYSTEM = 'Framework'

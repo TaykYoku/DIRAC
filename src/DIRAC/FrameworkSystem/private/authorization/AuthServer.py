@@ -114,6 +114,19 @@ class AuthServer(_AuthorizationServer):
       gLogger.debug('Found client', client)
     return client
 
+  def __getScope(self, scope, param):
+    """ Get parameter scope
+
+        :param str scope: scope
+        :param str param: parameter scope
+
+        :return: str or None
+    """
+    try:
+      return [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('%s:' % param)][0]
+    except:
+      return None
+
   def generateProxyOrToken(self, **kwargs):
     """ Generate proxy or tokens after authorization
     """
@@ -124,8 +137,8 @@ class AuthServer(_AuthorizationServer):
       if not isDownloadablePersonalProxy():
         raise Exception("You can't get proxy, configuration settings(downloadablePersonalProxy) not allow to do that.")
 
-      group = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('g:')][0]
-      lifetime = [s.split(':')[1] for s in scope_to_list(scope) if s.startswith('lifetime:')]
+      group = self.__getScope(scope, 'g')
+      lifetime = self.__getScope(scope, 'lifetime')
       gLogger.debug('Try to query %s@%s proxy%s' % (user, group, ('with lifetime:%s' % lifetime) if lifetime else ''))
       result = getUsernameForDN('/O=DIRAC/CN=%s' % user)
       if not result['OK']:
@@ -138,7 +151,7 @@ class AuthServer(_AuthorizationServer):
       for dn in userDNs:
         gLogger.debug('Try to get proxy for %s' % dn)
         if lifetime:
-          result = self.proxyCli.downloadProxy(dn, group, requiredTimeLeft=int(lifetime[0]))
+          result = self.proxyCli.downloadProxy(dn, group, requiredTimeLeft=lifetime)
         else:
           result = self.proxyCli.downloadProxy(dn, group)
         if not result['OK']:
@@ -230,9 +243,10 @@ class AuthServer(_AuthorizationServer):
     payload = {'sub': user,
                'iss': self.metadata['issuer'],
                'iat': int(time()),
-               'exp': int(time()) + (12 * 3600),
+               'exp': int(time()) + self.__getScope(scope, 'lifetime') or (12 * 3600),
                'scope': scope,
-               'setup': getSetup()}
+               'setup': getSetup(),
+               'group': self.__getScope(scope, 'g')}
     # Read private key of DIRAC auth service
     with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
       key = f.read()
