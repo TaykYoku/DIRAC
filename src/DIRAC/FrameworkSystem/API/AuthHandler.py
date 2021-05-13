@@ -17,8 +17,10 @@ from authlib.oauth2.rfc6749.util import scope_to_list
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
+from DIRAC.Core.Security.Locations import getJWKKeyPairLocation
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
+from DIRAC.FrameworkSystem.private.authorization.utils.JWKs import getJWKs, 
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import ResourceProtector
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
@@ -82,6 +84,7 @@ class AuthHandler(TornadoREST):
 
         :param dict ServiceInfoDict: infos about services
     """
+    createJWKsIfNeeded()
     cls.server = AuthServer()
     cls.server.css = dict(CSS=cls.CSS, css_align_center=cls.css_align_center, css_main=cls.css_main)
     cls.server.LOCATION = cls.LOCATION
@@ -217,10 +220,7 @@ class AuthHandler(TornadoREST):
           }
     """
     if self.request.method == "GET":
-      with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-        key = f.read()
-      return {'keys': [jwk.dumps(key, kty='RSA', alg='RS256')]}
-
+      return getJWKs()
 
   path_device = ['([A-z0-9-_]*)']
 

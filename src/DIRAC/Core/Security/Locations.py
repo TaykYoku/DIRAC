@@ -12,8 +12,27 @@ from DIRAC import gConfig
 g_SecurityConfPath = "/DIRAC/Security"
 
 
+def getJWKKeyPairLocation():
+  """ Get the path of the RSA key pair for JWTs file
+  """
+  fileDict = {}
+  fileName = 'jwtRS256'
+  paths = []
+  retVal = gConfig.getOption('%s/Grid-Security' % g_SecurityConfPath)
+  if retVal['OK']:
+    paths.append(retVal['Value'])
+  paths.append("%s/etc/grid-security/" % DIRAC.rootPath)
+  for kType in ['key', 'key.pub', 'key.pub.old']:
+    for path in paths:
+      filePath = os.path.realpath("%s/%s.%s" % (path, fileName, kType))
+      fileDict[kType] = filePath
+
+  # No access token found
+  return fileDict
+
+
 def getTokenLocation():
-  """ Get the path of the currently active grid proxy file
+  """ Get the path of the currently active access token file
   """
   envVar = 'DIRAC_TOKEN_FILE'
   if envVar in os.environ:
