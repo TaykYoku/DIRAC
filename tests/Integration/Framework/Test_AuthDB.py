@@ -70,7 +70,7 @@ def test_keys():
   result = db.getJWKs()
   assert result['OK'], result['Message']
   _payload = jwt.decode(token, JsonWebKey.import_key_set(result['Value']))
-  assert _payload == payload
+  assert _payload == payload, result['Value']
 
 
 def test_Sessions():
