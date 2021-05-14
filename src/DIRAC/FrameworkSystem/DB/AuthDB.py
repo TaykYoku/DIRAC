@@ -151,7 +151,7 @@ class AuthDB(SQLAlchemyDB):
       if not result['OK']:
         return result
       newer = result['Value']
-    return S_OK(RSAKey.import_key(newer['key']))
+    return S_OK(RSAKey.import_key(json.loads(newer['key'])))
 
   def getActiveKeys(self):
     """ Get active keys
