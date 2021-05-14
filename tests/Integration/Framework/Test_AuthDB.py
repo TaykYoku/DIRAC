@@ -47,7 +47,7 @@ def test_keys():
   assert result['Value'] == []
 
   # Create new one
-  result = db.getPrivateKey()
+    
   assert result['OK'], result['Message']
 
   # Sign token
@@ -60,7 +60,7 @@ def test_keys():
   # Get public key set
   result = db.getKeySet()
   assert result['OK'], result['Message']
-  _payload = jwt.decode(token, result['Value'])
+  _payload = jwt.decode(token, JsonWebKey.import_key_set(result['Value'].as_dict()))
   assert _payload == payload
   data = jws.deserialize_compact(code, result['Value'].keys[0])
   _code_payload = json_loads(urlsafe_b64decode(data['payload']))
