@@ -62,7 +62,7 @@ def test_keys():
   _payload = jwt.decode(token, result['Value'])
   assert _payload == payload
   data = jws.deserialize_compact(code, result['Value'].keys[0])
-  _code_payload = json_loads(urlsafe_b64decode(data))
+  _code_payload = json_loads(urlsafe_b64decode(data['payload']))
   assert _code_payload == code_payload
 
 
