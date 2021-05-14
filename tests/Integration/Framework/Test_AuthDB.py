@@ -80,7 +80,7 @@ def test_Sessions():
             'verification_uri_complete': u'https://domain.com/DIRAC/auth/device?user_code=MDKP-MXMF'}
   
   # Example of the updated session
-  sData1 = {'client_id': 'DIRAC_CLI',
+  sData2 = {'client_id': 'DIRAC_CLI',
             'device_code': 'SsoGTDglu6LThpx0CigM9i9J72B5atZ24ULr6R1awm',
             'expires_in': 1800,
             'id': 'SsoGTDglu6LThpx0CigM9i9J72B5atZ24ULr6R1awm',
