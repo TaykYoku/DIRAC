@@ -66,7 +66,7 @@ def test_keys():
   assert _code_payload == code_payload
 
   # Get JWK
-  result = getJWKs()
+  result = db.getJWKs()
   assert result['OK'], result['Message']
   _payload = jwt.decode(token, JsonWebKey.import_key_set(result['Value']))
   assert _payload == payload
