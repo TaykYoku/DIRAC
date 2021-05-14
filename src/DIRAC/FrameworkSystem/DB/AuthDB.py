@@ -7,9 +7,12 @@ from __future__ import print_function
 import json
 from time import time
 from pprint import pprint
+from M2Crypto import RSA, BIO
+from authlib.jose import jwk
 from sqlalchemy import Column, Integer, Text, String
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from authlib.common.security import generate_token
 from sqlalchemy.ext.declarative import declarative_base
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
@@ -19,6 +22,16 @@ __RCSID__ = "$Id$"
 
 
 Model = declarative_base()
+
+
+class JWK(Model):
+  __tablename__ = 'JWK'
+  __table_args__ = {'mysql_engine': 'InnoDB',
+                    'mysql_charset': 'utf8'}
+  id = Column(String(255), unique=True, primary_key=True, nullable=False)
+  private_key = Column(Text, nullable=False)
+  public_key = Column(Text, nullable=False)
+  expires_at = Column(Integer, nullable=False, default=0)
 
 
 class AuthSession(Model):
@@ -47,6 +60,7 @@ class AuthDB(SQLAlchemyDB):
   def __init__(self):
     """ Constructor
     """
+    self.jwks = 
     super(AuthDB, self).__init__()
     self._initializeConnection('Framework/AuthDB')
     result = self.__initializeDB()
@@ -59,6 +73,13 @@ class AuthDB(SQLAlchemyDB):
     """
     tablesInDB = self.inspector.get_table_names()
 
+    # JWK
+    if 'JWK' not in tablesInDB:
+      try:
+        JWK.__table__.create(self.engine)  # pylint: disable=no-member
+      except Exception as e:
+        return S_ERROR(e)
+
     # Sessions
     if 'Sessions' not in tablesInDB:
       try:
@@ -67,6 +88,102 @@ class AuthDB(SQLAlchemyDB):
         return S_ERROR(e)
 
     return S_OK()
+
+  def generateRSAKeys(self):
+    """ Generate an RSA keypair with an exponent of 65537 in PEM format
+    
+        :return: private key and public key
+    """
+    new_key = RSA.gen_key(4096, 65537)
+    memory = BIO.MemoryBuffer()
+    new_key.save_key_bio(memory, cipher=None)
+    private_key = memory.getvalue()
+    new_key.save_pub_key_bio(memory)
+    key = dict(private_key=private_key,
+               public_key=memory.getvalue(),
+               expires_at=time() + (30 * 24 *3600),
+               id=generate_token(10))
+    session = self.session()
+    try:
+      session.add(JWK(**key))
+      session.query(JWK).filter(JWK.expires_at < time()).delete()
+    except Exception as e:
+      return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
+    return self.__result(session, S_OK(key))
+
+  def getPublicKeys(self):
+    """ Get public keys
+    
+        :return: S_OK(list)/S_ERROR()
+    """
+    keys = []
+    result = self.getActiveKeys()
+    if result['OK'] and not result['Value']:
+      result = self.generateRSAKeys()
+      if result['OK']:
+        result = self.getActiveKeys()    
+    if not result['OK']:
+      return result
+    aKeys = result['Value']
+    
+    for d in aKeys:
+      keys.append(d['public_key'])
+    return S_OK(keys)
+
+  def getPublicKeySet(self):
+    """ Get public key set
+    
+        :return: S_OK(list)/S_ERROR()
+    """
+    result = self.getPublicKeys()
+    if not result['OK']:
+      return result
+    return S_OK({'keys': [jwk.dumps(k, kty='RSA', alg='RS256') for k in result['Value']]})
+  
+  def getPrivateKey(self):
+    """ Get private key
+    
+        :return: S_OK(str)/S_ERROR()
+    """
+    result = self.getActiveKeys()
+    if not result['OK']:
+      return result
+    newer = {}
+    for d in result['Value']:
+      if d['expires_at'] > newer.get('expires_at', time() + (24 * 3600)):
+        newer = d
+    if not newer.get('private_key'):
+      return generateRSAKeys()
+      if not result['OK']:
+        return result
+      newer = result['Value']
+    return S_OK(newer['private_key'])
+
+  def getActiveKeys(self):
+    """ Get active keys
+    
+        :return: S_OK(list)/S_ERROR()
+    """
+    session = self.session()
+    try:
+      jwks = session.query(JWK).filter(JWK.expires_at < time()).all()
+    except NoResultFound:
+      return self.__result(session, S_OK([]))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK([self.__rowToDict(jwk) for jwk in jwks]))
+  
+  def removeKeys(self):
+    """ Get active keys
+    
+        :return: S_OK(list)/S_ERROR()
+    """
+    session = self.session()
+    try:
+      session.query(JWK).delete()
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK())
 
   def removeExpiredSessions(self):
     """ Remove expired sessions """

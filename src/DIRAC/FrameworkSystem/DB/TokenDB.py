@@ -132,7 +132,7 @@ class TokenDB(SQLAlchemyDB):
   def getTokensByUserID(self, userID):
     session = self.session()
     try:
-      token = session.query(Token).filter(Token.user_id == userID).all()
+      tokens = session.query(Token).filter(Token.user_id == userID).all()
     except NoResultFound:
       return self.__result(session, S_OK([]))
     except Exception as e:
@@ -142,7 +142,7 @@ class TokenDB(SQLAlchemyDB):
   def getTokensByProvider(self, provider):
     session = self.session()
     try:
-      token = session.query(Token).filter(Token.provider == provider).all()
+      tokens = session.query(Token).filter(Token.provider == provider).all()
     except NoResultFound:
       return self.__result(session, S_OK([]))
     except Exception as e:

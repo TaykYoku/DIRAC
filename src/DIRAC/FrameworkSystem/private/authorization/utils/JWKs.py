@@ -2,6 +2,7 @@ import os
 
 from M2Crypto import RSA, BIO
 from authlib.jose import jwk
+from authlib.common.security import generate_token
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
