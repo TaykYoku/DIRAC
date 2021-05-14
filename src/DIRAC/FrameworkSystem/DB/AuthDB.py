@@ -60,7 +60,6 @@ class AuthDB(SQLAlchemyDB):
   def __init__(self):
     """ Constructor
     """
-    self.jwks = 
     super(AuthDB, self).__init__()
     self._initializeConnection('Framework/AuthDB')
     result = self.__initializeDB()
