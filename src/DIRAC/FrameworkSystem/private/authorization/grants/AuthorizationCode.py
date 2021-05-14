@@ -136,5 +136,5 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     result = self.server.db.getPrivateKey()
     if not result['OK']:
       raise Exception(result['Message'])
-    key = result['Value']
+    key = result['Value']['key']
     return jws.serialize_compact(protected, payload, key)

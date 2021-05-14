@@ -254,9 +254,9 @@ class AuthServer(_AuthorizationServer):
       raise Exception(result['Message'])
 
     # Sign token
-    key = result['Value']
-    data = key.as_dict()
-    header = {'alg': 'RS256', 'kid': data['kid']}
+    key = result['Value']['key']
+    kid = result['Value']['kid']
+    header = {'alg': 'RS256', 'kid': kid}
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 
@@ -287,8 +287,8 @@ class AuthServer(_AuthorizationServer):
 
     # Sign token
     key = result['Value']
-    data = key.as_dict()
-    header = {'alg': 'RS256', 'kid': data['kid']}
+    kid = result['Value']['kid']
+    header = {'alg': 'RS256', 'kid': kid}
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 

@@ -51,7 +51,8 @@ def test_keys():
   assert result['OK'], result['Message']
 
   # Sign token
-  private_key = result['Value']
+  header['kid'] = result['Value']['kid']
+  private_key = result['Value']['key']
   token = jwt.encode(header, payload, private_key)
   # Sign auth code
   code = jws.serialize_compact(header, json_b64encode(code_payload), private_key)
