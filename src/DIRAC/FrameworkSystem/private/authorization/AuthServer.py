@@ -248,8 +248,14 @@ class AuthServer(_AuthorizationServer):
                'setup': getSetup(),
                'group': self.__getScope(scope, 'g')}
     # Read private key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
-      key = f.read()
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
+    #   key = f.read()
+    result = self.db.getPrivateKey()
+    if not result['OK']:
+      raise Exception(result['Message'])
+
+    # Sign token
+    key = result['Value']
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 
@@ -273,8 +279,14 @@ class AuthServer(_AuthorizationServer):
                'setup': getSetup(),
                'client_id': client.client_id}
     # Read private key of DIRAC auth service
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
-      key = f.read()
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
+    #   key = f.read()
+    result = self.db.getPrivateKey()
+    if not result['OK']:
+      raise Exception(result['Message'])
+
+    # Sign token
+    key = result['Value']
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 

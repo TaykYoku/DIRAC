@@ -111,8 +111,8 @@ class AuthDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
     return self.__result(session, S_OK(dictKey))
 
-  def getPublicKeySet(self):
-    """ Get public key set
+  def getKeySet(self):
+    """ Get key set
     
         :return: S_OK(obj)/S_ERROR()
     """
@@ -134,6 +134,19 @@ class AuthDB(SQLAlchemyDB):
       keys.append(key)
       # keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
     return S_OK(KeySet(keys))
+  
+  def getJWKs(self):
+    """ Get JWKs list
+    
+        :return: S_OK(dict)/S_ERROR()
+    """
+    keys = []
+    result = self.getKeySet()
+    if not result['OK']:
+      return result
+    for k in result['Value'].as_dict()['keys']:
+      keys.append({'n': k['n'], "kty": k['kty'], "e": k['e'], "kid": k['kid']})
+    return S_OK({'keys': keys})
   
   def getPrivateKey(self):
     """ Get private key

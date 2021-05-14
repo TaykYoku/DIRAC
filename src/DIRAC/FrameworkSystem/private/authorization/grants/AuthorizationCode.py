@@ -54,8 +54,12 @@ class OpenIDCode(_OpenIDCode):
     return False
 
   def get_jwt_config(self, grant):
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
-      key = f.read()
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
+    #   key = f.read()
+    result = self.server.db.getPrivateKey()
+    if not result['OK']:
+      raise Exception(result['Message'])
+    key = result['Value']
     issuer = grant.server.metadata['issuer']
     return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
 
@@ -85,13 +89,26 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     """
     gLogger.debug('Query authorization code:', code)
     jws = JsonWebSignature(algorithms=['RS256'])
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-      key = f.read()
-    data = jws.deserialize_compact(code, key)
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
+    #   key = f.read()
+    result = self.server.db.getKeySet()
+    if not result['OK']:
+      raise Exception(result['Message'])
+    err = None
+    data = None
+    for key in result['Value'].keys:
+      try:
+        data = jws.deserialize_compact(code, key)
+      except Exception as e:
+        err = e
+    if err:
+      gLogger.error('Cannot read authorization code:', repr(e))
+      return None
     try:
       item = OAuth2Code(json_loads(urlsafe_b64decode(data['payload'])))
       gLogger.debug('Authorization code scope:', item.get_scope())
     except Exception as e:
+      gLogger.error('Cannot read authorization code:', repr(e))
       return None
     if not item.is_expired():
       return item
@@ -114,6 +131,10 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     gLogger.debug('Authorization code generated:', dict(code))
     payload = json_b64encode(dict(code))
-    with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
-      key = f.read()
+    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
+    #   key = f.read()
+    result = self.server.db.getPrivateKey()
+    if not result['OK']:
+      raise Exception(result['Message'])
+    key = result['Value']
     return jws.serialize_compact(protected, payload, key)

@@ -219,7 +219,7 @@ class AuthHandler(TornadoREST):
           }
     """
     if self.request.method == "GET":
-      return self.server.db.getPublicKeySet().get('Value', {})
+      return self.server.db.getJWKs().get('Value', {})
 
   path_device = ['([A-z0-9-_]*)']
 

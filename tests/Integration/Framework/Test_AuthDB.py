@@ -57,7 +57,7 @@ def test_keys():
   code = jws.serialize_compact(header, json_b64encode(code_payload), private_key)
 
   # Get public key set
-  result = db.getPublicKeySet()
+  result = db.getKeySet()
   assert result['OK'], result['Message']
   _payload = jwt.decode(token, result['Value'])
   assert _payload == payload
