@@ -65,6 +65,12 @@ def test_keys():
   _code_payload = json_loads(urlsafe_b64decode(data['payload']))
   assert _code_payload == code_payload
 
+  # Get JWK
+  result = getJWKs()
+  assert result['OK'], result['Message']
+  _payload = jwt.decode(token, JsonWebKey.import_key_set(result['Value']))
+  assert _payload == payload
+
 
 def test_Sessions():
   """ Try to store/get/remove Sessions
