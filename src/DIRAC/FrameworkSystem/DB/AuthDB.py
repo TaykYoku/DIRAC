@@ -130,7 +130,7 @@ class AuthDB(SQLAlchemyDB):
     #   keys.append(jwk.dumps(d['public_key'], kty='RSA', alg='RS256', kid=d['kid']))
     # return S_OK({'keys': keys})
     for keyDict in result['Value']:
-      key = RSAKey.import_key(keyDict['key'])
+      key = RSAKey.import_key(json.loads(keyDict['key']))
       keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
     return S_OK(KeySet([keys]))
   
