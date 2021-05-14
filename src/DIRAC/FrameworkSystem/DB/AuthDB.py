@@ -28,7 +28,7 @@ class JWK(Model):
   __tablename__ = 'JWK'
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
-  id = Column(String(255), unique=True, primary_key=True, nullable=False)
+  kid = Column(String(255), unique=True, primary_key=True, nullable=False)
   private_key = Column(Text, nullable=False)
   public_key = Column(Text, nullable=False)
   expires_at = Column(Integer, nullable=False, default=0)
@@ -101,7 +101,7 @@ class AuthDB(SQLAlchemyDB):
     key = dict(private_key=private_key,
                public_key=memory.getvalue(),
                expires_at=time() + (30 * 24 *3600),
-               id=generate_token(10))
+               kid=generate_token(3))
     session = self.session()
     try:
       session.add(JWK(**key))
@@ -110,8 +110,8 @@ class AuthDB(SQLAlchemyDB):
       return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
     return self.__result(session, S_OK(key))
 
-  def getPublicKeys(self):
-    """ Get public keys
+  def getPublicKeySet(self):
+    """ Get public key set
     
         :return: S_OK(list)/S_ERROR()
     """
@@ -126,18 +126,8 @@ class AuthDB(SQLAlchemyDB):
     aKeys = result['Value']
     
     for d in aKeys:
-      keys.append(d['public_key'])
-    return S_OK(keys)
-
-  def getPublicKeySet(self):
-    """ Get public key set
-    
-        :return: S_OK(list)/S_ERROR()
-    """
-    result = self.getPublicKeys()
-    if not result['OK']:
-      return result
-    return S_OK({'keys': [jwk.dumps(k, kty='RSA', alg='RS256') for k in result['Value']]})
+      keys.append(jwk.dumps(d['public_key'], kty='RSA', alg='RS256', kid=d['kid']))
+    return S_OK({'keys': keys})
   
   def getPrivateKey(self):
     """ Get private key
