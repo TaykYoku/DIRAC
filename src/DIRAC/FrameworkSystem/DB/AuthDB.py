@@ -12,6 +12,7 @@ from authlib.jose import jwk
 from sqlalchemy import Column, Integer, Text, String
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from authlib.jose import KeySet, RSAKey
 from authlib.common.security import generate_token
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -29,8 +30,7 @@ class JWK(Model):
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   kid = Column(String(255), unique=True, primary_key=True, nullable=False)
-  private_key = Column(Text, nullable=False)
-  public_key = Column(Text, nullable=False)
+  key = Column(Text, nullable=False)
   expires_at = Column(Integer, nullable=False, default=0)
 
 
@@ -93,22 +93,23 @@ class AuthDB(SQLAlchemyDB):
     
         :return: private key and public key
     """
-    new_key = RSA.gen_key(4096, 65537)
-    memory = BIO.MemoryBuffer()
-    new_key.save_key_bio(memory, cipher=None)
-    private_key = memory.getvalue()
-    new_key.save_pub_key_bio(memory)
-    key = dict(private_key=private_key,
-               public_key=memory.getvalue(),
-               expires_at=time() + (30 * 24 *3600),
-               kid=generate_token(3))
+    # new_key = RSA.gen_key(4096, 65537)
+    # memory = BIO.MemoryBuffer()
+    # new_key.save_key_bio(memory, cipher=None)
+    # private_key = memory.getvalue()
+    # new_key.save_pub_key_bio(memory)
+    key = RSAKey.generate_key(is_private=True)
+    rsakey = dict(key=json.dumps(key.as_dict())),
+                  expires_at=time() + (30 * 24 *3600),
+                  kid=KeySet([key]).as_dict()['keys'][0]['kid'])
+    
     session = self.session()
     try:
-      session.add(JWK(**key))
+      session.add(JWK(**rsakey))
       session.query(JWK).filter(JWK.expires_at < time()).delete()
     except Exception as e:
       return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
-    return self.__result(session, S_OK(key))
+    return self.__result(session, S_OK(rsakey))
 
   def getPublicKeySet(self):
     """ Get public key set
@@ -123,11 +124,15 @@ class AuthDB(SQLAlchemyDB):
         result = self.getActiveKeys()    
     if not result['OK']:
       return result
-    aKeys = result['Value']
-    
-    for d in aKeys:
-      keys.append(jwk.dumps(d['public_key'], kty='RSA', alg='RS256', kid=d['kid']))
-    return S_OK({'keys': keys})
+    # aKeys = result['Value']
+    # for d in aKeys:
+    #   RSAKey.import_key(d['key'])
+    #   keys.append(jwk.dumps(d['public_key'], kty='RSA', alg='RS256', kid=d['kid']))
+    # return S_OK({'keys': keys})
+    for keyDict in result['Value']:
+      key = RSAKey.import_key(keyDict['key'])
+      keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
+    return S_OK(KeySet([keys]))
   
   def getPrivateKey(self):
     """ Get private key
@@ -141,12 +146,12 @@ class AuthDB(SQLAlchemyDB):
     for d in result['Value']:
       if d['expires_at'] > newer.get('expires_at', time() + (24 * 3600)):
         newer = d
-    if not newer.get('private_key'):
+    if not newer.get('key'):
       result = self.generateRSAKeys()
       if not result['OK']:
         return result
       newer = result['Value']
-    return S_OK(newer)
+    return S_OK(RSAKey.import_key(newer['key']))
 
   def getActiveKeys(self):
     """ Get active keys

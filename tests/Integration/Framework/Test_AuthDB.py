@@ -51,8 +51,7 @@ def test_keys():
   assert result['OK'], result['Message']
 
   # Sign token
-  header['kid'] = result['Value']['kid']
-  private_key = result['Value']['private_key']
+  private_key = result['Value']
   token = jwt.encode(header, payload, private_key)
   # Sign auth code
   code = jws.serialize_compact(header, json_b64encode(code_payload), private_key)
@@ -60,7 +59,7 @@ def test_keys():
   # Get public key set
   result = db.getPublicKeySet()
   assert result['OK'], result['Message']
-  _payload = jwt.decode(token, JsonWebKey.import_key_set(result['Value']))
+  _payload = jwt.decode(token, result['Value'])
   assert _payload == payload
   data = jws.deserialize_compact(code, result['Value'])
   _code_payload = json_loads(urlsafe_b64decode(data))
