@@ -160,7 +160,7 @@ class AuthDB(SQLAlchemyDB):
     """
     session = self.session()
     try:
-      jwks = session.query(JWK).filter(JWK.expires_at < time()).all()
+      jwks = session.query(JWK).filter(JWK.expires_at > time()).all()
     except NoResultFound:
       return self.__result(session, S_OK([]))
     except Exception as e:
