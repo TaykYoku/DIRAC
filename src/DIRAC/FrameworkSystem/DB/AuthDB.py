@@ -152,7 +152,7 @@ class AuthDB(SQLAlchemyDB):
       if d['expires_at'] > newer.get('expires_at', time() + (24 * 3600)):
         newer = d
     if not newer.get('private_key'):
-      return generateRSAKeys()
+      return self.generateRSAKeys()
       if not result['OK']:
         return result
       newer = result['Value']
