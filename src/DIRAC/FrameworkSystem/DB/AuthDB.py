@@ -99,7 +99,7 @@ class AuthDB(SQLAlchemyDB):
     # private_key = memory.getvalue()
     # new_key.save_pub_key_bio(memory)
     key = RSAKey.generate_key(is_private=True)
-    rsakey = dict(key=json.dumps(key.as_dict())),
+    rsakey = dict(key=json.dumps(key.as_dict()),
                   expires_at=time() + (30 * 24 *3600),
                   kid=KeySet([key]).as_dict()['keys'][0]['kid'])
     
