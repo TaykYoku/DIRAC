@@ -51,9 +51,11 @@ def test_keys():
   assert result['OK'], result['Message']
 
   # Sign token
-  token = jwt.encode(header, payload, result['Value'])
+  header['kid'] = result['Value']['kid']
+  private_key = result['Value']['private_key']
+  token = jwt.encode(header, payload, private_key)
   # Sign auth code
-  code = jws.serialize_compact(header, json_b64encode(code_payload), result['Value'])
+  code = jws.serialize_compact(header, json_b64encode(code_payload), private_key)
 
   # Get public key set
   result = db.getPublicKeySet()

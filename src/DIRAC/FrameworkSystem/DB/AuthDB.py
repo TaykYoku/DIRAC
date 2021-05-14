@@ -146,7 +146,7 @@ class AuthDB(SQLAlchemyDB):
       if not result['OK']:
         return result
       newer = result['Value']
-    return S_OK(newer['private_key'])
+    return S_OK(newer)
 
   def getActiveKeys(self):
     """ Get active keys
