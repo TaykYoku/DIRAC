@@ -91,7 +91,7 @@ class AuthDB(SQLAlchemyDB):
   def generateRSAKeys(self):
     """ Generate an RSA keypair with an exponent of 65537 in PEM format
     
-        :return: private key and public key
+        :return: S_OK/S_ERROR
     """
     # new_key = RSA.gen_key(4096, 65537)
     # memory = BIO.MemoryBuffer()
@@ -114,14 +114,14 @@ class AuthDB(SQLAlchemyDB):
   def getPublicKeySet(self):
     """ Get public key set
     
-        :return: S_OK(list)/S_ERROR()
+        :return: S_OK(obj)/S_ERROR()
     """
     keys = []
     result = self.getActiveKeys()
     if result['OK'] and not result['Value']:
       result = self.generateRSAKeys()
       if result['OK']:
-        result = self.getActiveKeys()    
+        result = self.getActiveKeys()
     if not result['OK']:
       return result
     # aKeys = result['Value']
@@ -131,13 +131,14 @@ class AuthDB(SQLAlchemyDB):
     # return S_OK({'keys': keys})
     for keyDict in result['Value']:
       key = RSAKey.import_key(json.loads(keyDict['key']))
-      keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
+      keys.append(key)
+      # keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
     return S_OK(KeySet(keys))
   
   def getPrivateKey(self):
     """ Get private key
     
-        :return: S_OK(str)/S_ERROR()
+        :return: S_OK(obj)/S_ERROR()
     """
     result = self.getActiveKeys()
     if not result['OK']:
