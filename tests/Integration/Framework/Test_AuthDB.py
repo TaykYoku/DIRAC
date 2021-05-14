@@ -47,7 +47,7 @@ def test_keys():
   assert result['Value'] == []
 
   # Create new one
-    
+  result = db.getPrivateKey()
   assert result['OK'], result['Message']
 
   # Sign token
