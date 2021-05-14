@@ -625,10 +625,10 @@ class BaseRequestHandler(RequestHandler):
     if not self._idps[issuer].get('jwks'):
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
 
-    gLogger.debug("Token jwks is %s" % self._idps[issuer]['jwks'])
+    gLogger.debug("IdP jwks is %s" % self._idps[issuer]['jwks'])
 
     try:
-      gLogger.debug("Try to decode token..")
+      gLogger.debug("Try to decode token:", accessToken)
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
     except Exception:
       gLogger.debug("Try to update %s jwks.." % issuer)

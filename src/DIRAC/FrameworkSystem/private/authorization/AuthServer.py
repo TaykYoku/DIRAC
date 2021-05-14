@@ -239,7 +239,6 @@ class AuthServer(_AuthorizationServer):
         :return: jwt object
     """
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
-    header = {'alg': 'RS256'}
     payload = {'sub': user,
                'iss': self.metadata['issuer'],
                'iat': int(time()),
@@ -256,6 +255,8 @@ class AuthServer(_AuthorizationServer):
 
     # Sign token
     key = result['Value']
+    data = key.as_dict()
+    header = {'alg': data['alg'], 'kid': data['kid']}
     # Need to use enum==0.3.1 for python 2.7
     return jwt.encode(header, payload, key)
 
