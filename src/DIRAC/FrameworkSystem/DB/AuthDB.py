@@ -99,17 +99,17 @@ class AuthDB(SQLAlchemyDB):
     # private_key = memory.getvalue()
     # new_key.save_pub_key_bio(memory)
     key = RSAKey.generate_key(is_private=True)
-    rsakey = dict(key=json.dumps(key.as_dict()),
-                  expires_at=time() + (30 * 24 *3600),
-                  kid=KeySet([key]).as_dict()['keys'][0]['kid'])
+    dictKey = dict(key=json.dumps(key.as_dict()),
+                   expires_at=time() + (30 * 24 *3600),
+                   kid=KeySet([key]).as_dict()['keys'][0]['kid'])
     
     session = self.session()
     try:
-      session.add(JWK(**rsakey))
+      session.add(JWK(**dictKey))
       session.query(JWK).filter(JWK.expires_at < time()).delete()
     except Exception as e:
       return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
-    return self.__result(session, S_OK(rsakey))
+    return self.__result(session, S_OK(dictKey))
 
   def getPublicKeySet(self):
     """ Get public key set
@@ -132,7 +132,7 @@ class AuthDB(SQLAlchemyDB):
     for keyDict in result['Value']:
       key = RSAKey.import_key(json.loads(keyDict['key']))
       keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
-    return S_OK(KeySet([keys]))
+    return S_OK(KeySet(keys))
   
   def getPrivateKey(self):
     """ Get private key
