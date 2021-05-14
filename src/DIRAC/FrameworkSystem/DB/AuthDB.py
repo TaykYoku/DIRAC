@@ -93,11 +93,6 @@ class AuthDB(SQLAlchemyDB):
     
         :return: S_OK/S_ERROR
     """
-    # new_key = RSA.gen_key(4096, 65537)
-    # memory = BIO.MemoryBuffer()
-    # new_key.save_key_bio(memory, cipher=None)
-    # private_key = memory.getvalue()
-    # new_key.save_pub_key_bio(memory)
     key = RSAKey.generate_key(is_private=True)
     dictKey = dict(key=json.dumps(key.as_dict()),
                    expires_at=time() + (30 * 24 *3600),
@@ -124,15 +119,9 @@ class AuthDB(SQLAlchemyDB):
         result = self.getActiveKeys()
     if not result['OK']:
       return result
-    # aKeys = result['Value']
-    # for d in aKeys:
-    #   RSAKey.import_key(d['key'])
-    #   keys.append(jwk.dumps(d['public_key'], kty='RSA', alg='RS256', kid=d['kid']))
-    # return S_OK({'keys': keys})
     for keyDict in result['Value']:
       key = RSAKey.import_key(json.loads(keyDict['key']))
       keys.append(key)
-      # keys.append(RSAKey.dumps_public_key(key.raw_key.public_key()))
     return S_OK(KeySet(keys))
   
   def getJWKs(self):
