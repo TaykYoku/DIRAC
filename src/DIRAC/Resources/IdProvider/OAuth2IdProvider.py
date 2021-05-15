@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import re
 import six
+import jwt as _jwt
 import time
 import pprint
 import requests
@@ -168,7 +169,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.fetch_access_token(self.get_metadata('token_endpoint'),
                             authorization_response=response.uri,
                             code_verifier=session.get('code_verifier'))
-
     # Get user info
     claims = self.getUserProfile()
     credDict = self.parseBasic(claims)

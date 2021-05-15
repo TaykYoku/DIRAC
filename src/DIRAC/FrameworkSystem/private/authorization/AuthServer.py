@@ -209,11 +209,14 @@ class AuthServer(_AuthorizationServer):
     result = provObj.parseAuthResponse(response, session)
     if not result['OK']:
       return result
+    
     # FINISHING with IdP auth result
     credDict = result['Value']
+
     result = self.__tokenDB.updateToken(provObj.token, user_id=provObj.token['user_id'])
     if not result['OK']:
       return result
+
     gLogger.debug("Read profile:", pprint.pformat(credDict))
     # Is ID registred?
     result = getUsernameForDN(credDict['DN'])
@@ -247,8 +250,6 @@ class AuthServer(_AuthorizationServer):
                'setup': getSetup(),
                'group': self.__getScope(scope, 'g')}
     # Read private key of DIRAC auth service
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
-    #   key = f.read()
     result = self.db.getPrivateKey()
     if not result['OK']:
       raise Exception(result['Message'])
@@ -274,7 +275,7 @@ class AuthServer(_AuthorizationServer):
     payload = {'sub': user,
                'iss': self.metadata['issuer'],
                'iat': int(time()),
-               'exp': int(time()) + (30 * 24 * 3600),
+               'exp': int(time()) + (24 * 3600),
                'scope': scope,
                'setup': getSetup(),
                'client_id': client.client_id}
@@ -286,7 +287,7 @@ class AuthServer(_AuthorizationServer):
       raise Exception(result['Message'])
 
     # Sign token
-    key = result['Value']
+    key = result['Value']['key']
     kid = result['Value']['kid']
     header = {'alg': 'RS256', 'kid': kid}
     # Need to use enum==0.3.1 for python 2.7
