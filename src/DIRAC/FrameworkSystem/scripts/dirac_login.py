@@ -132,9 +132,7 @@ class Params(object):
     #   token = result['Value']
 
     result = getDIRACClient()
-    if not result['OK']:
-      return result
-    clientConfig = result['Value']
+    clientConfig = result.get('Value', dict(client_id='DIRAC_CLI', redirect_uri='https://diracclient'))
     result = getAuthorisationServerMetadata(self.issuer)
     if not result['OK']:
       return result
