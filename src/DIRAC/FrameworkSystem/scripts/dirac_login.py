@@ -28,7 +28,7 @@ from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTok
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getDIRACClient
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 
 __RCSID__ = "$Id$"
 
@@ -130,13 +130,14 @@ class Params(object):
     #   gLogger.warn(result['Message'])
     # else:
     #   token = result['Value']
-
-    result = getDIRACClient()
-    clientConfig = result.get('Value', dict(client_id='DIRAC_CLI', redirect_uri='https://diracclient'))
+    
     result = getAuthorisationServerMetadata(self.issuer)
     if not result['OK']:
       return result
-    clientConfig.update(result['Value'])
+
+    clientConfig = result['Value']
+    clientConfig['client_id'] = 'DIRAC_CLI'
+    clientConfig['redirect_uri'] = 'https://diracclient'
     clientConfig['ProviderName'] = 'DIRAC_CLI'
 
     idpObj = OAuth2IdProvider(**clientConfig)
@@ -167,7 +168,7 @@ class Params(object):
 
     result = Script.enableCS()
     if not result['OK']:
-      gLogger.debug(result['Message'])
+      print(result['Message'])
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
 
