@@ -114,7 +114,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       return jwt.decode(accessToken, JsonWebKey.import_key_set(self.jwks))
     except Exception:
       # If we have outdated keys, we try to update them from identity provider
-      gLogger.debug("Try to update %s jwks.." % issuer)
+      gLogger.debug("Try to update %s jwks.." % self.metadata['issuer'])
       self.jwks = self.fetch_metadata(self.get_metadata('jwks_uri'))
       return jwt.decode(accessToken, JsonWebKey.import_key_set(self.jwks))
     
