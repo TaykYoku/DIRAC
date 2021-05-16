@@ -102,7 +102,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
-  def verify(self, accessToken=None):
+  def verifyToken(self, accessToken=None):
     """ Verify access token
 
         :param str accessToken: access token

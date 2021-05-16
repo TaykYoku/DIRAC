@@ -617,7 +617,7 @@ class BaseRequestHandler(RequestHandler):
       return S_ERROR('Found a not bearer access token.')
 
     cli = self.__idps.getIdProviderForToken(accessToken)
-    payload = cli.verify()
+    payload = cli.verifyToken()
     credDict = cli.researchGroup(payload, accessToken)
     
     # # Read token without verification to get issuer
