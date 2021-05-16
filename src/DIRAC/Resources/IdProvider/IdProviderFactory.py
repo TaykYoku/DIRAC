@@ -56,12 +56,10 @@ class IdProviderFactory(object):
       result = getAuthorisationServerMetadata()
       if not result['OK']:
         return result
-      result['Value']['token'] = token
       return OAuth2IdProvider(**result['Value'])
     result = getIdProviderForIssuer(issuer)
     if not result['OK']:
       return result
-    result['Value']['token'] = token
     return self.getIdProvider(result['Value'])
 
   #############################################################################

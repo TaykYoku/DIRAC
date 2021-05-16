@@ -102,12 +102,12 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
-  def verifyToken(self, accessToken=None):
+  def verifyToken(self, accessToken):
     """ Verify access token
 
         :param str accessToken: access token
     """
-    accessToken = accessToken or self.token.get('access_token')
+    accessToken = accessToken
     try:
       # Try to decode token
       gLogger.debug("Try to decode token:", accessToken)
