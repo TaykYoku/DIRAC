@@ -87,9 +87,9 @@ class AuthHandler(TornadoREST):
     cls.server = AuthServer()
     cls.server.css = dict(CSS=cls.CSS, css_align_center=cls.css_align_center, css_main=cls.css_main)
     cls.server.LOCATION = cls.LOCATION
-    cls.idps = IdProviderFactory()
-    cls._idps[cls.server.metadata['issuer']]['jwks_uri'] = cls.server.metadata['jwks_uri']
-    cls._idps[cls.server.metadata['issuer']]['jwks'] = cls.server.db.getJWKs().get('Value', {})
+    # cls.idps = IdProviderFactory()
+    # cls._idps[cls.server.metadata['issuer']]['jwks_uri'] = cls.server.metadata['jwks_uri']
+    # cls._idps[cls.server.metadata['issuer']]['jwks'] = cls.server.db.getJWKs().get('Value', {})
     
   def initializeRequest(self):
     """ Called at every request """
