@@ -30,7 +30,7 @@ __RCSID__ = "$Id$"
 
 class AuthHandler(TornadoREST):
   # Authorization access to all methods handled by AuthServer instance
-  USE_AUTHZ_GRANTS = ['VISITOR']
+  USE_AUTHZ_GRANTS = ['JWT', 'VISITOR']
   SYSTEM = 'Framework'
   AUTH_PROPS = 'all'
   LOCATION = "/DIRAC/auth"
@@ -220,6 +220,45 @@ class AuthHandler(TornadoREST):
     """
     if self.request.method == "GET":
       return self.server.db.getJWKs().get('Value', {})
+
+  def web_userinfo(self):
+    """ The UserInfo endpoint can be used to retrieve identity information about a user,
+        see `spec <https://openid.net/specs/openid-connect-core-1_0.html#UserInfo>`_
+
+        GET LOCATION/userinfo
+
+        Parameters:
+        +---------------+--------+---------------------------------+--------------------------------------------------+
+        | **name**      | **in** | **description**                 | **example**                                      |
+        +---------------+--------+---------------------------------+--------------------------------------------------+
+        | Authorization | header | Provide access token            | Bearer jkagfbfd3r4ubf887gqduyqwogasd87           |
+        +---------------+--------+---------------------------------+--------------------------------------------------+
+
+        Request example::
+
+          GET LOCATION/userinfo
+          Authorization: Bearer <access_token>
+
+        Response::
+
+          HTTP/1.1 200 OK
+          Content-Type: application/json
+
+          {
+            "sub": "248289761001",
+            "name": "Bob Smith",
+            "given_name": "Bob",
+            "family_name": "Smith",
+            "group": [
+              "dirac_user",
+              "dirac_admin"
+            ]
+          }
+    """
+    # Token verification
+    # token = ResourceProtector().acquire_token(self.request, '')
+    # return {'sub': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
+    return self.getRemoteCredentials()
 
   path_device = ['([A-z0-9-_]*)']
 
