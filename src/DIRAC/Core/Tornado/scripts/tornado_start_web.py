@@ -9,6 +9,7 @@ __RCSID__ = "$Id$"
 import os
 import sys
 import tornado
+import pprint
 
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
 
@@ -49,13 +50,14 @@ def main():
     gLogger.fatal('Web portal is not installed. %s' % repr(e))
     sys.exit(1)
   
-    # Get routes and settings for a portal
-    result = App().getAppToDict(8000)
-    if not result['OK']:
-      gLogger.fatal(result['Message'])
-      sys.exit(1)
-    app = result['Value']
-    serverToLaunch.addHandlers(app['routes'], app['settings'])
+  # Get routes and settings for a portal
+  result = App().getAppToDict(8000)
+  if not result['OK']:
+    gLogger.fatal(result['Message'])
+    sys.exit(1)
+  app = result['Value']
+
+  serverToLaunch.addHandlers(app['routes'], app['settings'])
 
   serverToLaunch.startTornado()
 
