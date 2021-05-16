@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from authlib.jose import jwt
+import jwt as _jwt
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import ObjectLoader, ThreadSafe
@@ -49,7 +49,7 @@ class IdProviderFactory(object):
         :return: S_OK(IdProvider)/S_ERROR()
     """
     # Read token without verification to get issuer
-    issuer = jwt.decode(token, options=dict(verify_signature=False))['iss'].strip('/')
+    issuer = _jwt.decode(token, options=dict(verify_signature=False))['iss'].strip('/')
     result = getIdProviderForIssuer(issuer)
     if not result['OK']:
       return result
