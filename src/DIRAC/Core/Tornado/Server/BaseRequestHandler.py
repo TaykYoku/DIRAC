@@ -635,7 +635,7 @@ class BaseRequestHandler(RequestHandler):
       self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
       payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
 
-    credDict = {}
+    credDict = payload
     credDict['DN'] = '/O=DIRAC/CN=%s' % payload['sub']
 
     # Scope based authz

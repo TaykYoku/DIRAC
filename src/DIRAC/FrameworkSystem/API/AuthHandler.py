@@ -260,7 +260,6 @@ class AuthHandler(TornadoREST):
     # token = ResourceProtector().acquire_token(self.request, '')
     # return {'sub': token.sub, 'issuer': token.issuer, 'group': token.groups[0]}
     userinfo = self.getRemoteCredentials()
-    userinfo['sub'] = userinfo['ID']
     return userinfo
 
   path_device = ['([A-z0-9-_]*)']
