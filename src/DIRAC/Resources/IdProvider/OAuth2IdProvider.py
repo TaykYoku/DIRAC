@@ -76,9 +76,6 @@ def claimParser(claimDict, attributes):
 
 class OAuth2IdProvider(IdProvider, OAuth2Session):
 
-  jwks_uri = None
-  jwks = None
-
   def __init__(self, name=None, token_endpoint_auth_method='client_secret_post', revocation_endpoint_auth_method=None,
                scope='', token=None, token_placement='header', update_token=None, **parameters):
     """ OIDCClient constructor
@@ -90,6 +87,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                            revocation_endpoint_auth_method=revocation_endpoint_auth_method,
                            scope=scope, token=token, token_placement=token_placement,
                            update_token=update_token, **parameters)
+    self.jwks = parameters.get('jwks')
     # Convert scope to list
     scope = scope or ''
     self.scope = list_to_scope([s.strip() for s in scope.strip().replace('+', ' ').split(',' if ',' in scope else ' ')])
@@ -104,28 +102,49 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
                                                                           self.client_secret,
                                                                           pprint.pformat(self.metadata)))
 
+  def verify(self, accessToken=None):
+    """ Verify access token
+
+        :param str accessToken: access token
+    """
+    accessToken = accessToken or self.token.get('access_token')
+    try:
+      # Try to decode token
+      gLogger.debug("Try to decode token:", accessToken)
+      return jwt.decode(accessToken, JsonWebKey.import_key_set(self.jwks))
+    except Exception:
+      # If we have outdated keys, we try to update them from identity provider
+      gLogger.debug("Try to update %s jwks.." % issuer)
+      self.jwks = self.fetch_metadata(self.get_metadata('jwks_uri'))
+      return jwt.decode(accessToken, JsonWebKey.import_key_set(self.jwks))
+    
   def update_token(self, token, refresh_token):
     pass
 
   def get_metadata(self, option=None):
-    """
+    """ Get metadata
     """
     if not self.metadata.get(option):
       self.metadata.update(self.fetch_metadata())
     return self.metadata.get(option)
 
   def fetch_metadata(self, url=None):
-    """
+    """ Fetch metada
     """
     return self.get(url or self.server_metadata_url, withhold_token=True).json()
 
   def researchGroup(self, payload, token):
     """ Research group
     """
-    return {}
+    credDict = self.parseBasic(payload)
+    if not credDict.get('group'):
+      cerdDict = self.userDiscover(credDict)
+    credDict['provider'] = self.name
+    return credDict
+
 
   def authorization(self, group=None):
-    """
+    """ Authorizaion through DeviceCode flow
     """
     result = self.submitDeviceCodeAuthorizationFlow(group)
     if not result['OK']:
@@ -194,17 +213,19 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """
     credDict = {}
     credDict['ID'] = claimDict['sub']
+    credDict['DN'] = '/O=DIRAC/CN=%s' % credDict['ID']
+    credDict['group'] = claimDict.get('group')
     return credDict
 
-  def __getUserInfo(self, useToken=None):
-    self.log.debug('Sent request to userinfo endpoint..')
-    r = None
-    try:
-      r = self.request('GET', self.get_metadata('userinfo_endpoint'), withhold_token=useToken)
-      r.raise_for_status()
-      return S_OK(r.json())
-    except (self.exceptions.RequestException, ValueError) as e:
-      return S_ERROR("%s: %s" % (repr(e), r.text if r else ''))
+  # def __getUserInfo(self, useToken=None):
+  #   self.log.debug('Sent request to userinfo endpoint..')
+  #   r = None
+  #   try:
+  #     r = self.request('GET', self.get_metadata('userinfo_endpoint'), withhold_token=useToken)
+  #     r.raise_for_status()
+  #     return S_OK(r.json())
+  #   except (self.exceptions.RequestException, ValueError) as e:
+  #     return S_ERROR("%s: %s" % (repr(e), r.text if r else ''))
 
   def parseEduperson(self, claimDict):
     """ Parse eduperson claims
@@ -231,7 +252,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     return credDict
 
   def userDiscover(self, credDict):
-    credDict['DN'] = '/O=DIRAC/CN=%s' % credDict['ID']
     credDict['DIRACGroups'] = []
     for vo, voData in credDict.get('VOs', {}).items():
       result = getVOMSRoleGroupMapping(vo)

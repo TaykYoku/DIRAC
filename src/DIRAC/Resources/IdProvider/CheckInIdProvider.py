@@ -16,10 +16,11 @@ class CheckInIdProvider(OAuth2IdProvider):
   SIGN = '#aai.egi.eu'
   PARAM_SCOPE = 'eduperson_entitlement?value='
 
-  def researchGroup(self, payload, token):
+  def researchGroup(self, payload, token=None):
     """ Research group
     """
-    self.token = token
+    if token:
+      self.token = token
     claims = self.getUserProfile()
     credDict = self.parseBasic(claims)
     credDict.update(self.parseEduperson(claims))

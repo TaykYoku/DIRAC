@@ -13,6 +13,7 @@ import jwt as _jwt
 
 import os
 import time
+import pprint
 import requests
 import threading
 from datetime import datetime
@@ -179,17 +180,19 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      cls._idps = {getAuthAPI().strip('/'): {'jwks_uri': getAuthAPI().strip('/') + '/jwk'}}
+      cls.__idps = IdProviderFactory()
 
-      # Set Identity Providers
-      result = getProvidersForInstance('Id')
-      if result['OK']:
-        for providerName in result['Value']:
-          result = getProviderInfo(providerName)
-          if result['OK']:
-            cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
-      if not result['OK']:
-        raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
+      # cls._idps = {getAuthAPI().strip('/'): {'jwks_uri': getAuthAPI().strip('/') + '/jwk'}}
+
+      # # Set Identity Providers
+      # result = getProvidersForInstance('Id')
+      # if result['OK']:
+      #   for providerName in result['Value']:
+      #     result = getProviderInfo(providerName)
+      #     if result['OK']:
+      #       cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
+      # if not result['OK']:
+      #   raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
 
       # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
       absoluteUrl = request.path
@@ -605,7 +608,7 @@ class BaseRequestHandler(RequestHandler):
 
         :return: S_OK(dict)/S_ERROR()
     """
-    # Export token
+    # Export token from headers
     token = self.request.headers.get('Authorization')
     if not token or len(token.split()) != 2:
       return S_ERROR('Not found a bearer access token.')
@@ -613,45 +616,38 @@ class BaseRequestHandler(RequestHandler):
     if tokenType.lower() != 'bearer':
       return S_ERROR('Found a not bearer access token.')
     
-    # Read token without verification to get issuer
-    issuer = _jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
-    if not self._idps.get(issuer):
-      return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
-
-    gLogger.debug("Token issuer is %s" % issuer)
-
-    if not self._idps[issuer].get('jwks_uri'):
-      self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
-    if not self._idps[issuer].get('jwks'):
-      self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-
-    gLogger.debug("IdP jwks is %s" % self._idps[issuer]['jwks'])
-
-    try:
-      gLogger.debug("Try to decode token:", accessToken)
-      payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-    except Exception:
-      gLogger.debug("Try to update %s jwks.." % issuer)
-      self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-      payload = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-
-    credDict = payload
-    credDict['DN'] = '/O=DIRAC/CN=%s' % payload['sub']
-
-    # Scope based authz
-    gLogger.debug("Research group for %s" % payload)
-
-    if payload.get('scope'):
-      groups = [s.split(':')[1] for s in scope_to_list(payload['scope']) if s.startswith('g:')]
-
-    if groups:
-      credDict['group'] = groups[0]
+    cli = self.__idps.getIdProviderForToken(accessToken)
+    payload = cli.verify()
+    credDict = cli.researchGroup(payload, accessToken)
     
-    gLogger.debug("Find %s group" % credDict['group'])
-    
-    print(credDict)
+    # # Read token without verification to get issuer
+    # issuer = _jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
+    # if not self._idps.get(issuer):
+    #   return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
 
-    credDict['token'] = accessToken
+    # gLogger.debug("Token issuer is %s" % issuer)
+
+    # # Make sure the JWKs of the identity provider are present
+    # if not self._idps[issuer].get('jwks_uri'):
+    #   self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
+    # if not self._idps[issuer].get('jwks'):
+    #   self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
+
+    # gLogger.debug("IdP jwks is %s" % self._idps[issuer]['jwks'])
+
+    # try:
+    #   # Try to decode token
+    #   gLogger.debug("Try to decode token:", accessToken)
+    #   credDict = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
+    # except Exception:
+    #   # If we have outdated keys, we try to update them from identity provider
+    #   gLogger.debug("Try to update %s jwks.." % issuer)
+    #   self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
+    #   credDict = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
+
+    # # Masking the user ID under DN
+    # credDict['DN'] = '/O=DIRAC/CN=%s' % credDict['sub']
+
     return S_OK(credDict)
 
   def _authzVISITOR(self):
