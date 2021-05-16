@@ -39,10 +39,9 @@ from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-er
 from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
-from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
+# from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthAPI
 
 sLog = gLogger.getSubLogger(__name__.split('.')[-1])
 
@@ -615,7 +614,7 @@ class BaseRequestHandler(RequestHandler):
     tokenType, accessToken = token.split()
     if tokenType.lower() != 'bearer':
       return S_ERROR('Found a not bearer access token.')
-    
+
     cli = self.__idps.getIdProviderForToken(accessToken)
     payload = cli.verify()
     credDict = cli.researchGroup(payload, accessToken)

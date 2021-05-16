@@ -15,7 +15,9 @@ import jwt as _jwt
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import ObjectLoader, ThreadSafe
 from DIRAC.Core.Utilities.DictCache import DictCache
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo
+from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProviderInfo, getIdProviderForIssuer
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthAPI
 
 __RCSID__ = "$Id$"
 
@@ -50,6 +52,12 @@ class IdProviderFactory(object):
     """
     # Read token without verification to get issuer
     issuer = _jwt.decode(token, options=dict(verify_signature=False))['iss'].strip('/')
+    if issuer == getAuthAPI().strip('/'):
+      result = getAuthorisationServerMetadata()
+      if not result['OK']:
+        return result
+      result['Value']['token'] = token
+      return OAuth2IdProvider(**result['Value'])
     result = getIdProviderForIssuer(issuer)
     if not result['OK']:
       return result
