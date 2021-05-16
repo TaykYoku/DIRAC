@@ -343,7 +343,6 @@ class BaseRequestHandler(RequestHandler):
       regardless of the HTTP method used
 
     """
-    self.credDict = self._gatherPeerCredentials()
     try:
       self.credDict = self._gatherPeerCredentials()
     except Exception as e:  # pylint: disable=broad-except
