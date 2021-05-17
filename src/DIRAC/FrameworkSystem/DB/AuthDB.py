@@ -33,6 +33,7 @@ class Token(Model, OAuth2TokenMixin):
   __tablename__ = 'Token'
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
+  access_token = Column(String(255), primary_key=True, unique=True, nullable=False)
   expires_at = Column(Integer, nullable=False, default=0)
 
 
