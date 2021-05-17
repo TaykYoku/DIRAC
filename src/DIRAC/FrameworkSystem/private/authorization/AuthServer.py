@@ -101,7 +101,6 @@ class AuthServer(_AuthorizationServer):
     """
     if token.get('refresh_token'):
       token['client_id'] = request.client.client_id
-      token['scope'] = request.scope
       result = self.db.storeToken(token)
       if not result['OK']:
         gLogger.error(result['Message'])
@@ -377,7 +376,7 @@ class AuthServer(_AuthorizationServer):
       doc = document('DIRAC authentication')
       with doc.head:
         dom.link(rel='stylesheet',
-                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css")
+                 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css")
         dom.style(self.css['CSS'])
       with doc:
         with dom.div(style=self.css['css_main']):

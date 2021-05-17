@@ -150,7 +150,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     credDict['provider'] = self.name
     return credDict
 
-
   def authorization(self, group=None):
     """ Authorizaion through DeviceCode flow
     """
