@@ -146,11 +146,10 @@ class AuthServer(_AuthorizationServer):
       lifetime = self.__getScope(scope, 'lifetime')
       gLogger.debug('Try to query %s@%s proxy%s' % (user, group, ('with lifetime:%s' % lifetime) if lifetime else ''))
       result = getUsernameForDN('/O=DIRAC/CN=%s' % user)
+      if result['OK']:
+        result = getDNForUsername(result['Value'])
       if not result['OK']:
         raise Exception(result['Message'])
-      result = getDNForUsername(result['Value'])
-      if not result['OK']:
-        return result
       userDNs = result['Value']
       err = []
       for dn in userDNs:
@@ -168,9 +167,9 @@ class AuthServer(_AuthorizationServer):
             raise Exception(result['Message'])
           return {'proxy': result['Value']}
       raise Exception('; '.join(err))
-      
-    return self.bearerToken(client, grant_type, user=user, scope=scope,
-                            expires_in=expires_in, include_refresh_token=client.has_client_secret())
+
+    return self.bearerToken(client, grant_type, user=user, scope=scope, expires_in=expires_in,
+                            include_refresh_token=include_refresh_token)
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number

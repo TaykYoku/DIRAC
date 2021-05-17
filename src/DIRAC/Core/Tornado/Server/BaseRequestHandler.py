@@ -342,7 +342,6 @@ class BaseRequestHandler(RequestHandler):
       regardless of the HTTP method used
 
     """
-    self.credDict = self._gatherPeerCredentials()
     try:
       self.credDict = self._gatherPeerCredentials()
     except Exception as e:  # pylint: disable=broad-except
@@ -553,7 +552,7 @@ class BaseRequestHandler(RequestHandler):
       try:
         result = eval('self._authz%s' % grant)()
       except AttributeError as e:
-        print(repr(e))
+        gLogger.debug(repr(e))
         raise Exception('%s authentication type is not supported.' % grant)
 
       if result['OK']:

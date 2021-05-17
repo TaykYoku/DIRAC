@@ -120,7 +120,16 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     
   def update_token(self, token, refresh_token):
     pass
-  
+
+  def refreshToken(self, refresh_token):
+    """ Refresh token
+
+        :param str token: refresh_token
+
+        :return: dict
+    """
+    return self.refresh_token(self.get_metadata('token_endpoint'), refresh_token=refresh_token)
+
   def revokeToken(self, token=None, token_type_hint='refresh_token'):
     """ Revoke token
 

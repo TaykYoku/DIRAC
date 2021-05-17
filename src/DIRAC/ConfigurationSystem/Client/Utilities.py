@@ -630,7 +630,7 @@ def getAuthClients(clientID=None, clientName=None):
         cliDict['client_metadata'] = {'response_types': ['code'],
                                       'redirect_uris': [cliDict['redirect_uri']],
                                       'token_endpoint_auth_method': cliDict['token_endpoint_auth_method'],
-                                      'grant_types': ['authorization_code']}
+                                      'grant_types': ['authorization_code', 'refresh_token']}
     if clientName and clientName == cliName:
       return S_OK(cliDict)
 
