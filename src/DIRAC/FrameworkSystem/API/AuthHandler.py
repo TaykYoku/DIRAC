@@ -222,6 +222,20 @@ class AuthHandler(TornadoREST):
     """
     return self.server.db.getJWKs().get('Value', {})
 
+  def web_revoke(self):
+    """ Revocation endpoint
+
+        Request example::
+
+          GET LOCATION/revoke
+
+        Response::
+
+          HTTP/1.1 200 OK
+          Content-Type: application/json
+    """
+    return self.server.db.revokeToken()
+
   def web_userinfo(self):
     """ The UserInfo endpoint can be used to retrieve identity information about a user,
         see `spec <https://openid.net/specs/openid-connect-core-1_0.html#UserInfo>`_

@@ -17,6 +17,8 @@ from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from authlib.oauth2.rfc6749.util import scope_to_list
 
+from DIRAC.FrameworkSystem.private.authorization.grants.RevokeToken import RevocationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.grants.RefreshToken import RefreshTokenGrant
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (DeviceAuthorizationEndpoint,
                                                                            DeviceCodeGrant)
 from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (OpenIDCode,
@@ -68,11 +70,11 @@ class AuthServer(_AuthorizationServer):
     self.config = {}
     self.collectMetadata()
     # Register configured grants
-    if DeviceCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
-      self.register_grant(DeviceCodeGrant)
-      self.register_endpoint(DeviceAuthorizationEndpoint)
-    if AuthorizationCodeGrant.GRANT_TYPE in self.metadata['grant_types_supported']:
-      self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
+    self.register_grant(RefreshTokenGrant)
+    self.register_grant(DeviceCodeGrant)
+    self.register_endpoint(DeviceAuthorizationEndpoint)
+    self.register_endpoint(RevocationEndpoint)
+    self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
 
   def collectMetadata(self):
     """ Collect metadata """

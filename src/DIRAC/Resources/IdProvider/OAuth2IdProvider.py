@@ -120,6 +120,14 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     
   def update_token(self, token, refresh_token):
     pass
+  
+  def revokeToken(self, token=None, token_type_hint='refresh_token'):
+    """ Revoke token
+
+        :param str token: token
+        :param str token_type_hint: token type
+    """
+    self.revoke_token(self.get_metadata('revocation_endpoint'), token=token, token_type_hint=token_type_hint)
 
   def get_metadata(self, option=None):
     """ Get metadata

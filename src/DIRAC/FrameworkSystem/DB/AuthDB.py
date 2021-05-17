@@ -105,17 +105,21 @@ class AuthDB(SQLAlchemyDB):
 
     return S_OK()
 
-  def getTokenByRefreshToken(self, refresh_token):
+  def getToken(self, token, token_type_hint='refresh_token'):
     """ Find Token for refresh token
 
-        :param str refresh_token: refresh token
+        :param str token: token
+        :param str token_type_hint: token type
 
         :return: S_OK()/S_ERROR()
     """
     session = self.session()
     try:
       session.query(Token).filter(Token.expires_at < time()).delete()
-      token = session.query(Token).filter(Token.refresh_token == refresh_token).first()
+      if token_type_hint == 'access_token':
+        token = session.query(Token).filter(Token.access_token == token).first()
+      else:
+        token = session.query(Token).filter(Token.refresh_token == token).first()
     except NoResultFound:
       return self.__result(session, S_ERROR("Token not found."))
     except Exception as e:

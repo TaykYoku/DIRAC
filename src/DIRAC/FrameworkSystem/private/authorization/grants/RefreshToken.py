@@ -13,10 +13,10 @@ class RefreshTokenGrant(_RefreshTokenGrant):
 
         :param str refresh_token: refresh token
 
-        :return: object
+        :return: dict or None
     """
     # Check auth session
-    result = self.server.db.getTokenByRefreshToken(refresh_token)
+    result = self.server.db.getToken(refresh_token)
     if not result['OK']:
       raise OAuth2Error('Cannot get token', result['Message'])
     token = result['Value']
