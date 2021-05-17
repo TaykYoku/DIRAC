@@ -102,7 +102,7 @@ class AuthServer(_AuthorizationServer):
     if token.get('refresh_token'):
       token['client_id'] = request.client.client_id
       token['scope'] = request.scope
-      result = self.server.db.storeToken(token)
+      result = self.db.storeToken(token)
       if not result['OK']:
         gLogger.error(result['Message'])
   
