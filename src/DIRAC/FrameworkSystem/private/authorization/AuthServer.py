@@ -100,7 +100,7 @@ class AuthServer(_AuthorizationServer):
         :param object request: Request object
     """
     if token.get('refresh_token'):
-      token['client_id'] = request.client['client_id']
+      token['client_id'] = request.client.client_id
       token['scope'] = request.client['scope']
       result = self.server.db.storeToken(token)
       if not result['OK']:
