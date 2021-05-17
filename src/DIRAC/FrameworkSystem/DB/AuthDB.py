@@ -18,6 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from authlib.jose import KeySet, RSAKey, jwk
 from authlib.common.security import generate_token
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
