@@ -22,6 +22,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
 from DIRAC.FrameworkSystem.private.authorization.utils.JWKs import getJWKs, createJWKsIfNeeded
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
+from DIRAC.FrameworkSystem.private.authorization.grants.RevokeToken import RevocationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
@@ -234,7 +235,9 @@ class AuthHandler(TornadoREST):
           HTTP/1.1 200 OK
           Content-Type: application/json
     """
-    return self.server.db.revokeToken()
+    if self.request.method == 'POST':
+      self.log.verbose('Initialize a Device authentication flow.')
+      return self.server.create_endpoint_response(RevocationEndpoint.ENDPOINT_NAME, self.request)
 
   def web_userinfo(self):
     """ The UserInfo endpoint can be used to retrieve identity information about a user,
