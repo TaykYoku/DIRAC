@@ -5,18 +5,61 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# pylint: disable=invalid-name,wrong-import-position,protected-access
-import sys
-import pytest
-import pprint
+import time
 from authlib.jose import JsonWebKey, JsonWebSignature, jwt
-from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urlsafe_b64decode, json_loads
+from authlib.common.encoding import json_b64encode, urlsafe_b64decode, json_loads
 
-from DIRAC import gConfig
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 
 
 db = AuthDB()
+
+
+def test_Token():
+  """ Try to revoke/save/get tokens
+  """
+  # Get key
+  result = db.getPrivateKey()
+  assert result['OK'], result['Message']
+  privat_key = result['Value']['key']
+
+  # Sign token
+  payload = {'sub': 'user',
+             'iss': 'issuer',
+             'exp': time.time() + 3600,
+             'scope': 'scope',
+             'setup': 'setup',
+             'group': 'my_group'}
+  token = jwt.encode({'alg': 'RS256'}, payload, privat_key)
+  # Expired token
+  payload['exp'] = 0
+  exp_token = jwt.encode({'alg': 'RS256'}, payload, privat_key)
+
+  # Remove if exists in DB
+  db.unrevokeToken(token)
+
+  # Check if token revoked
+  result = db.isTokenRevoked(token)
+  assert result['OK'], result['Message']
+  assert result['Value'] == False
+
+  # Revoke token
+  result = db.revokeToken(token)
+  assert result['OK'], result['Message']
+
+  # Revoke expired token
+  result = db.revokeToken(exp_token)
+  assert result['OK'], result['Message']
+
+  # Check if token revoked
+  result = db.isTokenRevoked(token)
+  assert result['OK'], result['Message']
+  assert result['Value'] == True
+
+  # Check if expired token there
+  result = db.isTokenRevoked(exp_token)
+  assert result['OK'], result['Message']
+  assert result['Value'] == False
 
 
 def test_keys():

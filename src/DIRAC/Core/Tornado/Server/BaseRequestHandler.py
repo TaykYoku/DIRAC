@@ -619,34 +619,6 @@ class BaseRequestHandler(RequestHandler):
     cli = self.__idps.getIdProviderForToken(accessToken)
     payload = cli.verifyToken(accessToken)
     credDict = cli.researchGroup(payload, accessToken)
-    
-    # # Read token without verification to get issuer
-    # issuer = _jwt.decode(accessToken, options=dict(verify_signature=False))['iss'].strip('/')
-    # if not self._idps.get(issuer):
-    #   return S_ERROR('%s issuer not registred in DIRAC.' % issuer)
-
-    # gLogger.debug("Token issuer is %s" % issuer)
-
-    # # Make sure the JWKs of the identity provider are present
-    # if not self._idps[issuer].get('jwks_uri'):
-    #   self._idps[issuer]['jwks_uri'] = requests.get(get_well_known_url(issuer, True), verify=False).json()['jwks_uri']
-    # if not self._idps[issuer].get('jwks'):
-    #   self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-
-    # gLogger.debug("IdP jwks is %s" % self._idps[issuer]['jwks'])
-
-    # try:
-    #   # Try to decode token
-    #   gLogger.debug("Try to decode token:", accessToken)
-    #   credDict = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-    # except Exception:
-    #   # If we have outdated keys, we try to update them from identity provider
-    #   gLogger.debug("Try to update %s jwks.." % issuer)
-    #   self._idps[issuer]['jwks'] = requests.get(self._idps[issuer]['jwks_uri'], verify=False).json()
-    #   credDict = jwt.decode(accessToken, JsonWebKey.import_key_set(self._idps[issuer]['jwks']))
-
-    # # Masking the user ID under DN
-    # credDict['DN'] = '/O=DIRAC/CN=%s' % credDict['sub']
 
     return S_OK(credDict)
 

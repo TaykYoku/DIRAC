@@ -5,16 +5,19 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+import jwt as _jwt
+
 from time import time
 from pprint import pprint
 from M2Crypto import RSA, BIO
-from authlib.jose import jwk
 from sqlalchemy import Column, Integer, Text, String
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from authlib.jose import KeySet, RSAKey
-from authlib.common.security import generate_token
 from sqlalchemy.ext.declarative import declarative_base
+
+from authlib.jose import KeySet, RSAKey, jwk
+from authlib.common.security import generate_token
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Base.SQLAlchemyDB import SQLAlchemyDB
@@ -23,6 +26,13 @@ __RCSID__ = "$Id$"
 
 
 Model = declarative_base()
+
+
+class Token(Model, OAuth2TokenMixin):
+  __tablename__ = 'Token'
+  __table_args__ = {'mysql_engine': 'InnoDB',
+                    'mysql_charset': 'utf8'}
+  expires_at = Column(Integer, nullable=False, default=0)
 
 
 class JWK(Model):
@@ -35,7 +45,7 @@ class JWK(Model):
 
 
 class AuthSession(Model):
-  __tablename__ = 'Sessions'
+  __tablename__ = 'AuthSession'
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
   id = Column(String(255), unique=True, primary_key=True, nullable=False)
@@ -72,6 +82,13 @@ class AuthDB(SQLAlchemyDB):
     """
     tablesInDB = self.inspector.get_table_names()
 
+    # Token
+    if 'Token' not in tablesInDB:
+      try:
+        Token.__table__.create(self.engine)  # pylint: disable=no-member
+      except Exception as e:
+        return S_ERROR(e)
+
     # JWK
     if 'JWK' not in tablesInDB:
       try:
@@ -79,14 +96,64 @@ class AuthDB(SQLAlchemyDB):
       except Exception as e:
         return S_ERROR(e)
 
-    # Sessions
-    if 'Sessions' not in tablesInDB:
+    # AuthSession
+    if 'AuthSession' not in tablesInDB:
       try:
         AuthSession.__table__.create(self.engine)  # pylint: disable=no-member
       except Exception as e:
         return S_ERROR(e)
 
     return S_OK()
+
+  def getTokenByRefreshToken(self, refresh_token):
+    """ Find Token for refresh token
+
+        :param str refresh_token: refresh token
+
+        :return: S_OK()/S_ERROR()
+    """
+    session = self.session()
+    try:
+      session.query(Token).filter(Token.expires_at < time()).delete()
+      token = session.query(Token).filter(Token.refresh_token == refresh_token).first()
+    except NoResultFound:
+      return self.__result(session, S_ERROR("Token not found."))
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK(OAuth2Token(self.__rowToDict(token))))
+
+  def revokeToken(self, token):
+    """ Revoke token
+
+        :param dict token: token to revoke
+
+        :return: S_OK()/S_ERROR()
+    """
+    session = self.session()
+    try:
+      token = session.query(Token).filter(Token.access_token == token['access_token'])
+      token.revoked = True
+    except Exception as e:
+      return self.__result(session, S_ERROR('Could not revoke token: %s' % e))
+    return self.__result(session, S_OK())
+
+  def storeToken(self, token):
+    """ Save token
+
+        :param dict token: token info
+
+        :return: S_OK(str)/S_ERROR()
+    """
+    token['expires_at'] = int(_jwt.decode(token['refresh_token'], options=dict(verify_signature=False))['exp'])
+    gLogger.debug('Store token:', dict(token))
+    attrts = dict((k, v) for k, v in dict(token).items() if k in list(Token.__dict__.keys()))
+    session = self.session()
+    try:
+      session.query(Token).filter(Token.access_token == token['access_token']).delete()
+      session.add(Token(**attrts))
+    except Exception as e:
+      return self.__result(session, S_ERROR('Could not add Token: %s' % e))
+    return self.__result(session, S_OK('Token successfully added'))
 
   def generateRSAKeys(self):
     """ Generate an RSA keypair with an exponent of 65537 in PEM format
@@ -101,7 +168,6 @@ class AuthDB(SQLAlchemyDB):
     session = self.session()
     try:
       session.add(JWK(**dictKey))
-      session.query(JWK).filter(JWK.expires_at < time()).delete()
     except Exception as e:
       return self.__result(session, S_ERROR('Could not generate keys: %s' % e))
     return self.__result(session, S_OK(dictKey))
@@ -163,6 +229,8 @@ class AuthDB(SQLAlchemyDB):
     """
     session = self.session()
     try:
+      # Remove all expired jwks
+      session.query(JWK).filter(JWK.expires_at < time()).delete()
       jwks = session.query(JWK).filter(JWK.expires_at > time()).all()
     except NoResultFound:
       return self.__result(session, S_OK([]))
@@ -178,15 +246,6 @@ class AuthDB(SQLAlchemyDB):
     session = self.session()
     try:
       session.query(JWK).delete()
-    except Exception as e:
-      return self.__result(session, S_ERROR(str(e)))
-    return self.__result(session, S_OK())
-
-  def removeExpiredSessions(self):
-    """ Remove expired sessions """
-    session = self.session()
-    try:
-      session.query(AuthSession).filter(AuthSession.expires_at < time()).delete()
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))
     return self.__result(session, S_OK())
@@ -234,6 +293,8 @@ class AuthDB(SQLAlchemyDB):
     """
     session = self.session()
     try:
+      # Remove all expired sessions
+      session.query(AuthSession).filter(AuthSession.expires_at < time()).delete()
       session.query(AuthSession).filter(AuthSession.id == sessionID).delete()
     except Exception as e:
       return self.__result(session, S_ERROR(str(e)))

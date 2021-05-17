@@ -95,9 +95,14 @@ class AuthServer(_AuthorizationServer):
     """ Store tokens
 
         :param dict token: tokens
-        :param object request: http Request object, implemented for compatibility with authlib library (unuse)
+        :param object request: Request object
     """
-    return S_OK(None)
+    if token.get('refresh_token'):
+      token['client_id'] = request.client['client_id']
+      token['scope'] = request.client['scope']
+      result = self.server.db.storeToken(token)
+      if not result['OK']:
+        gLogger.error(result['Message'])
   
   def getClient(self, clientID):
     """ Search authorization client
@@ -127,11 +132,10 @@ class AuthServer(_AuthorizationServer):
     except:
       return None
 
-  def generateProxyOrToken(self, **kwargs):
+  def generateProxyOrToken(self, client, grant_type, user=None, scope=None,
+                           expires_in=None, include_refresh_token=True):
     """ Generate proxy or tokens after authorization
     """
-    user = kwargs['user']
-    scope = kwargs['scope']
     if 'proxy' in scope_to_list(scope):
       # Try to return user proxy if proxy scope present in the authorization request
       if not isDownloadablePersonalProxy():
@@ -164,7 +168,8 @@ class AuthServer(_AuthorizationServer):
           return {'proxy': result['Value']}
       raise Exception('; '.join(err))
       
-    return self.bearerToken(**kwargs)
+    return self.bearerToken(client, grant_type, user=user, scope=scope,
+                            expires_in=expires_in, include_refresh_token=client.has_client_secret())
 
   def getIdPAuthorization(self, providerName, request):
     """ Submit subsession and return dict with authorization url and session number
@@ -239,27 +244,16 @@ class AuthServer(_AuthorizationServer):
         :param str user: user unique id
         :param str scope: scope
 
-        :return: jwt object
+        :return: str
     """
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
-    payload = {'sub': user,
-               'iss': self.metadata['issuer'],
-               'iat': int(time()),
-               'exp': int(time()) + (self.__getScope(scope, 'lifetime') or (12 * 3600)),
-               'scope': scope,
-               'setup': getSetup(),
-               'group': self.__getScope(scope, 'g')}
-    # Read private key of DIRAC auth service
-    result = self.db.getPrivateKey()
-    if not result['OK']:
-      raise Exception(result['Message'])
-
-    # Sign token
-    key = result['Value']['key']
-    kid = result['Value']['kid']
-    header = {'alg': 'RS256', 'kid': kid}
-    # Need to use enum==0.3.1 for python 2.7
-    return jwt.encode(header, payload, key)
+    return self.signToken({'sub': user,
+                           'iss': self.metadata['issuer'],
+                           'iat': int(time()),
+                           'exp': int(time()) + (self.__getScope(scope, 'lifetime') or (12 * 3600)),
+                           'scope': scope,
+                           'setup': getSetup(),
+                           'group': self.__getScope(scope, 'g')})
 
   def refresh_token_generator(self, client, grant_type, user, scope):
     """ A function to generate ``refresh_token``
@@ -269,19 +263,24 @@ class AuthServer(_AuthorizationServer):
         :param str user: user unique id
         :param str scope: scope
 
-        :return: jwt object
+        :return: str
     """
     gLogger.debug('GENERATE DIRAC REFRESH TOKEN for "%s" with "%s" scopes.' % (user, scope))
-    payload = {'sub': user,
-               'iss': self.metadata['issuer'],
-               'iat': int(time()),
-               'exp': int(time()) + (24 * 3600),
-               'scope': scope,
-               'setup': getSetup(),
-               'client_id': client.client_id}
-    # Read private key of DIRAC auth service
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'r') as f:
-    #   key = f.read()
+    return self.signToken({'sub': user,
+                           'iss': self.metadata['issuer'],
+                           'iat': int(time()),
+                           'exp': int(time()) + (24 * 3600),
+                           'scope': scope,
+                           'setup': getSetup(),
+                           'client_id': client.client_id})
+
+  def signToken(self, payload):
+    """ Sign token
+
+        :param dict payload: token payload
+
+        ;return: str
+    """
     result = self.db.getPrivateKey()
     if not result['OK']:
       raise Exception(result['Message'])
