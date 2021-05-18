@@ -2,26 +2,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 import time
-import requests
 from authlib.oauth2 import OAuth2Error
-from authlib.oauth2.rfc6749.util import scope_to_list
 from authlib.oauth2.rfc6749.grants import AuthorizationEndpointMixin
 from authlib.oauth2.rfc6749.errors import InvalidClientError, UnauthorizedClientError
 from authlib.oauth2.rfc8628 import (DeviceAuthorizationEndpoint as _DeviceAuthorizationEndpoint,
                                     DeviceCodeGrant as _DeviceCodeGrant,
-                                    DeviceCredentialDict,
-                                    DEVICE_CODE_GRANT_TYPE)
+                                    DeviceCredentialDict)
 
 from DIRAC import gLogger, S_OK, S_ERROR
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthAPI
+from DIRAC.FrameworkSystem.private.authorization.AuthServer import collectMetadata
 
 log = gLogger.getSubLogger(__name__)
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
-  URL = '%s/device' % getAuthAPI()
 
   def create_endpoint_response(self, req):
     """ See :func:`authlib.oauth2.rfc8628.DeviceAuthorizationEndpoint.create_endpoint_response` """
@@ -34,7 +29,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
         :return: str
     """
-    return self.URL
+    return collectMetadata()['device_authorization_endpoint']
 
   def save_device_credential(self, client_id, scope, data):
     """ Save device credentials
@@ -113,7 +108,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
       return None
     data['expires_at'] = int(data['expires_in']) + int(time.time())
     data['interval'] = DeviceAuthorizationEndpoint.INTERVAL
-    data['verification_uri'] = DeviceAuthorizationEndpoint.URL
+    data['verification_uri'] = collectMetadata()['device_authorization_endpoint']
     print('query_device_credential: %s' % DeviceCredentialDict(data))
     print('scope: %s' % DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
@@ -132,5 +127,5 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     return (data['user_id'], True) if data.get('username') != "None" else None
 
   def should_slow_down(self, credential, now):
-    """ If need to slow down requests """
+    """ If need to slow down  """
     return False

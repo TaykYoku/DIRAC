@@ -174,15 +174,22 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
     return self.waitFinalStatusOfDeviceCodeAuthorizationFlow(response['device_code'])
 
-  def submitNewSession(self, session=None):
+  def submitNewSession(self, pkce=True):
     """ Submit new authorization session
 
-        :param str session: session number
+        :param bool pkce: use PKCE
 
         :return: S_OK(str)/S_ERROR()
     """
-    url, state = self.create_authorization_url(self.get_metadata('authorization_endpoint'), state=self.generateState(session))
-    return S_OK((url, state, {}))
+    session = {}
+    params = dict(state=generate_token(10))
+    # Create PKCE verifier
+    if pkce:
+      session['code_verifier'] = generate_token(48)
+      params['code_challenge_method'] = 'S256'
+      params['code_challenge'] = create_s256_code_challenge(session['code_verifier'])
+    url, state = self.create_authorization_url(self.get_metadata('authorization_endpoint'), **params)
+    return S_OK((url, state, session))
 
   def parseAuthResponse(self, response, session=None):
     """ Make user info dict:
@@ -199,11 +206,9 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     if not session:
       session = {}
 
-    self.log.debug('Current session is:\n', pprint.pformat(dict(session)))
+    self.log.debug('Current session is:\n', pprint.pformat(session))
     
-    self.fetch_access_token(self.get_metadata('token_endpoint'),
-                            authorization_response=response.uri,
-                            code_verifier=session.get('code_verifier'))
+    self.fetchToken(authorization_response=response.uri, code_verifier=session.get('code_verifier'))
     # Get user info
     claims = self.getUserProfile()
     credDict = self.parseBasic(claims)
@@ -213,12 +218,18 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     self.log.debug('Got response dictionary:\n', pprint.pformat(cerdDict))
 
     # Store token
-    self.token['client_id'] = self.client_id
-    self.token['provider'] = self.name
     self.token['user_id'] = credDict['ID']
     self.log.debug('Store token to the database:\n', pprint.pformat(dict(self.token)))
 
     return S_OK(credDict)
+
+  def fetchToken(self, **kwargs):
+    """ Fetch token
+    """
+    self.fetch_access_token(self.get_metadata('token_endpoint'), **kwargs)
+    self.token['client_id'] = self.client_id
+    self.token['provider'] = self.name
+    return OAuth2Token(self.token)
 
   def parseBasic(self, claimDict):
     """ Parse basic claims

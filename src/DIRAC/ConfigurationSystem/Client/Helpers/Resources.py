@@ -428,20 +428,21 @@ def getFilterConfig(filterID):
   return gConfig.getOptionsDict('Resources/LogFilters/%s' % filterID)
 
 
-def getIdProviderForIssuer(issuer):
-  """ Get identity provider for issuer
+def getSettingsNamesForIdPIssuer(issuer):
+  """ Get identity providers for issuer
 
       :param str issuer: issuer
 
-      :return: S_OK(dict)/S_ERROR()
+      :return: S_OK(list)/S_ERROR()
   """
+  names = []
   result = getProvidersForInstance('Id')
   if not result['OK']:
     return result
-  for prov in result['Value']:
-    if issuer.strip('/') == gConfig.getValue('%s/IdProviders/%s/issuer' % (gBaseResourcesSection, prov)).strip('/'):
-      return S_OK(prov)
-  return S_ERROR('Not found provider wwith %s issuer.' % issuer)
+  for name in result['Value']:
+    if issuer.strip('/') == gConfig.getValue('%s/IdProviders/%s/issuer' % (gBaseResourcesSection, name)).strip('/'):
+      names.append(name)
+  return S_OK(names) if names else S_ERROR('Not found provider wwith %s issuer.' % issuer)
 
 
 def getInfoAboutProviders(of=None, providerName=None, option='', section=''):

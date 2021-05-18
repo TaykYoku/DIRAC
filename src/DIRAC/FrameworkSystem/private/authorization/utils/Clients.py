@@ -15,12 +15,27 @@ __RCSID__ = "$Id$"
 
 DEFAULT_SCOPE = 'proxy g: lifetime:'
 
+DEFAULT_CLIENTS = {
+    'DIRACCLI': dict(
+        client_id='DIRAC_CLI',
+        response_types=['device'],
+        grant_types=['urn:ietf:params:oauth:grant-type:device_code']
+    ),
+    'WebAppDIRAC': dict(
+        token_endpoint_auth_method='client_secret_basic',
+        response_types=['code'],
+        grant_types=['authorization_code', 'refresh_token']
+    )
+}
 
 class Client(OAuth2ClientMixin):
   def __init__(self, params):
+
     super(Client, self).__init__()
-    client_metadata = params.get('client_metadata', {})
+    client_metadata = params.get('client_metadata', params)
     client_metadata['scope'] = ' '.join([client_metadata.get('scope', ''), DEFAULT_SCOPE])
+    if params.get('redirect_uri') and not client_metadata.get('redirect_uris'):
+      client_metadata['redirect_uris'] = [params['redirect_uri']]
     self.client_id = params['client_id']
     self.client_secret = params.get('client_secret', '')
     self.client_id_issued_at = params.get('client_id_issued_at', int(time.time()))

@@ -39,9 +39,7 @@ from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-er
 from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.FrameworkSystem.Client.MonitoringClient import MonitoringClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
-# from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthAPI
 
 sLog = gLogger.getSubLogger(__name__.split('.')[-1])
 
@@ -179,19 +177,7 @@ class BaseRequestHandler(RequestHandler):
       if cls.__init_done:
         return S_OK()
 
-      cls.__idps = IdProviderFactory()
-
-      # cls._idps = {getAuthAPI().strip('/'): {'jwks_uri': getAuthAPI().strip('/') + '/jwk'}}
-
-      # # Set Identity Providers
-      # result = getProvidersForInstance('Id')
-      # if result['OK']:
-      #   for providerName in result['Value']:
-      #     result = getProviderInfo(providerName)
-      #     if result['OK']:
-      #       cls._idps[result['Value']['issuer'].strip('/')] = result['Value']
-      # if not result['OK']:
-      #   raise Exception("There was a problem loading Identity Providers: %s" % result['Message'])
+      cls._idps = IdProviderFactory()
 
       # absoluteUrl: full URL e.g. ``https://<host>:<port>/<System>/<Component>``
       absoluteUrl = request.path
@@ -615,7 +601,7 @@ class BaseRequestHandler(RequestHandler):
     if tokenType.lower() != 'bearer':
       return S_ERROR('Found a not bearer access token.')
 
-    cli = self.__idps.getIdProviderForToken(accessToken)
+    cli = self._idps.getIdProviderForToken(accessToken)
     payload = cli.verifyToken(accessToken)
     credDict = cli.researchGroup(payload, accessToken)
 

@@ -23,7 +23,7 @@ from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (Devic
                                                                            DeviceCodeGrant)
 from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (OpenIDCode,
                                                                                   AuthorizationCodeGrant)
-from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client
+from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client, DEFAULT_CLIENTS
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Request,
                                                                         createOAuth2Request)
 
@@ -31,8 +31,8 @@ from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 from DIRAC.FrameworkSystem.DB.TokenDB import TokenDB
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, getAuthClients
-from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup, getDNForUsername
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
@@ -46,6 +46,25 @@ log.setLevel(logging.DEBUG)
 log = gLogger.getSubLogger(__name__)
 
 
+def collectMetadata(issuer=None):
+  """ Collect metadata """
+  result = getAuthorisationServerMetadata()
+  if not result['OK']:
+    raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
+  metadata = result['Value']
+  metadata['jwks_uri'] = metadata['issuer'] + '/jwk'
+  metadata['token_endpoint'] = metadata['issuer'] + '/token'
+  metadata['userinfo_endpoint'] = metadata['issuer'] + '/userinfo'
+  metadata['revocation_endpoint'] = metadata['issuer'] + '/revoke'
+  metadata['authorization_endpoint'] = metadata['issuer'] + '/authorization'
+  metadata['device_authorization_endpoint'] = metadata['issuer'] + '/device'
+  metadata['grant_types_supported'] = ['code', 'authorization_code', 'refresh_token',
+                                        'urn:ietf:params:oauth:grant-type:device_code']
+  metadata['response_types_supported'] = ['code', 'device', 'token']
+  metadata['code_challenge_methods_supported'] = ['S256']
+  return AuthorizationServerMetadata(metadata)
+
+
 class AuthServer(_AuthorizationServer):
   """ Implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
 
@@ -56,7 +75,7 @@ class AuthServer(_AuthorizationServer):
   css = {}
   LOCATION = None
 
-  metadata_class = AuthorizationServerMetadata
+  # metadata_class = AuthorizationServerMetadata
 
   def __init__(self):
     self.db = AuthDB()
@@ -68,24 +87,14 @@ class AuthServer(_AuthorizationServer):
     self.generate_token = self.generateProxyOrToken
     self.bearerToken = BearerToken(self.access_token_generator, self.refresh_token_generator)
     self.config = {}
-    self.collectMetadata()
+    self.metadata = collectMetadata()
+    self.metadata.validate()
     # Register configured grants
     self.register_grant(RefreshTokenGrant)
     self.register_grant(DeviceCodeGrant)
     self.register_endpoint(DeviceAuthorizationEndpoint)
     self.register_endpoint(RevocationEndpoint)
     self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
-
-  def collectMetadata(self):
-    """ Collect metadata """
-    self.metadata = {}
-    result = getAuthorisationServerMetadata()
-    if not result['OK']:
-      raise Exception('Cannot prepare authorization server metadata. %s' % result['Message'])
-    # Verify metadata
-    metadata = self.metadata_class(result['Value'])
-    metadata.validate()
-    self.metadata = metadata
 
   def addSession(self, session):
     self.db.addSession(session)
@@ -112,13 +121,24 @@ class AuthServer(_AuthorizationServer):
 
         :return: object
     """
+    data = {}
     gLogger.debug('Try to query %s client' % clientID)
-    client = None
-    result = getAuthClients(clientID)
-    if result['OK']:
-      client = Client(result['Value'])
-      gLogger.debug('Found client', client)
-    return client
+    result = getProvidersForInstance('Id', 'DIRACAS')
+    if not result['OK']:
+      gLogger.error(result['Message'])
+      return None
+
+    for providerName in result['Value']:
+      data = DEFAULT_CLIENTS.get(providerName, {})
+      result = getProviderInfo(providerName)
+      if not result['OK']:
+        gLogger.debug(result['Message'])
+      data.update(result['Value'])
+      if data.get('client_id') and data['client_id'] == clientID:
+        gLogger.debug('Found client:\n', pprint.pformat(data))
+        return Client(data)
+
+    return None
 
   def __getScope(self, scope, param):
     """ Get parameter scope

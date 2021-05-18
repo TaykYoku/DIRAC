@@ -29,6 +29,7 @@ from DIRAC.Core.Security.ProxyFile import writeToProxyFile
 from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
 from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
+from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 __RCSID__ = "$Id$"
 
@@ -39,7 +40,7 @@ class Params(object):
     self.proxy = False
     self.group = None
     self.lifetime = None
-    self.provider = 'DIRAC_AS'
+    self.provider = 'DIRACCLI'
     self.issuer = None
     self.proxyLoc = '/tmp/x509up_u%s' % os.getuid()
 
@@ -124,23 +125,11 @@ class Params(object):
 
         :return: S_OK()/S_ERROR()
     """
-    # token = None
-    # result = readTokenFromFile()
-    # if not result['OK']:
-    #   gLogger.warn(result['Message'])
-    # else:
-    #   token = result['Value']
-    
-    result = getAuthorisationServerMetadata(self.issuer)
-    if not result['OK']:
-      return result
+    params = {}
+    if self.issuer:
+      params['issuer'] = self.issuer
+    idpObj = IdProviderFactory().getIdProvider(self.provider, **params)
 
-    clientConfig = result['Value']
-    clientConfig['client_id'] = 'DIRAC_CLI'
-    clientConfig['redirect_uri'] = 'https://diracclient'
-    clientConfig['ProviderName'] = 'DIRAC_CLI'
-
-    idpObj = OAuth2IdProvider(**clientConfig)
     if self.group:
       idpObj.scope += '+g:%s' % self.group
     if self.proxy:
