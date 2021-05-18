@@ -440,7 +440,8 @@ def getSettingsNamesForIdPIssuer(issuer):
   if not result['OK']:
     return result
   for name in result['Value']:
-    if issuer.strip('/') == gConfig.getValue('%s/IdProviders/%s/issuer' % (gBaseResourcesSection, name)).strip('/'):
+    nameIssuer = gConfig.getValue('%s/IdProviders/%s/issuer' % (gBaseResourcesSection, name))
+    if nameIssuer and issuer.strip('/') == nameIssuer.strip('/'):
       names.append(name)
   return S_OK(names) if names else S_ERROR('Not found provider wwith %s issuer.' % issuer)
 
