@@ -537,7 +537,7 @@ class BaseRequestHandler(RequestHandler):
     for a in grants:
       grant = a.upper()
       grantFunc = eval('self._authz%s' % grant)
-      if not callable(grantFunc))
+      if not callable(grantFunc):
         raise Exception('%s authentication type is not supported.' % grant)
       result = grantFunc()
       if result['OK']:
