@@ -111,7 +111,7 @@ class IdProviderFactory(object):
         pDict.update(meta)
       provider = pClass(**pDict)
       if not meta and hasattr(provider, 'metadata'):
-        self.addMetadata(idProvider, provider.metadata)
+        self.addMetadata(name, provider.metadata)
     except Exception as x:
       msg = 'IdProviderFactory could not instantiate %s object: %s' % (subClassName, str(x))
       self.log.exception()
