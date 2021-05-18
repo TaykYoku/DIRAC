@@ -593,8 +593,8 @@ def getAuthorisationServerMetadata(issuer=None):
         data.update(result['Value'])
   if not result['OK']:
     return result
-
-  data['issuer'] = data.get('issuer', getAuthAPI())
+  if not data['issuer']:
+    data['issuer'] = getAuthAPI()
   if not data['issuer']:
     return S_ERROR('No issuer found in DIRAC authorization server configuration.')
 
