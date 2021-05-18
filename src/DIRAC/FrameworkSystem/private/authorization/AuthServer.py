@@ -124,6 +124,7 @@ class AuthServer(_AuthorizationServer):
     data = {}
     gLogger.debug('Try to query %s client' % clientID)
     result = getProvidersForInstance('Id', 'DIRAC')
+    pprint.pprint(result)
     if not result['OK']:
       gLogger.error(result['Message'])
       return None
@@ -131,6 +132,7 @@ class AuthServer(_AuthorizationServer):
     for providerName in result['Value']:
       data = DEFAULT_CLIENTS.get(providerName, {})
       result = getProviderInfo(providerName)
+      pprint.pprint(result)
       if not result['OK']:
         gLogger.debug(result['Message'])
       data.update(result['Value'])
