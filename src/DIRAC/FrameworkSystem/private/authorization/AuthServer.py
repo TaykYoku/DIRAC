@@ -289,10 +289,7 @@ class AuthServer(_AuthorizationServer):
     return self.signToken({'sub': user,
                            'iss': self.metadata['issuer'],
                            'iat': int(time()),
-                           'exp': int(time()) + (24 * 3600),
-                           'scope': scope,
-                           'setup': getSetup(),
-                           'client_id': client.client_id})
+                           'exp': int(time()) + (24 * 3600)})
 
   def signToken(self, payload):
     """ Sign token
