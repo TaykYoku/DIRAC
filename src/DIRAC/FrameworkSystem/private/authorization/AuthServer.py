@@ -131,8 +131,8 @@ class AuthServer(_AuthorizationServer):
 
     clients = list(set(result['Value'] + list(DEFAULT_CLIENTS.keys())))
     for client in clients:
-      data = DEFAULT_CLIENTS.get(providerName, {})
-      result = getProviderInfo(providerName)
+      data = DEFAULT_CLIENTS.get(client, {})
+      result = getProviderInfo(client)
       pprint.pprint(result)
       if not result['OK']:
         gLogger.debug(result['Message'])
