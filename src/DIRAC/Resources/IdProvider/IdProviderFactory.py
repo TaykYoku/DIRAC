@@ -76,6 +76,11 @@ class IdProviderFactory(object):
         :return: S_OK(IdProvider)/S_ERROR()
     """
     pDict = DEFAULT_CLIENTS.get(name, {})
+    if pDict:
+      _result = getAuthorisationServerMetadata()
+      if not _result['OK']:
+        return _result
+      pDict.update(result['Value'])
     pDict.update(kwargs)
 
     result = getProviderInfo(name)
