@@ -16,7 +16,7 @@ class DIRACIdProvider(OAuth2IdProvider):
   def fetch_metadata(self, url=None):
     """ Fetch metada
     """
-    self.metadata.udpate(collectMetadata(self.metadata['issuer']))
+    self.metadata.update(collectMetadata(self.metadata['issuer']))
     if url:
       return self.get(url, withhold_token=True).json()
 
