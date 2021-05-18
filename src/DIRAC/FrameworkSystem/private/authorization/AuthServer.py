@@ -129,7 +129,8 @@ class AuthServer(_AuthorizationServer):
       gLogger.error(result['Message'])
       return None
 
-    for providerName in result['Value']:
+    clients = list(set(result['Value'] + list(DEFAULT_CLIENTS.keys())))
+    for client in clients:
       data = DEFAULT_CLIENTS.get(providerName, {})
       result = getProviderInfo(providerName)
       pprint.pprint(result)
