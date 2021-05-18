@@ -536,12 +536,10 @@ class BaseRequestHandler(RequestHandler):
 
     for a in grants:
       grant = a.upper()
-      try:
-        result = eval('self._authz%s' % grant)()
-      except AttributeError as e:
-        gLogger.debug(repr(e))
+      grantFunc = eval('self._authz%s' % grant)
+      if not callable(grantFunc))
         raise Exception('%s authentication type is not supported.' % grant)
-
+      result = grantFunc()
       if result['OK']:
         for e in err:
           sLog.debug(e)
