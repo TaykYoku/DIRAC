@@ -167,7 +167,7 @@ class AuthDB(SQLAlchemyDB):
     
         :return: S_OK/S_ERROR
     """
-    key = RSAKey.generate_key(is_private=True)
+    key = RSAKey.generate_key(key_size=1024, is_private=True)
     dictKey = dict(key=json.dumps(key.as_dict()),
                    expires_at=time() + (30 * 24 *3600),
                    kid=KeySet([key]).as_dict()['keys'][0]['kid'])
