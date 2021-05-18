@@ -109,7 +109,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
         :param str accessToken: access token
     """
-    accessToken = accessToken
+    pprint.pprint(self.jwks)
     try:
       # Try to decode token
       gLogger.debug("Try to decode token:", accessToken)
@@ -118,6 +118,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       # If we have outdated keys, we try to update them from identity provider
       gLogger.debug("Try to update %s jwks.." % self.metadata['issuer'])
       self.jwks = self.fetch_metadata(self.get_metadata('jwks_uri'))
+      pprint.pprint(self.jwks)
       return jwt.decode(accessToken, JsonWebKey.import_key_set(self.jwks))
     
   def update_token(self, token, refresh_token):
