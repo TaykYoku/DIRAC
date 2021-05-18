@@ -11,7 +11,7 @@ from authlib.oauth2.rfc8628 import (DeviceAuthorizationEndpoint as _DeviceAuthor
                                     DeviceCredentialDict)
 
 from DIRAC import gLogger, S_OK, S_ERROR
-from DIRAC.FrameworkSystem.private.authorization.AuthServer import collectMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 
 log = gLogger.getSubLogger(__name__)
 
@@ -29,7 +29,10 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
         :return: str
     """
-    return collectMetadata()['device_authorization_endpoint']
+    result = getAuthorisationServerMetadata()
+    if not result['OK']:
+      raise OAuth2Error('Cannot prepare authorization server metadata. %s' % result['Message'])
+    return result['Value']['issuer'] + '/device'
 
   def save_device_credential(self, client_id, scope, data):
     """ Save device credentials
@@ -106,9 +109,12 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     data = result['Value']
     if not data:
       return None
+    result = getAuthorisationServerMetadata()
+    if not result['OK']:
+      raise OAuth2Error('Cannot prepare authorization server metadata. %s' % result['Message'])
+    data['verification_uri'] = result['Value']['issuer'] + '/device'
     data['expires_at'] = int(data['expires_in']) + int(time.time())
     data['interval'] = DeviceAuthorizationEndpoint.INTERVAL
-    data['verification_uri'] = collectMetadata()['device_authorization_endpoint']
     print('query_device_credential: %s' % DeviceCredentialDict(data))
     print('scope: %s' % DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
