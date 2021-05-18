@@ -128,8 +128,10 @@ class Params(object):
     params = {}
     if self.issuer:
       params['issuer'] = self.issuer
-    idpObj = IdProviderFactory().getIdProvider(self.provider, **params)
-
+    result = IdProviderFactory().getIdProvider(self.provider, **params)
+    if not result['OK']:
+      return result
+    idpObj = result['Value']
     if self.group:
       idpObj.scope += '+g:%s' % self.group
     if self.proxy:

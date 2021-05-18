@@ -601,7 +601,10 @@ class BaseRequestHandler(RequestHandler):
     if tokenType.lower() != 'bearer':
       return S_ERROR('Found a not bearer access token.')
 
-    cli = self._idps.getIdProviderForToken(accessToken)
+    result = self._idps.getIdProviderForToken(accessToken)
+    if not result['OK']:
+      return result
+    cli = result['Value']
     payload = cli.verifyToken(accessToken)
     credDict = cli.researchGroup(payload, accessToken)
 
