@@ -33,7 +33,8 @@ def test_Token():
    'refresh_token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZldm5HWnN2aDBCWFM3c3FoTWVTSGE4LW5oc3g0Rk9KRTNPSlZ0azNLcEEifQ.eyJzdWIiOiI5N2ZhZGY2M2U1NWVhMzU4YTRmMDg0ZTRjMTM2NDc1ZTM3NzM1N2M2NzIzMjY5ZjIzZWI5YWJhNDM3ZmQ2ZDlkQGVnaS5ldSIsImlzcyI6Imh0dHBzOi8vbWFyb3N2bjMyLmluMnAzLmZyL0RJUkFDL2F1dGgiLCJzZXR1cCI6IkVHSS1Qcm9kdWN0aW9uIiwiY2xpZW50X2lkIjoiMWhsVWd0dGFwM1A5b1RTWFV3cElUNTBUVkh4Q2ZsTjNPOTh1SFAyMTdZIiwiZXhwIjoxNjIxMzYwMzg0LCJzY29wZSI6Imc6Y2hlY2tpbi1pbnRlZ3JhdGlvbl91c2VyIiwiaWF0IjoxNjIxMjczOTg0fQ.ixOeAnauORbDTmUVZ48d6UjS7Ks3HuhKlpumrhJwK_sQSye8ZeahQfV_2PfF9sozS79FbHaS1y7w8bcCMg7iaM6_pDtueK2rSC90q4deuWPOAVv6iGA2hX-94hBCDAYepPWFPPwPZ3iGzTiYmBIbbLjQ9NC3xrg0OQeWmbTVFk6p8himIRGS1BvlOTvYEIxQrwxV8wseIT-NrmplpBWV6mWl1NC2dCRo-BtW1QzWYwGugcf2wRQYposcwP6x-jW-AmaqsHpNr57kkSGfsbd0DlBvuHZO0zW6QYsvX6k4VJVQubjPs9028ot0x9eOaVXClPbeJMwtS0H8AP1BThvdQA'}
   payload = {'sub': 'user',
              'iss': 'issuer',
-             'exp': time.time() + 3600,
+             'iat': int(time.time()),
+             'exp': int(time.time()) + (12 * 3600)),
              'scope': 'scope',
              'setup': 'setup',
              'group': 'my_group'}
