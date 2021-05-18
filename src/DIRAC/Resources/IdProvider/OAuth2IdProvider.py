@@ -20,6 +20,8 @@ from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 from authlib.oauth2.rfc8628 import DEVICE_CODE_GRANT_TYPE
 from authlib.integrations.requests_client import OAuth2Session
 from authlib.oidc.discovery.well_known import get_well_known_url
+from authlib.oauth2.rfc7636 import create_s256_code_challenge
+
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import OAuth2Token
 
