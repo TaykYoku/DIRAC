@@ -19,9 +19,4 @@ class DIRACIdProvider(OAuth2IdProvider):
     self.metadata.update(collectMetadata(self.metadata['issuer']))
     if url:
       return self.get(url, withhold_token=True).json()
-
-
-  def researchGroup(self, payload, token):
-    """ Research group
-    """
-    pass
+    
