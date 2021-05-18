@@ -191,7 +191,7 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
       params['code_challenge_method'] = 'S256'
       params['code_challenge'] = create_s256_code_challenge(session['code_verifier'])
     url, state = self.create_authorization_url(self.get_metadata('authorization_endpoint'), **params)
-    return S_OK((url, state, session))
+    return url, state, session
 
   def parseAuthResponse(self, response, session=None):
     """ Make user info dict:

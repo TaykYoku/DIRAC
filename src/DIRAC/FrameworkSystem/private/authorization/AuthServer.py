@@ -203,10 +203,7 @@ class AuthServer(_AuthorizationServer):
     if not result['OK']:
       return result
     idpObj = result['Value']
-    result = idpObj.submitNewSession()
-    if not result['OK']:
-      return result
-    authURL, state, session = result['Value']
+    authURL, state, session = idpObj.submitNewSession()
     session['state'] = state
     session['Provider'] = providerName
     session['mainSession'] = request if isinstance(request, dict) else request.toDict()
