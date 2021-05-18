@@ -136,7 +136,8 @@ class AuthServer(_AuthorizationServer):
       pprint.pprint(result)
       if not result['OK']:
         gLogger.debug(result['Message'])
-      data.update(result['Value'])
+      else:
+        data.update(result['Value'])
       if data.get('client_id') and data['client_id'] == clientID:
         gLogger.debug('Found client:\n', pprint.pformat(data))
         return Client(data)
