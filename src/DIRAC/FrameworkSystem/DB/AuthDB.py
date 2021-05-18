@@ -33,8 +33,12 @@ class Token(Model, OAuth2TokenMixin):
   __tablename__ = 'Token'
   __table_args__ = {'mysql_engine': 'InnoDB',
                     'mysql_charset': 'utf8'}
-  access_token = Column(String(255), primary_key=True, unique=True, nullable=False)
-  refresh_token = Column(String(255), nullable=False)
+  # access_token too large for varchar(255)
+  # 767 bytes is the stated prefix limitation for InnoDB tables in MySQL version 5.6
+  # https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
+  id = Column(Integer, autoincrement=True, primary_key=True)
+  access_token = Column(Text, nullable=False)
+  refresh_token = Column(Text, nullable=False)
   expires_at = Column(Integer, nullable=False, default=0)
 
 

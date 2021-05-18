@@ -268,9 +268,9 @@ class AuthServer(_AuthorizationServer):
     gLogger.debug('GENERATE DIRAC ACCESS TOKEN for "%s" with "%s" scopes.' % (user, scope))
     return self.signToken({'sub': user,
                            'iss': self.metadata['issuer'],
-                          #  'iat': int(time()),
+                           'iat': int(time()),
                            'exp': int(time()) + (self.__getScope(scope, 'lifetime') or (12 * 3600)),
-                          #  'scope': scope,
+                           'scope': scope,
                            'setup': getSetup(),
                            'group': self.__getScope(scope, 'g')})
 
