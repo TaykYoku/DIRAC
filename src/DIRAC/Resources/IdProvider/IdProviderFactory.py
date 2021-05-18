@@ -75,6 +75,7 @@ class IdProviderFactory(object):
 
         :return: S_OK(IdProvider)/S_ERROR()
     """
+    self.log.debug('Search %s configuration..' % name)
     pDict = DEFAULT_CLIENTS.get(name, {})
     if pDict:
       result = getAuthorisationServerMetadata()
