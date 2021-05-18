@@ -123,7 +123,7 @@ class AuthServer(_AuthorizationServer):
     """
     data = {}
     gLogger.debug('Try to query %s client' % clientID)
-    result = getProvidersForInstance('Id', 'DIRACAS')
+    result = getProvidersForInstance('Id', 'DIRAC')
     if not result['OK']:
       gLogger.error(result['Message'])
       return None
