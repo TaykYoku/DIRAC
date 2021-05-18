@@ -145,13 +145,14 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     """ Get metadata
     """
     if not self.metadata.get(option):
-      self.metadata.update(self.fetch_metadata())
+      self.fetch_metadata()
     return self.metadata.get(option)
 
   def fetch_metadata(self, url=None):
     """ Fetch metada
     """
-    return self.get(url or self.server_metadata_url, withhold_token=True).json()
+    data = self.get(url or self.server_metadata_url, withhold_token=True).json()
+    self.metadata.update(data)
 
   def researchGroup(self, payload, token):
     """ Research group

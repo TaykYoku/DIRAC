@@ -16,11 +16,12 @@ class DIRACIdProvider(OAuth2IdProvider):
   def fetch_metadata(self, url=None):
     """ Fetch metada
     """
-    print('>>> DIRAC fetch_metadata')
-    return collectMetadata(self.metadata['issuer'])
+    self.metadata.udpate(collectMetadata(self.metadata['issuer']))
+    if url:
+      return self.get(url, withhold_token=True).json()
+
 
   def researchGroup(self, payload, token):
     """ Research group
     """
-    print('>>> DIRAC researchGroup')
     pass
