@@ -77,9 +77,9 @@ class IdProviderFactory(object):
     """
     pDict = DEFAULT_CLIENTS.get(name, {})
     if pDict:
-      _result = getAuthorisationServerMetadata()
-      if not _result['OK']:
-        return _result
+      result = getAuthorisationServerMetadata()
+      if not result['OK']:
+        return result
       pDict.update(result['Value'])
     pDict.update(kwargs)
 
