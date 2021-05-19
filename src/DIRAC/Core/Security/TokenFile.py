@@ -1,4 +1,4 @@
-""" Collection of utilities for dealing with security files (i.e. proxy files)
+""" Collection of utilities for dealing with security files (i.e. token files)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -6,7 +6,6 @@ from __future__ import print_function
 
 __RCSID__ = "$Id$"
 
-import six
 import os
 import json
 import stat
@@ -20,8 +19,9 @@ from DIRAC.Core.Security.Locations import getTokenLocation
 def readTokenFromFile(fileName=None):
   """ Read token from a file
 
-      arguments:
-        - fileName : filename to read
+      :param str fileName: filename to read
+
+      :return: S_OK(dict)/S_ERROR()
   """
   if not fileName:
     fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "/tmp/JWTup_u%d" % os.getuid())
@@ -34,11 +34,12 @@ def readTokenFromFile(fileName=None):
 
 
 def writeToTokenFile(tokenContents, fileName=False):
-  """ Write a proxy string to file
+  """ Write a token string to file
 
-      arguments:
-        - tokenContents : string object to dump to file
-        - fileName : filename to dump to
+      :param str tokenContents: token as string
+      :param str fileName: filename to dump to
+
+      :return: S_OK(str)/S_ERROR()
   """
   if not fileName:
     try:
@@ -60,12 +61,12 @@ def writeToTokenFile(tokenContents, fileName=False):
 
 
 def writeTokenDictToTokenFile(tokenDict, fileName=None):
-  """
-  Write an dict to file
+  """ Write a token dict to file
 
-  arguments:
-    - tokenDict : dict object to dump to file
-    - fileName : filename to dump to
+      :param dict tokenDict: dict object to dump to file
+      :param str fileName: filename to dump to
+
+      :return: S_OK(str)/S_ERROR()
   """
   if not fileName:
     fileName = getTokenLocation() or os.environ.get('DIRAC_TOKEN_FILE', "/tmp/JWTup_u%d" % os.getuid())
@@ -77,9 +78,11 @@ def writeTokenDictToTokenFile(tokenDict, fileName=None):
 
 
 def writeTokenDictToTemporaryFile(tokenDict):
-  """
-  Write a token dict to a temporary file
-  return S_OK( string with name of file )/ S_ERROR
+  """ Write a token dict to a temporary file
+
+      :param dict tokenDict: dict object to dump to file
+
+      :return: S_OK(str)/S_ERROR() -- contain file name
   """
   try:
     fd, tokenLocation = tempfile.mkstemp()

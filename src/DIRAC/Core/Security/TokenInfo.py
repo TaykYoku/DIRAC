@@ -9,7 +9,7 @@ import jwt as _jwt
 import six
 import time
 
-from DIRAC import S_OK, S_ERROR, gLogger
+from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.Core.Security import Locations
 
@@ -25,7 +25,7 @@ def getTokenInfo(token=False):
 
       :param token: token location or token as dict
 
-      :return: dict
+      :return: S_OK(dict)/S_ERROR()
   """
   # Discover token location
   if isinstance(token, dict):
@@ -51,6 +51,10 @@ def getTokenInfo(token=False):
 
 def formatTokenInfoAsString(infoDict):
   """ Convert a token infoDict into a string
+
+      :param dict infoDict: info
+
+      :return: str
   """
   secs = int(infoDict['exp']) - time.time()
   hours = int(secs / 3600)

@@ -17,6 +17,7 @@ log = gLogger.getSubLogger(__name__)
 
 
 class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
+  """ See :class:`authlib.oauth2.rfc8628.DeviceAuthorizationEndpoint` """
 
   def create_endpoint_response(self, req):
     """ See :func:`authlib.oauth2.rfc8628.DeviceAuthorizationEndpoint.create_endpoint_response` """
@@ -50,6 +51,7 @@ class DeviceAuthorizationEndpoint(_DeviceAuthorizationEndpoint):
 
 
 class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
+  """ See :class:`authlib.oauth2.rfc8628.DeviceCodeGrant` """
   RESPONSE_TYPES = {'device'}
 
   def validate_authorization_request(self):
@@ -102,6 +104,12 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     return 200, 'Authorization complite.'
 
   def query_device_credential(self, device_code):
+    """ Get device credential from previously savings via ``DeviceAuthorizationEndpoint``.
+
+        :param str device_code: device code
+
+        :return: dict
+    """
     result = self.server.db.getSession(device_code)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
@@ -130,5 +138,7 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     return (data['user_id'], True) if data.get('username') != "None" else None
 
   def should_slow_down(self, credential, now):
-    """ If need to slow down  """
+    """ The authorization request is still pending and polling should continue,
+        but the interval MUST be increased by 5 seconds for this and all subsequent requests.
+    """
     return False

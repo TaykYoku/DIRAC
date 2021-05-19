@@ -9,6 +9,7 @@ from DIRAC import gLogger
 
 
 class RefreshTokenGrant(_RefreshTokenGrant):
+  """ See :class:`authlib.oauth2.rfc6749.grants.RefreshTokenGrant` """
 
   def authenticate_refresh_token(self, refresh_token):
     """ Get credential for token

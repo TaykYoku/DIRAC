@@ -108,6 +108,7 @@ class TornadoBaseClient(object):
     self.__ca_location = False
 
     self.kwargs = kwargs
+    self.__useAccessToken = None
     self.__useCertificates = None
     # The CS useServerCertificate option can be overridden by explicit argument
     self.__forceUseCertificates = self.kwargs.get(self.KW_USE_CERTIFICATES)
@@ -224,10 +225,14 @@ class TornadoBaseClient(object):
       else:
         self.kwargs[self.KW_SKIP_CA_CHECK] = skipCACheck()
 
+    # Use tokens?
     if self.KW_USE_ACCESS_TOKEN in self.kwargs:
       self.__useAccessToken = self.kwargs[self.KW_USE_ACCESS_TOKEN]
     else:
-      self.__useAccessToken = os.environ.get('DIRAC_USE_ACCESS_TOKEN')
+      if not gConfig.useServerCertificate():
+        self.__useAccessToken = gConfig.getValue("/DIRAC/Security/UseTokens", "false").lower() in ("y", "yes", "true")
+      if os.environ.get('DIRAC_USE_ACCESS_TOKEN'):
+        self.__useAccessToken = os.environ['DIRAC_USE_ACCESS_TOKEN']
 
     # Rewrite a little bit from here: don't need the proxy string, we use the file
     if self.KW_PROXY_CHAIN in self.kwargs:
@@ -519,8 +524,7 @@ class TornadoBaseClient(object):
       result = readTokenFromFile()
       if not result['OK']:
         return result
-      aToken = result['Value']['access_token'] if isinstance(result['Value'], dict) else result['Value']
-      auth = {'headers': {"Authorization": "Bearer %s" % aToken}}
+      auth = {'headers': {"Authorization": "Bearer %s" % result['Value']['access_token']}}
 
     # CHRIS 04.02.21
     # TODO: add proxyLocation check ?

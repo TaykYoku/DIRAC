@@ -7,8 +7,6 @@ from __future__ import print_function
 from time import time
 from pprint import pprint
 from authlib.jose import JsonWebSignature
-# from authlib.oidc.core import UserInfo
-# from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 from authlib.oauth2.base import OAuth2Error
 from authlib.oauth2.rfc6749.grants import AuthorizationCodeGrant as _AuthorizationCodeGrant
 from authlib.oauth2.rfc7636 import CodeChallenge
@@ -50,26 +48,8 @@ class OAuth2Code(dict):
     return self.get('nonce')
 
 
-# class OpenIDCode(_OpenIDCode):
-#   def exists_nonce(self, nonce, request):
-#     return False
-
-#   def get_jwt_config(self, grant):
-#     result = self.server.db.getPrivateKey()
-#     if not result['OK']:
-#       raise Exception(result['Message'])
-#     key = result['Value']
-#     issuer = grant.server.metadata['issuer']
-#     return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
-
-#   def generate_user_info(self, user, scope):
-#     print('== generate_user_info ==')
-#     print(user)
-#     print(scope)
-#     return UserInfo(sub=user[0], grp=user[1])
-
-
 class AuthorizationCodeGrant(_AuthorizationCodeGrant):
+  """ See :class:`authlib.oauth2.rfc6749.grants.AuthorizationCodeGrant` """
   TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post', 'none']
 
   def save_authorization_code(self, code, request):
@@ -111,11 +91,17 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
       return item
 
   def authenticate_user(self, authorization_code):
-    """ Authenticatre user """
+    """ Authenticate the user related to this authorization_code.
+    
+        :param authorization_code: authorization code
+    """
     return authorization_code.user
 
   def generate_authorization_code(self):
-    """ Generate authoization code """
+    """ The method to generate "code" value for authorization code data.
+    
+        :return: str
+    """
     gLogger.debug('Generate authorization code for credentials:', self.request.user)
     pprint(self.request.data)
     jws = JsonWebSignature(algorithms=['RS256'])
