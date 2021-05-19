@@ -59,13 +59,14 @@ def formatTokenInfoAsString(infoDict):
   secs -= mins * 60
   exp = "%02d:%02d:%02d" % (hours, mins, secs)
 
+  leftAlign = 13
   contentList = []
-  contentList.append('subject: %s' % infoDict['sub'])
-  contentList.append('issuer: %s' % infoDict['iss'])
-  contentList.append('timeleft: %s' % exp)
-  contentList.append('username: %s' % infoDict['username'])
+  contentList.append('%s: %s' % ('subject'.ljust(leftAlign), infoDict['sub'])
+  contentList.append('%s: %s' % ('issuer'.ljust(leftAlign), infoDict['iss'])
+  contentList.append('%s: %s' % ('timeleft'.ljust(leftAlign), exp)
+  contentList.append('%s: %s' % ('username'.ljust(leftAlign), infoDict['username'])
   if infoDict.get('group'):
-    contentList.append('DIRAC group: %s' % infoDict['group'])
+    contentList.append('%s: %s' % ('DIRAC group'.ljust(leftAlign), infoDict['group'])
   if infoDict.get('properties'):
-    contentList.append('groupProperties: %s' % infoDict['properties'])
+    contentList.append('%s: %s' % ('groupProperties'.ljust(leftAlign), infoDict['properties'])
   return "\n".join(contentList)
