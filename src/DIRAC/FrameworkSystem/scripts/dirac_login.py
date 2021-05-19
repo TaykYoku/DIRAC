@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 ########################################################################
-# File :    dirac-proxy-init.py
+# File :    dirac-login.py
 # Author :  Adrian Casajus
 ########################################################################
 """
-Creating a proxy.
+Login to DIRAC.
 
 Example:
-  $ dirac-proxy-init -g dirac_user -t --rfc
-  Enter Certificate password:
+  $ dirac-login -g dirac_user
 """
 from __future__ import division
 from __future__ import absolute_import
@@ -26,6 +25,7 @@ from DIRAC.Core.Base import Script
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
 from DIRAC.Core.Security.TokenFile import writeTokenDictToTokenFile
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
+from DIRAC.Core.Security.ProxyInfo import getProxyInfo, formatProxyInfoAsString
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 __RCSID__ = "$Id$"
@@ -151,6 +151,10 @@ class Params(object):
       if not result['OK']:
         return result
       gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
+      result = getProxyInfo(self.proxyLoc)
+      if not result['OK']:
+        return result['Message']
+      gLogger.notice(formatProxyInfoAsString(result['Value']))
     else:
       result = writeTokenDictToTokenFile(idpObj.token)
       if not result['OK']:
