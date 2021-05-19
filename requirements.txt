@@ -66,3 +66,7 @@ flaky
 ldap3
 # setuptools_scm comes via tornado. newer versions of setuptools_scm do not support py2
 setuptools_scm<6.0
+# OAuth2
+authlib == 1.0.0
+pyjwt
+dominate
