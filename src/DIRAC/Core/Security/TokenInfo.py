@@ -61,12 +61,12 @@ def formatTokenInfoAsString(infoDict):
 
   leftAlign = 13
   contentList = []
-  contentList.append('%s: %s' % ('subject'.ljust(leftAlign), infoDict['sub'])
-  contentList.append('%s: %s' % ('issuer'.ljust(leftAlign), infoDict['iss'])
-  contentList.append('%s: %s' % ('timeleft'.ljust(leftAlign), exp)
-  contentList.append('%s: %s' % ('username'.ljust(leftAlign), infoDict['username'])
+  contentList.append('%s: %s' % ('subject'.ljust(leftAlign), infoDict['sub']))
+  contentList.append('%s: %s' % ('issuer'.ljust(leftAlign), infoDict['iss']))
+  contentList.append('%s: %s' % ('timeleft'.ljust(leftAlign), exp))
+  contentList.append('%s: %s' % ('username'.ljust(leftAlign), infoDict['username']))
   if infoDict.get('group'):
-    contentList.append('%s: %s' % ('DIRAC group'.ljust(leftAlign), infoDict['group'])
+    contentList.append('%s: %s' % ('DIRAC group'.ljust(leftAlign), infoDict['group']))
   if infoDict.get('properties'):
-    contentList.append('%s: %s' % ('groupProperties'.ljust(leftAlign), infoDict['properties'])
+    contentList.append('%s: %s' % ('groupProperties'.ljust(leftAlign), ', '.join(infoDict['properties'])))
   return "\n".join(contentList)
