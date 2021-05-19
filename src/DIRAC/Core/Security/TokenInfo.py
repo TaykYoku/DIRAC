@@ -52,10 +52,16 @@ def getTokenInfo(token=False):
 def formatTokenInfoAsString(infoDict):
   """ Convert a token infoDict into a string
   """
+  hours = int((int(infoDict['exp']) - time.time()) / 3600)
+  secs -= hours * 3600
+  mins = int(secs / 60)
+  secs -= mins * 60
+  exp = "%02d:%02d:%02d" % (hours, mins, secs)
+
   contentList = []
   contentList.append('subject: %s' % infoDict['sub'])
   contentList.append('issuer: %s' % infoDict['iss'])
-  contentList.append('timeleft: %s' % int((int(infoDict['exp']) - time.time()) / 3600))
+  contentList.append('timeleft: %s' % exp)
   contentList.append('username: %s' % infoDict['username'])
   if infoDict.get('group'):
     contentList.append('DIRAC group: %s' % infoDict['group'])
