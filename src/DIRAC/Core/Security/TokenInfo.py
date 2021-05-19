@@ -34,7 +34,7 @@ def getTokenInfo(token=False):
     if not tokenLocation:
       return S_ERROR("Cannot find token location.")
     result = readTokenFromFile()
-    if not retVal['OK']:
+    if not result['OK']:
       return result
     token = OAuth2Token(result['Value'])
 
