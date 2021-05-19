@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-########################################################################
-# File :   tornado-start-CS
-# Author : Louis MARTIN
-########################################################################
-# Just run this script to start Tornado and CS service
-# Use dirac.cfg (or other cfg given in the command line) to change port
 
 from __future__ import absolute_import
 from __future__ import division
@@ -14,24 +8,22 @@ __RCSID__ = "$Id$"
 
 import os
 import sys
+import tornado
+
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
 
 
 @DIRACScript()
 def main():
-  # Must be defined BEFORE any dirac import
+  # Must be define BEFORE any dirac import
   os.environ['DIRAC_USE_TORNADO_IOLOOP'] = "True"
 
-  from DIRAC.ConfigurationSystem.Client.PathFinder import getServiceSection
+  from DIRAC.ConfigurationSystem.Client.PathFinder import getAPISection
   from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
   from DIRAC.ConfigurationSystem.Client.LocalConfiguration import LocalConfiguration
-  from DIRAC.ConfigurationSystem.private.Refresher import gRefresher
-  from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
   from DIRAC.Core.Tornado.Server.TornadoServer import TornadoServer
+  from DIRAC.Core.Utilities.DErrno import includeExtensionErrors
   from DIRAC.FrameworkSystem.Client.Logger import gLogger
-
-  if gConfigurationData.isMaster():
-    gRefresher.disable()
 
   localCfg = LocalConfiguration()
   localCfg.addMandatoryEntry("/DIRAC/Setup")
@@ -40,21 +32,22 @@ def main():
   localCfg.addDefaultEntry("LogColor", True)
   resultDict = localCfg.loadUserData()
   if not resultDict['OK']:
-    gLogger.initialize("Tornado-CS", "/")
+    gLogger.initialize("Tornado", "/")
     gLogger.error("There were errors when loading configuration", resultDict['Message'])
     sys.exit(1)
 
   includeExtensionErrors()
 
-  gLogger.initialize('Tornado-CS', "/")
+  gLogger.initialize('Tornado', "/")
 
-  # get the specific master CS port
+  endpoints = ['Framework/Auth']
   try:
-    csPort = int(gConfigurationData.extractOptionFromCFG('%s/Port' % getServiceSection('Configuration/Server')))
+    asPort = int(gConfigurationData.extractOptionFromCFG('%s/Port' % getAPISection('Framework/Auth')))
   except TypeError:
-    csPort = None
+    asPort = None
 
-  serverToLaunch = TornadoServer(services=['Configuration/Server'], port=csPort)
+  serverToLaunch = TornadoServer(False, endpoints, port=asPort)
+
   serverToLaunch.startTornado()
 
 
