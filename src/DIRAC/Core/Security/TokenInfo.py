@@ -47,7 +47,7 @@ def getTokenInfo(token=False):
   return S_OK(payload)
 
 
-def formatProxyInfoAsString(infoDict):
+def formatTokenInfoAsString(infoDict):
   """ Convert a token infoDict into a string
   """
   contentList = []
