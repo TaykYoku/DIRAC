@@ -79,7 +79,6 @@ def test_Token():
   assert result['OK'], result['Message']
 
   # Check if token revoked
-  # Check token
   result = db.getToken(token['refresh_token'])
   assert result['OK'], result['Message']
   assert result['Value']['revoked'] == True
