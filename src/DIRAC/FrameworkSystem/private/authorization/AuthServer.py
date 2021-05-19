@@ -172,7 +172,7 @@ class AuthServer(_AuthorizationServer):
       for dn in userDNs:
         gLogger.debug('Try to get proxy for %s' % dn)
         if lifetime:
-          result = self.proxyCli.downloadProxy(dn, group, requiredTimeLeft=lifetime)
+          result = self.proxyCli.downloadProxy(dn, group, requiredTimeLeft=int(lifetime))
         else:
           result = self.proxyCli.downloadProxy(dn, group)
         if not result['OK']:
