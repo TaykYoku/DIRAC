@@ -114,7 +114,7 @@ class Params(object):
     Script.registerSwitch(
         "T",
         "lifetime",
-        "set proxy lifetime",
+        "set proxy lifetime in a hours",
         self.setLivetime)
 
   def doOAuthMagic(self):
@@ -133,6 +133,8 @@ class Params(object):
       idpObj.scope += '+g:%s' % self.group
     if self.proxy:
       idpObj.scope += '+proxy'
+    if self.lifetime:
+      idpObj.scope += '+lifetime:%s' % (int(self.lifetime) * 3600)
     
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
