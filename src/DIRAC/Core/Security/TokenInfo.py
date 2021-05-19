@@ -12,6 +12,7 @@ from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import DErrno
 from DIRAC.Core.Security import Locations
 
+from DIRAC.Core.Security.TokenFile import readTokenFromFile
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.private.authorization.utils.Tokens import OAuth2Token
 
