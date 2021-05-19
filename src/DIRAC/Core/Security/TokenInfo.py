@@ -68,5 +68,5 @@ def formatTokenInfoAsString(infoDict):
   if infoDict.get('group'):
     contentList.append('%s: %s' % ('DIRAC group'.ljust(leftAlign), infoDict['group']))
   if infoDict.get('properties'):
-    contentList.append('%s: %s' % ('groupProperties'.ljust(leftAlign), ', '.join(infoDict['properties'])))
+    contentList.append('%s: %s' % ('properties'.ljust(leftAlign), ', '.join(infoDict['properties'])))
   return "\n".join(contentList)
