@@ -137,7 +137,10 @@ class Params(object):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
-    result = idpObj.authorization()
+    try:
+      result = idpObj.authorization()
+    except KeyboardInterrupt as e:
+      return S_ERROR(repr(e))
     if not result['OK']:
       return result
     
