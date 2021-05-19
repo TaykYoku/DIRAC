@@ -102,18 +102,18 @@ class Params(object):
         "set DIRAC group",
         self.setGroup)
     Script.registerSwitch(
-        "O",
-        "provider",
+        "O:",
+        "provider=",
         "set identity provider",
         self.setProvider)
     Script.registerSwitch(
-        "I",
-        "issuer",
+        "I:",
+        "issuer=",
         "set issuer",
         self.setIssuer)
     Script.registerSwitch(
-        "T",
-        "lifetime",
+        "T:",
+        "lifetime=",
         "set proxy lifetime in a hours",
         self.setLivetime)
 
