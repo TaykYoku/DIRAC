@@ -151,10 +151,6 @@ class Params(object):
       if not result['OK']:
         return result
       gLogger.notice('Proxy is saved to %s.' % self.proxyLoc)
-      result = getProxyInfo(self.proxyLoc)
-      if not result['OK']:
-        return result['Message']
-      gLogger.notice(formatProxyInfoAsString(result['Value']))
     else:
       result = writeTokenDictToTokenFile(idpObj.token)
       if not result['OK']:
@@ -166,6 +162,12 @@ class Params(object):
       print(result['Message'])
       return S_ERROR("Cannot contact CS to get user list")
     DIRAC.gConfig.forceRefresh()
+
+    if self.proxy:
+      result = getProxyInfo(self.proxyLoc)
+      if not result['OK']:
+        return result['Message']
+      gLogger.notice(formatProxyInfoAsString(result['Value']))
 
     return S_OK(self.proxyLoc)
 
