@@ -11,63 +11,78 @@ from authlib.common.encoding import json_b64encode, urlsafe_b64decode, json_load
 
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 
-
 db = AuthDB()
+
+payload = {'sub': 'user',
+           'iss': 'issuer',
+           'iat': int(time.time()),
+           'exp': int(time.time()) + (12 * 3600),
+           'scope': 'scope',
+           'setup': 'setup',
+           'group': 'my_group'}
+
+exp_payload = {'sub': 'user',
+               'iss': 'issuer',
+               'iat': int(time.time()) - 10,
+               'exp': int(time.time()) - 10,
+               'scope': 'scope',
+               'setup': 'setup',
+               'group': 'my_group'}
 
 
 def test_Token():
   """ Try to revoke/save/get tokens
   """
+  # Remove all tokens
+  result = db.removeTokens()
+  assert result['OK'], result['Message']
+
   # Get key
   result = db.getPrivateKey()
   assert result['OK'], result['Message']
   privat_key = result['Value']['key']
 
   # Sign token
-  {'access_token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZldm5HWnN2aDBCWFM3c3FoTWVTSGE4LW5oc3g0Rk9KRTNPSlZ0azNLcEEifQ.eyJncm91cCI6ImNoZWNraW4taW50ZWdyYXRpb25fdXNlciIsInN1YiI6Ijk3ZmFkZjYzZTU1ZWEzNThhNGYwODRlNGMxMzY0NzVlMzc3MzU3YzY3MjMyNjlmMjNlYjlhYmE0MzdmZDZkOWRAZWdpLmV1IiwiaXNzIjoiaHR0cHM6Ly9tYXJvc3ZuMzIuaW4ycDMuZnIvRElSQUMvYXV0aCIsInNldHVwIjoiRUdJLVByb2R1Y3Rpb24iLCJleHAiOjE2MjEzMTcxODQsInNjb3BlIjoiZzpjaGVja2luLWludGVncmF0aW9uX3VzZXIiLCJpYXQiOjE2MjEyNzM5ODR9.a95Xwxtsy1QVKhA8rl7soWw0YLC40M0VRRts4hQme6rC1_a__SuhD3ps1PtQnJRYK1NdbqHh7_uPaLIdCkMGvDmovwVyUzBd9usi1wHeATu06k0226REPrsfl_g2yaoqeHspel_BCEVJLRCeGVMpAXWVhUb3gLaOx4XilV3jQBevqXxYiBPeiu5gyRxFe5mhSFK7B6atPiBOUNAUDxUPj9Zz5rq954sQvjz-SWVdmFMOxXKuXNCH0HnWUccID54BLp-OanhN0TcyKjrU7RdFb2UnMFbWOjitF4RXT8qXKKL1NkDUXCX4t-c1poncC9d_tgtIxViy7OlYhoXJyGFVqQ',
-   'expires_in': 864000,
-   'expires_at': 1621360384,
-   'token_type': 'Bearer',
-   'client_id': '1hlUgttap3P9oTSXUwpIT50TVHxCflN3O98uHP217Y',
-   'scope': u'g:checkin-integration_user',
-   'refresh_token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZldm5HWnN2aDBCWFM3c3FoTWVTSGE4LW5oc3g0Rk9KRTNPSlZ0azNLcEEifQ.eyJzdWIiOiI5N2ZhZGY2M2U1NWVhMzU4YTRmMDg0ZTRjMTM2NDc1ZTM3NzM1N2M2NzIzMjY5ZjIzZWI5YWJhNDM3ZmQ2ZDlkQGVnaS5ldSIsImlzcyI6Imh0dHBzOi8vbWFyb3N2bjMyLmluMnAzLmZyL0RJUkFDL2F1dGgiLCJzZXR1cCI6IkVHSS1Qcm9kdWN0aW9uIiwiY2xpZW50X2lkIjoiMWhsVWd0dGFwM1A5b1RTWFV3cElUNTBUVkh4Q2ZsTjNPOTh1SFAyMTdZIiwiZXhwIjoxNjIxMzYwMzg0LCJzY29wZSI6Imc6Y2hlY2tpbi1pbnRlZ3JhdGlvbl91c2VyIiwiaWF0IjoxNjIxMjczOTg0fQ.ixOeAnauORbDTmUVZ48d6UjS7Ks3HuhKlpumrhJwK_sQSye8ZeahQfV_2PfF9sozS79FbHaS1y7w8bcCMg7iaM6_pDtueK2rSC90q4deuWPOAVv6iGA2hX-94hBCDAYepPWFPPwPZ3iGzTiYmBIbbLjQ9NC3xrg0OQeWmbTVFk6p8himIRGS1BvlOTvYEIxQrwxV8wseIT-NrmplpBWV6mWl1NC2dCRo-BtW1QzWYwGugcf2wRQYposcwP6x-jW-AmaqsHpNr57kkSGfsbd0DlBvuHZO0zW6QYsvX6k4VJVQubjPs9028ot0x9eOaVXClPbeJMwtS0H8AP1BThvdQA'}
-  payload = {'sub': 'user',
-             'iss': 'issuer',
-             #'iat': int(time.time()),
-             'exp': int(time.time()) + (12 * 3600),
-             #'scope': 'scope',
-             'setup': 'setup',
-             'group': 'my_group'}
-  token = jwt.encode({'alg': 'RS256'}, payload, privat_key)
+  token = dict(access_token=jwt.encode({'alg': 'RS256'}, payload, privat_key),
+               expires_in=864000,
+               token_type='Bearer',
+               client_id='1hlUgttap3P9oTSXUwpIT50TVHxCflN3O98uHP217Y',
+               scope='g:checkin-integration_user',
+               refresh_token=jwt.encode({'alg': 'RS256'}, payload, privat_key))
   # Expired token
-  payload['exp'] = 0
-  exp_token = jwt.encode({'alg': 'RS256'}, payload, privat_key)
+  exp_token = dict(access_token=jwt.encode({'alg': 'RS256'}, exp_payload, privat_key),
+                   expires_in=864000,
+                   token_type='Bearer',
+                   client_id='1hlUgttap3P9oTSXUwpIT50TVHxCflN3O98uHP217Y',
+                   scope='g:checkin-integration_user',
+                   refresh_token=jwt.encode({'alg': 'RS256'}, exp_payload, privat_key))
 
-  # Remove if exists in DB
-  db.unrevokeToken(token)
-
-  # Check if token revoked
-  result = db.isTokenRevoked(token)
+  # Store tokens
+  result = db.storeToken(token)
   assert result['OK'], result['Message']
-  assert result['Value'] == False
+  result = db.storeToken(token)
+  assert result['OK'], result['Message']
+
+  # Check token
+  result = db.getToken(token['refresh_token'])
+  assert result['OK'], result['Message']
+  assert result['Value']['access_token'] == token['access_token']
+  assert result['Value']['refresh_token'] == token['refresh_token']
+  assert result['Value']['revoked'] == False
+
+  # Check expired token
+  result = db.getToken(exp_token['refresh_token'])
+  assert not result['OK']
 
   # Revoke token
   result = db.revokeToken(token)
   assert result['OK'], result['Message']
 
-  # Revoke expired token
-  result = db.revokeToken(exp_token)
-  assert result['OK'], result['Message']
-
   # Check if token revoked
-  result = db.isTokenRevoked(token)
+  # Check token
+  result = db.getToken(token['refresh_token'])
   assert result['OK'], result['Message']
-  assert result['Value'] == True
-
-  # Check if expired token there
-  result = db.isTokenRevoked(exp_token)
-  assert result['OK'], result['Message']
-  assert result['Value'] == False
+  assert result['Value']['revoked'] == True
 
 
 def test_keys():
@@ -90,7 +105,8 @@ def test_keys():
              'group': 'my_group'}
 
   # Remove all keys
-  db.removeKeys()
+  result = db.removeKeys()
+  assert result['OK'], result['Message']
 
   # Check active keys
   result = db.getActiveKeys()

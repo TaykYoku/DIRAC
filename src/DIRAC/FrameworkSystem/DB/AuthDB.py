@@ -142,8 +142,10 @@ class AuthDB(SQLAlchemyDB):
     """
     session = self.session()
     try:
-      token = session.query(Token).filter(Token.access_token == token['access_token'])
+      token = session.query(Token).filter(Token.access_token == token['access_token']).first()
       token.revoked = True
+    except NoResultFound:
+      return self.__result(session, S_OK())
     except Exception as e:
       return self.__result(session, S_ERROR('Could not revoke token: %s' % e))
     return self.__result(session, S_OK())
@@ -165,6 +167,18 @@ class AuthDB(SQLAlchemyDB):
     except Exception as e:
       return self.__result(session, S_ERROR('Could not add Token: %s' % e))
     return self.__result(session, S_OK('Token successfully added'))
+
+  def removeTokens(self):
+    """ Get active keys
+    
+        :return: S_OK(list)/S_ERROR()
+    """
+    session = self.session()
+    try:
+      session.query(Token).delete()
+    except Exception as e:
+      return self.__result(session, S_ERROR(str(e)))
+    return self.__result(session, S_OK())
 
   def generateRSAKeys(self):
     """ Generate an RSA keypair with an exponent of 65537 in PEM format
