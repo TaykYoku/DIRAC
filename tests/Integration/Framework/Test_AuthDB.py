@@ -66,6 +66,8 @@ def test_Token():
   assert result['OK'], result['Message']
   print(token)
   assert token
+  print(token['refresh_token'])
+  assert token['refresh_token']
 
   # Check token
   result = db.getToken(token['refresh_token'])
