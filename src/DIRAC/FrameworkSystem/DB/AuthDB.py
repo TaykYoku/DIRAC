@@ -120,8 +120,6 @@ class AuthDB(SQLAlchemyDB):
 
         :return: S_OK()/S_ERROR()
     """
-    print('>> getToken')
-    
     session = self.session()
     try:
       session.query(Token).filter(Token.expires_at < time()).delete()
@@ -129,7 +127,8 @@ class AuthDB(SQLAlchemyDB):
         token = session.query(Token).filter(Token.access_token == token).first()
       else:
         token = session.query(Token).filter(Token.refresh_token == token).first()
-      print(token)
+      if not token:
+        return self.__result(session, S_ERROR("Token not found."))
     except NoResultFound:
       return self.__result(session, S_ERROR("Token not found."))
     except Exception as e:
