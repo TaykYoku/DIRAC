@@ -52,7 +52,8 @@ def getTokenInfo(token=False):
 def formatTokenInfoAsString(infoDict):
   """ Convert a token infoDict into a string
   """
-  hours = int((int(infoDict['exp']) - time.time()) / 3600)
+  secs = int(infoDict['exp']) - time.time()
+  hours = int(secs / 3600)
   secs -= hours * 3600
   mins = int(secs / 60)
   secs -= mins * 60
