@@ -19,7 +19,6 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
-from DIRAC.FrameworkSystem.private.authorization.utils.JWKs import getJWKs, createJWKsIfNeeded
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.grants.RevokeToken import RevocationEndpoint
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
@@ -83,7 +82,6 @@ class AuthHandler(TornadoREST):
 
         :param dict ServiceInfoDict: infos about services
     """
-    createJWKsIfNeeded()
     cls.server = AuthServer()
     cls.server.css = dict(CSS=cls.CSS, css_align_center=cls.css_align_center, css_main=cls.css_main)
     cls.server.LOCATION = cls.LOCATION
