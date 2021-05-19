@@ -248,16 +248,6 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
     credDict['group'] = claimDict.get('group')
     return credDict
 
-  # def __getUserInfo(self, useToken=None):
-  #   self.log.debug('Sent request to userinfo endpoint..')
-  #   r = None
-  #   try:
-  #     r = self.request('GET', self.get_metadata('userinfo_endpoint'), withhold_token=useToken)
-  #     r.raise_for_status()
-  #     return S_OK(r.json())
-  #   except (self.exceptions.RequestException, ValueError) as e:
-  #     return S_ERROR("%s: %s" % (repr(e), r.text if r else ''))
-
   def parseEduperson(self, claimDict):
     """ Parse eduperson claims
 
@@ -398,13 +388,13 @@ class OAuth2IdProvider(IdProvider, OAuth2Session):
 
   def exchange_token(self, url, subject_token=None, subject_token_type=None, body='',
                      refresh_token=None, access_token=None, auth=None, headers=None, **kwargs):
-    """ Fetch a new access token using a refresh token.
+    """ Exchange a new access token
 
-        :param url: Refresh Token endpoint, must be HTTPS.
+        :param url: Exchange Token endpoint, must be HTTPS.
         :param str subject_token: subject_token
         :param str subject_token_type: token type https://tools.ietf.org/html/rfc8693#section-3
         :param body: Optional application/x-www-form-urlencoded body to add the
-                      include in the token request. Prefer kwargs over body.
+                     include in the token request. Prefer kwargs over body.
         :param str refresh_token: refresh token
         :param str access_token: access token
         :param auth: An auth tuple or method as accepted by requests.
