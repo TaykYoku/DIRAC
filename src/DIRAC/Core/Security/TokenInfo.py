@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import jwt as _jwt
 import six
+import time
 
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import DErrno
