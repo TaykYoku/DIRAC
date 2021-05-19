@@ -120,6 +120,8 @@ class AuthDB(SQLAlchemyDB):
 
         :return: S_OK()/S_ERROR()
     """
+    print('>> getToken')
+    print(token)
     session = self.session()
     try:
       session.query(Token).filter(Token.expires_at < time()).delete()
