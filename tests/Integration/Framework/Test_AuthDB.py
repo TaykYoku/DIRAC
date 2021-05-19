@@ -56,12 +56,16 @@ def test_Token():
                    client_id='1hlUgttap3P9oTSXUwpIT50TVHxCflN3O98uHP217Y',
                    scope='g:checkin-integration_user',
                    refresh_token=jwt.encode({'alg': 'RS256'}, exp_payload, privat_key))
+  print(token)
+  assert token
 
   # Store tokens
   result = db.storeToken(token)
   assert result['OK'], result['Message']
   result = db.storeToken(token)
   assert result['OK'], result['Message']
+  print(token)
+  assert token
 
   # Check token
   result = db.getToken(token['refresh_token'])
@@ -69,6 +73,8 @@ def test_Token():
   assert result['Value']['access_token'] == token['access_token']
   assert result['Value']['refresh_token'] == token['refresh_token']
   assert result['Value']['revoked'] == False
+  print(token)
+  assert token
 
   # Check expired token
   result = db.getToken(exp_token['refresh_token'])
