@@ -26,6 +26,7 @@ from DIRAC.Core.Utilities.DIRACScript import DIRACScript
 from DIRAC.Core.Security.TokenFile import writeTokenDictToTokenFile
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
 from DIRAC.Core.Security.ProxyInfo import getProxyInfo, formatProxyInfoAsString
+from DIRAC.Core.Security.TokenInfo import getTokenInfo, formatTokenInfoAsString
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 __RCSID__ = "$Id$"
@@ -168,6 +169,11 @@ class Params(object):
       if not result['OK']:
         return result['Message']
       gLogger.notice(formatProxyInfoAsString(result['Value']))
+    else:
+      result = getTokenInfo(self.proxyLoc)
+      if not result['OK']:
+        return result['Message']
+      gLogger.notice(formatTokenInfoAsString(result['Value']))
 
     return S_OK(self.proxyLoc)
 
