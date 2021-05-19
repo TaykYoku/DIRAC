@@ -1,5 +1,5 @@
 """
-TornadoService is the base class for your handlers.
+TornadoREST is the base class for your RESTful API handlers.
 It directly inherits from :py:class:`tornado.web.RequestHandler`
 """
 

@@ -24,11 +24,8 @@ import DIRAC
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base import Script
 from DIRAC.Core.Utilities.DIRACScript import DIRACScript
-from DIRAC.Core.Security.TokenFile import readTokenFromFile, writeTokenDictToTokenFile
+from DIRAC.Core.Security.TokenFile import writeTokenDictToTokenFile
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
-from DIRAC.Resources.IdProvider.OAuth2IdProvider import OAuth2IdProvider
-from DIRAC.FrameworkSystem.Client.BundleDeliveryClient import BundleDeliveryClient
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
 
 __RCSID__ = "$Id$"
@@ -136,12 +133,10 @@ class Params(object):
       idpObj.scope += '+g:%s' % self.group
     if self.proxy:
       idpObj.scope += '+proxy'
-    # idpObj.scope += 'origin_token'
     
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Submit Device authorisation flow
-    # Get IdP
     result = idpObj.authorization()
     if not result['OK']:
       return result

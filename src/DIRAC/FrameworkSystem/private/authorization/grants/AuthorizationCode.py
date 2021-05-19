@@ -7,8 +7,9 @@ from __future__ import print_function
 from time import time
 from pprint import pprint
 from authlib.jose import JsonWebSignature
-from authlib.oidc.core import UserInfo
-from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
+# from authlib.oidc.core import UserInfo
+# from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
+from authlib.oauth2.base import OAuth2Error
 from authlib.oauth2.rfc6749.grants import AuthorizationCodeGrant as _AuthorizationCodeGrant
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.common.encoding import to_unicode, json_dumps, json_b64encode, urlsafe_b64decode, json_loads
@@ -49,25 +50,23 @@ class OAuth2Code(dict):
     return self.get('nonce')
 
 
-class OpenIDCode(_OpenIDCode):
-  def exists_nonce(self, nonce, request):
-    return False
+# class OpenIDCode(_OpenIDCode):
+#   def exists_nonce(self, nonce, request):
+#     return False
 
-  def get_jwt_config(self, grant):
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
-    #   key = f.read()
-    result = self.server.db.getPrivateKey()
-    if not result['OK']:
-      raise Exception(result['Message'])
-    key = result['Value']
-    issuer = grant.server.metadata['issuer']
-    return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
+#   def get_jwt_config(self, grant):
+#     result = self.server.db.getPrivateKey()
+#     if not result['OK']:
+#       raise Exception(result['Message'])
+#     key = result['Value']
+#     issuer = grant.server.metadata['issuer']
+#     return {'key': key, 'alg': 'RS512', 'iss': issuer, 'exp': 3600}
 
-  def generate_user_info(self, user, scope):
-    print('== generate_user_info ==')
-    print(user)
-    print(scope)
-    return UserInfo(sub=user[0], grp=user[1])
+#   def generate_user_info(self, user, scope):
+#     print('== generate_user_info ==')
+#     print(user)
+#     print(scope)
+#     return UserInfo(sub=user[0], grp=user[1])
 
 
 class AuthorizationCodeGrant(_AuthorizationCodeGrant):
@@ -89,8 +88,6 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     """
     gLogger.debug('Query authorization code:', code)
     jws = JsonWebSignature(algorithms=['RS256'])
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key.pub', 'rb') as f:
-    #   key = f.read()
     result = self.server.db.getKeySet()
     if not result['OK']:
       raise Exception(result['Message'])
@@ -102,7 +99,7 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
       except Exception as e:
         err = e
     if err:
-      gLogger.error('Cannot read authorization code:', repr(e))
+      gLogger.error('Cannot get authorization code:', repr(err))
       return None
     try:
       item = OAuth2Code(json_loads(urlsafe_b64decode(data['payload'])))
@@ -114,6 +111,7 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
       return item
 
   def authenticate_user(self, authorization_code):
+    """ Authenticatre user """
     return authorization_code.user
 
   def generate_authorization_code(self):
@@ -130,11 +128,8 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
                        'code_challenge': self.request.args.get('code_challenge'),
                        'code_challenge_method': self.request.args.get('code_challenge_method')})
     gLogger.debug('Authorization code generated:', dict(code))
-    payload = json_b64encode(dict(code))
-    # with open('/opt/dirac/etc/grid-security/jwtRS256.key', 'rb') as f:
-    #   key = f.read()
     result = self.server.db.getPrivateKey()
     if not result['OK']:
-      raise Exception(result['Message'])
+      raise OAuth2Error('Cannot check authorization code: %s' % result['Message'])
     key = result['Value']['key']
-    return jws.serialize_compact(protected, payload, key)
+    return jws.serialize_compact(protected, json_b64encode(dict(code)), key)

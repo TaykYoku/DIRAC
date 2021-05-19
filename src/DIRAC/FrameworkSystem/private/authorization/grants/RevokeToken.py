@@ -4,6 +4,8 @@ from __future__ import print_function
 
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 
+from DIRAC import gLogger
+
 
 class RevocationEndpoint(_RevocationEndpoint):
 

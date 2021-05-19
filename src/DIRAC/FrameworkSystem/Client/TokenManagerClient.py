@@ -13,5 +13,4 @@ from DIRAC.Core.Base.Client import Client, createClient
 
 @createClient('Framework/TokenManager')
 class TokenManagerClient(Client):
-
   pass

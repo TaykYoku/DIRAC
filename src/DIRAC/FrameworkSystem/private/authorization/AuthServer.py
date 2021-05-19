@@ -21,22 +21,19 @@ from DIRAC.FrameworkSystem.private.authorization.grants.RevokeToken import Revoc
 from DIRAC.FrameworkSystem.private.authorization.grants.RefreshToken import RefreshTokenGrant
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import (DeviceAuthorizationEndpoint,
                                                                            DeviceCodeGrant)
-from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import (OpenIDCode,
-                                                                                  AuthorizationCodeGrant)
+from DIRAC.FrameworkSystem.private.authorization.grants.AuthorizationCode import AuthorizationCodeGrant  #, OpenIDCode
 from DIRAC.FrameworkSystem.private.authorization.utils.Clients import Client, DEFAULT_CLIENTS
-from DIRAC.FrameworkSystem.private.authorization.utils.Requests import (OAuth2Request,
-                                                                        createOAuth2Request)
+from DIRAC.FrameworkSystem.private.authorization.utils.Requests import OAuth2Request, createOAuth2Request
 
-from DIRAC import gLogger, gConfig, S_OK, S_ERROR
+from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.DB.AuthDB import AuthDB
 from DIRAC.FrameworkSystem.DB.TokenDB import TokenDB
 from DIRAC.Resources.IdProvider.IdProviderFactory import IdProviderFactory
-from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
+from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata, isDownloadablePersonalProxy
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup, getDNForUsername
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getProvidersForInstance, getProviderInfo
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getSetup
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getEmailsForGroup, getDNForUsername
 from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
-from DIRAC.ConfigurationSystem.Client.Utilities import isDownloadablePersonalProxy
 
 import logging
 import sys
@@ -59,7 +56,7 @@ def collectMetadata(issuer=None):
   metadata['authorization_endpoint'] = metadata['issuer'] + '/authorization'
   metadata['device_authorization_endpoint'] = metadata['issuer'] + '/device'
   metadata['grant_types_supported'] = ['code', 'authorization_code', 'refresh_token',
-                                        'urn:ietf:params:oauth:grant-type:device_code']
+                                       'urn:ietf:params:oauth:grant-type:device_code']
   metadata['response_types_supported'] = ['code', 'device', 'token']
   metadata['code_challenge_methods_supported'] = ['S256']
   return AuthorizationServerMetadata(metadata)
@@ -74,8 +71,6 @@ class AuthServer(_AuthorizationServer):
   """
   css = {}
   LOCATION = None
-
-  # metadata_class = AuthorizationServerMetadata
 
   def __init__(self):
     self.db = AuthDB()
@@ -94,7 +89,7 @@ class AuthServer(_AuthorizationServer):
     self.register_grant(DeviceCodeGrant)
     self.register_endpoint(DeviceAuthorizationEndpoint)
     self.register_endpoint(RevocationEndpoint)
-    self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=False)])      
+    self.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])#, OpenIDCode(require_nonce=False)])      
 
   def addSession(self, session):
     self.db.addSession(session)
@@ -124,7 +119,6 @@ class AuthServer(_AuthorizationServer):
     data = {}
     gLogger.debug('Try to query %s client' % clientID)
     result = getProvidersForInstance('Id', 'DIRAC')
-    pprint.pprint(result)
     if not result['OK']:
       gLogger.error(result['Message'])
       return None
@@ -133,7 +127,6 @@ class AuthServer(_AuthorizationServer):
     for client in clients:
       data = DEFAULT_CLIENTS.get(client, {})
       result = getProviderInfo(client)
-      pprint.pprint(result)
       if not result['OK']:
         gLogger.debug(result['Message'])
       else:
@@ -383,6 +376,15 @@ class AuthServer(_AuthorizationServer):
     if not result['OK']:
       return None, result
     idPs = result['Value']
+
+    # Remove settings of the DIRAC AS
+    result = getProvidersForInstance('Id', 'DIRAC')
+    if not result['OK']:
+      return None, result
+    for dCli in result['Value']:
+      if dCli in idPs:
+        idPs.remove(dCli)
+
     if not idPs:
       return None, S_ERROR('No identity providers found.')
 

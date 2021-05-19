@@ -9,7 +9,7 @@ import time
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from authlib.oauth2.rfc6749.util import scope_to_list, list_to_scope
 
-from DIRAC import S_OK, gLogger
+from DIRAC import gLogger
 
 __RCSID__ = "$Id$"
 
@@ -56,4 +56,4 @@ class Client(OAuth2ClientMixin):
         if s.startswith(def_scope) and s not in allowed:
           allowed.append(s)
     gLogger.debug('Try to allow "%s" scope:' % scope, allowed)
-    return list_to_scope(allowed)
+    return list_to_scope(list(set(allowed)))

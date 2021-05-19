@@ -5,6 +5,8 @@ from __future__ import print_function
 from authlib.oauth2.base import OAuth2Error
 from authlib.oauth2.rfc6749.grants import RefreshTokenGrant as _RefreshTokenGrant
 
+from DIRAC import gLogger
+
 
 class RefreshTokenGrant(_RefreshTokenGrant):
 

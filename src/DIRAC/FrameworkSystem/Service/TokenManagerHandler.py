@@ -15,7 +15,6 @@ __RCSID__ = "$Id$"
 import six
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
-# from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.Core.Security import Properties
 from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader

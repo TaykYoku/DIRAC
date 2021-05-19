@@ -10,7 +10,7 @@ from authlib.oauth2.rfc8628 import (DeviceAuthorizationEndpoint as _DeviceAuthor
                                     DeviceCodeGrant as _DeviceCodeGrant,
                                     DeviceCredentialDict)
 
-from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC import gLogger
 from DIRAC.ConfigurationSystem.Client.Utilities import getAuthorisationServerMetadata
 
 log = gLogger.getSubLogger(__name__)
@@ -103,7 +103,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
 
   def query_device_credential(self, device_code):
     result = self.server.db.getSession(device_code)
-    print('query_device_credential>>  %s' % result)
     if not result['OK']:
       raise OAuth2Error(result['Message'])
     data = result['Value']
@@ -115,8 +114,6 @@ class DeviceCodeGrant(_DeviceCodeGrant, AuthorizationEndpointMixin):
     data['verification_uri'] = result['Value']['issuer'] + '/device'
     data['expires_at'] = int(data['expires_in']) + int(time.time())
     data['interval'] = DeviceAuthorizationEndpoint.INTERVAL
-    print('query_device_credential: %s' % DeviceCredentialDict(data))
-    print('scope: %s' % DeviceCredentialDict(data).get_scope())
     return DeviceCredentialDict(data)
 
   def query_user_grant(self, user_code):
