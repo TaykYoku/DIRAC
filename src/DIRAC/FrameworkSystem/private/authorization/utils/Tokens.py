@@ -20,6 +20,7 @@ class OAuth2Token(_OAuth2Token, OAuth2TokenMixin):
 
   def __init__(self, params=None, **kwargs):
     kwargs.update(params or {})
+    kwargs['revoked'] = False if kwargs.get('revoked') and kwargs['revoked'] == 'False' else kwargs.get('revoked')
     self.sub = kwargs.get('sub')
     self.issuer = kwargs.get('iss')
     self.client_id = kwargs.get('client_id', kwargs.get('aud'))
