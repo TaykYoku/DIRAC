@@ -68,7 +68,7 @@ def test_Token():
   assert result['OK'], result['Message']
   assert result['Value']['access_token'] == token['access_token']
   assert result['Value']['refresh_token'] == token['refresh_token']
-  assert result['Value']['revoked'] == False
+  assert result['Value']['revoked'] == 'False'
 
   # Check expired token
   result = db.getToken(exp_token['refresh_token'])
