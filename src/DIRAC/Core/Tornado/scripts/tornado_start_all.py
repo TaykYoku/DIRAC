@@ -54,7 +54,7 @@ def main():
 
   gLogger.initialize('Tornado', "/")
 
-  serverToLaunch = TornadoServer()
+  serverToLaunch = TornadoServer(endpoints=True)
   serverToLaunch.startTornado()
 
 
