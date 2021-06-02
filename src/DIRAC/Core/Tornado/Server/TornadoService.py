@@ -9,13 +9,18 @@ from __future__ import print_function
 
 __RCSID__ = "$Id$"
 
+from io import open
+
+import os
+import datetime
+
 import tornado.ioloop
 from tornado import gen
 from tornado.ioloop import IOLoop
 
 import DIRAC
 
-from DIRAC import gLogger
+from DIRAC import gLogger, S_OK
 from DIRAC.Core.Utilities.JEncode import decode, encode
 from DIRAC.Core.Tornado.Server.BaseRequestHandler import BaseRequestHandler
 from DIRAC.ConfigurationSystem.Client import PathFinder
