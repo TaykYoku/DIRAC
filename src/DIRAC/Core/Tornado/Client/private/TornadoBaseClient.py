@@ -545,6 +545,7 @@ class TornadoBaseClient(object):
           return S_ERROR('Access token expired.')
 
         # Try to refresh token
+        self.__idp.scope = None
         result = self.__idp.refreshToken(token['refresh_token'])
         if result['OK']:
           token = result['Value']
