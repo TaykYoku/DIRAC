@@ -323,10 +323,10 @@ class AuthHandler(TornadoREST):
           groupProvider = Registry.getIdPForGroup(group)
           # If requested access token for group that is not registred in any identity provider
           if not groupProvider and 'proxy' not in req.scope:
-            # TODO: self.server.db mark session as failed
+            self.server.db.removeSession(session['id'])
             return 'The %s group belongs to the VO that is not tied to any Identity Provider.' % group
           if provider and provider != groupProvider:
-            # TODO: self.server.db mark session as failed
+            self.server.db.removeSession(session['id'])
             return 'The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider)
           provider = groupProvider
 
