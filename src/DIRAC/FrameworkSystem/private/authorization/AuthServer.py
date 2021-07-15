@@ -149,7 +149,7 @@ class AuthServer(_AuthorizationServer):
           result = result['Value'].dumpAllToString()
           if not result['OK']:
             raise OAuth2Error(result['Message'])
-          return {'proxy': result['Value']}
+          return {'proxy': result['Value'].decode()}
       raise OAuth2Error('; '.join(err))
 
     else:
