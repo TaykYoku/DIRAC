@@ -316,11 +316,19 @@ class AuthHandler(TornadoREST):
         # Get original request from session
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
 
-        groups = [s.split(':')[1] for s in scope_to_list(req.scope) if s.startswith('g:')]  # pylint: disable=no-member
+        groups = req.groups
         group = groups[0] if groups else None
 
-        if group and not provider:
-          provider = Registry.getIdPForGroup(group)
+        if group:
+          groupProvider = Registry.getIdPForGroup(group)
+          # If requested access token for group that is not registred in any identity provider
+          if not groupProvider and 'proxy' not in req.scope:
+            # TODO: self.server.db mark session as failed
+            return 'The %s group belongs to the VO that is not tied to any Identity Provider.' % group
+          if provider and provider != groupProvider:
+            # TODO: self.server.db mark session as failed
+            return 'The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider)
+          provider = groupProvider
 
         self.log.debug('Use provider:', provider)
         # pylint: disable=no-member
