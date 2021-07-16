@@ -34,6 +34,23 @@ class OAuth2Request(_OAuth2Request):
         :return: list
     """
     return [s.split(':')[1] for s in scope_to_list(self.scope) if s.startswith('g:') and s.split(':')[1]]
+  
+  @property
+  def group(self):
+    """ Serarch DIRAC group in scopes
+
+        :return: str
+    """
+    groups = [s.split(':')[1] for s in scope_to_list(self.scope) if s.startswith('g:') and s.split(':')[1]]
+    return groups[0] if groups else None
+  
+  @property
+  def provider(self):
+    """ Serarch IdP in scopes
+
+        :return: str
+    """
+    return self.data.get('provider')
 
   def toDict(self):
     """ Convert class to dictionary

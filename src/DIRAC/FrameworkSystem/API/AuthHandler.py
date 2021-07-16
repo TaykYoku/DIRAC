@@ -23,7 +23,7 @@ from authlib.oauth2.rfc6749.util import scope_to_list
 
 from DIRAC import S_ERROR, gConfig
 from DIRAC.Core.Tornado.Server.TornadoREST import TornadoREST
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getIdPForGroup, getGroupsForUser
 from DIRAC.FrameworkSystem.private.authorization.AuthServer import AuthServer
 from DIRAC.FrameworkSystem.private.authorization.utils.Requests import createOAuth2Request
 from DIRAC.FrameworkSystem.private.authorization.grants.DeviceFlow import DeviceAuthorizationEndpoint
@@ -320,14 +320,17 @@ class AuthHandler(TornadoREST):
         group = groups[0] if groups else None
 
         if group:
-          groupProvider = Registry.getIdPForGroup(group)
+          groupProvider = getIdPForGroup(group)
           # If requested access token for group that is not registred in any identity provider
+          # or the requested provider does not match the group return error
           if not groupProvider and 'proxy' not in req.scope:
             self.server.db.removeSession(session['id'])
-            return 'The %s group belongs to the VO that is not tied to any Identity Provider.' % group
+            error = OAuth2Error('The %s group belongs to the VO that is not tied to any Identity Provider.' % group)
+            return self.server.handle_error_response(None, error)
           if provider and provider != groupProvider:
             self.server.db.removeSession(session['id'])
-            return 'The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider)
+            error = OAuth2Error('The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider))
+            return self.server.handle_error_response(None, error)
           provider = groupProvider
 
         self.log.debug('Use provider:', provider)
@@ -479,18 +482,21 @@ class AuthHandler(TornadoREST):
     firstRequest.addScopes(self.get_arguments('chooseScope'))
     # Read already authed user
     username = extSession['authed']['username']
-    self.log.debug('Next groups has been found for %s:' % username, ', '.join(firstRequest.groups))
+    # Requested arguments in first request
+    groups = firstRequest.groups
+    provider = firstRequest.provider
+    self.log.debug('Next groups has been found for %s:' % username, ', '.join(groups))
 
     # Researche Group
-    result = Registry.getGroupsForUser(username)
+    result = getGroupsForUser(username)
     if not result['OK']:
       return None, result
-    validGroups = result['Value']
+    validGroups = [group for group in result['Value'] if getIdPForGroup(group) == provider]
     if not validGroups:
-      return None, S_ERROR('No groups found for %s.' % username)
+      return None, S_ERROR('No groups found for %s and for %s Identity Provider.' % (username, provider))
 
     self.log.debug('The state of %s user groups has been checked:' % username, pprint.pformat(validGroups))
-    if not firstRequest.groups:
+    if not groups:
       if len(validGroups) == 1:
         firstRequest.addScopes(['g:%s' % validGroups[0]])
       else:
