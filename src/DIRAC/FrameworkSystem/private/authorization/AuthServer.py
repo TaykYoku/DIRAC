@@ -370,7 +370,7 @@ class AuthServer(_AuthorizationServer):
       request.provider = provider
 
     # Find identity provider for group
-    groupProvider = getIdPForGroup(request.group) if request.group else None
+    groupProvider = getIdPForGroup(request.group) if request.groups else None
 
     # If requested access token for group that is not registred in any identity provider
     # or the requested provider does not match the group return error

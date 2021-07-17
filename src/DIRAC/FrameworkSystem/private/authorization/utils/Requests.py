@@ -41,7 +41,7 @@ class OAuth2Request(_OAuth2Request):
 
         :return: list
     """
-    return [s.split(':')[1] for s in scope_to_list(self.scope) if s.startswith('g:') and s.split(':')[1]]
+    return [s.split(':')[1] for s in scope_to_list(self.scope or '') if s.startswith('g:') and s.split(':')[1]]
   
   @property
   def group(self):
@@ -49,7 +49,7 @@ class OAuth2Request(_OAuth2Request):
 
         :return: str
     """
-    groups = [s.split(':')[1] for s in scope_to_list(self.scope) if s.startswith('g:') and s.split(':')[1]]
+    groups = [s.split(':')[1] for s in scope_to_list(self.scope or '') if s.startswith('g:') and s.split(':')[1]]
     return groups[0] if groups else None
   
   @property
