@@ -157,7 +157,7 @@ class TokenManagerHandler(TornadoService):
             result = idpObj.exchangeGroup(userGroup)
             if result['OK']:
               return result
-      err.append(result.get('Message', 'token is empty.'))
+      err.append(result.get('Message', 'No token found for %s.' % dn))
     return S_ERROR('; '.join(err or ['No user ID found for %s' % username]))
 
   def export_deleteToken(self, userDN):
