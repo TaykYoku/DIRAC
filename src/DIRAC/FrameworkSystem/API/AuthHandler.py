@@ -410,14 +410,11 @@ class AuthHandler(TornadoREST):
           state, OAuth2Error(error=error, description=self.get_argument('error_description', '')))
 
     # Check current auth session that was initiated for the selected external identity provider
-    try:
-      session = json.loads(self.get_secure_cookie('auth_session'))
-    except Exception:
-      session = {}
-
-    sessionWithExtIdP = session if state and (session.get('state') == state) else None
-    if not sessionWithExtIdP:
+    session = self.get_secure_cookie('auth_session')
+    if not session or (state and (session.get('state') == state)):
       return S_ERROR("%s session is expired." % state)
+
+    sessionWithExtIdP = json.loads(session)
 
     if not sessionWithExtIdP.get('authed'):
       # Parse result of the second authentication flow
@@ -484,20 +481,20 @@ class AuthHandler(TornadoREST):
     # Read already authed user
     username = extSession['authed']['username']
     # Requested arguments in first request
-    groups = firstRequest.groups
     provider = firstRequest.provider
-    self.log.debug('Next groups has been found for %s:' % username, ', '.join(groups))
+    self.log.debug('Next groups has been found for %s:' % username, ', '.join(firstRequest.groups))
 
     # Researche Group
     result = getGroupsForUser(username)
     if not result['OK']:
       return None, result
-    validGroups = [group for group in result['Value'] if getIdPForGroup(group) == provider]
+    groups = result['Value']
+    validGroups = [group for group in groups if (getIdPForGroup(group) == provider) or ('proxy' in firstRequest.scope)]
     if not validGroups:
       return None, S_ERROR('No groups found for %s and for %s Identity Provider.' % (username, provider))
 
     self.log.debug('The state of %s user groups has been checked:' % username, pprint.pformat(validGroups))
-    if not groups:
+    if not firstRequest.groups:
       if len(validGroups) == 1:
         firstRequest.addScopes(['g:%s' % validGroups[0]])
       else:

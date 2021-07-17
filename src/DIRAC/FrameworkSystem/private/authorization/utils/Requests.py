@@ -24,6 +24,7 @@ class OAuth2Request(_OAuth2Request):
 
   def setQueryArguments(self, **kwargs):
     """ Set query arguments """
+    path = self.uri.replace('?%s' % (self.query or ''), '')
     for k in kwargs:
       # Remove argument from uri
       query = re.sub(r"&{argument}(=[^&]*)?|^{argument}(=[^&]*)?&?".format(argument=k), "", self.query)
@@ -32,7 +33,7 @@ class OAuth2Request(_OAuth2Request):
         query += '&'
       query += "%s=%s" % (k, '+'.join(kwargs[k]) if isinstance(kwargs[k], list) else kwargs[k])
     # Re-init class
-    self.__init__(self.method, to_unicode(self.path + '?' + query))
+    self.__init__(self.method, to_unicode(path + '?' + query))
 
   @property
   def groups(self):
