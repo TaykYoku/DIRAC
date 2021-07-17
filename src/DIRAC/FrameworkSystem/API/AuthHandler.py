@@ -315,27 +315,28 @@ class AuthHandler(TornadoREST):
         session = result['Value']
         # Get original request from session
         req = createOAuth2Request(dict(method='GET', uri=session['uri']))
+        req.setQueryArguments(id=session['id'], user_code=userCode)
 
-        groups = req.groups
-        group = groups[0] if groups else None
+        # # This MOVED to AuthServer
+        # # groups = req.groups
+        # # group = groups[0] if groups else None
+        # # if group:
+        # #   groupProvider = getIdPForGroup(group)
+        # #   # If requested access token for group that is not registred in any identity provider
+        # #   # or the requested provider does not match the group return error
+        # #   if not groupProvider and 'proxy' not in req.scope:
+        # #     self.server.db.removeSession(session['id'])
+        # #     error = OAuth2Error('The %s group belongs to the VO that is not tied to any Identity Provider.' % group)
+        # #     return self.server.handle_error_response(None, error)
+        # #   if provider and provider != groupProvider:
+        # #     self.server.db.removeSession(session['id'])
+        # #     error = OAuth2Error('The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider))
+        # #     return self.server.handle_error_response(None, error)
+        # #   provider = groupProvider
+        # # self.log.debug('Use provider:', provider)
 
-        if group:
-          groupProvider = getIdPForGroup(group)
-          # If requested access token for group that is not registred in any identity provider
-          # or the requested provider does not match the group return error
-          if not groupProvider and 'proxy' not in req.scope:
-            self.server.db.removeSession(session['id'])
-            error = OAuth2Error('The %s group belongs to the VO that is not tied to any Identity Provider.' % group)
-            return self.server.handle_error_response(None, error)
-          if provider and provider != groupProvider:
-            self.server.db.removeSession(session['id'])
-            error = OAuth2Error('The %s group Identity Provider is "%s" and not "%s".' % (group, groupProvider, provider))
-            return self.server.handle_error_response(None, error)
-          provider = groupProvider
-
-        self.log.debug('Use provider:', provider)
         # pylint: disable=no-member
-        authURL = '%s/authorization/%s?%s&user_code=%s' % (self.LOCATION, provider, req.query, userCode)
+        authURL = '%s?%s' % (req.path.replace('device', 'authorization'), req.query)
         # Save session to cookie
         return self.server.handle_response(302, {}, [("Location", authURL)], session)
 
@@ -477,7 +478,7 @@ class AuthHandler(TornadoREST):
         :return: response
     """
     # Base DIRAC client auth session
-    firstRequest = createOAuth2Request(extSession['mainSession'])
+    firstRequest = createOAuth2Request(extSession['firstRequest'])
     # Read requested groups by DIRAC client or user
     firstRequest.addScopes(self.get_arguments('chooseScope'))
     # Read already authed user
