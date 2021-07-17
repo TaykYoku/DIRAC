@@ -411,10 +411,12 @@ class AuthHandler(TornadoREST):
 
     # Check current auth session that was initiated for the selected external identity provider
     session = self.get_secure_cookie('auth_session')
-    if not session or (state and (session.get('state') == state)):
+    if not session:
       return S_ERROR("%s session is expired." % state)
 
     sessionWithExtIdP = json.loads(session)
+    if state and not sessionWithExtIdP.get('state') == state:
+      return S_ERROR("%s session is expired." % state)
 
     if not sessionWithExtIdP.get('authed'):
       # Parse result of the second authentication flow
