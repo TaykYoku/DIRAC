@@ -150,18 +150,15 @@ class TokenManagerHandler(TornadoService):
       result = Registry.getIDFromDN(dn)
       if result['OK']:
         result = self.__tokenDB.getTokenForUserProvider(result['Value'], provider)
-        if not result['OK']:
-          err.append(result['Message'])
-        elif result['Value']:
+        if result['OK'] and result['Value']:
           idpObj.token = result['Value']
           result = self.__checkProperties(dn, userGroup)
           if result['OK']:
             result = idpObj.exchangeGroup(userGroup)
             if result['OK']:
               return result
-    if not err:
-      return S_ERROR('No user ID found for %s' % username)
-    return S_ERROR('; '.join(err))
+      err.append(result.get('Message', 'token is empty.'))
+    return S_ERROR('; '.join(err or ['No user ID found for %s' % username]))
 
   def export_deleteToken(self, userDN):
     """ Delete a token from the DB
