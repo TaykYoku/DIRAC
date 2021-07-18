@@ -39,6 +39,25 @@ class TokenManagerHandler(TornadoService):
     cls.idps = IdProviderFactory()
     return S_OK()
 
+  def __generateUsersTokensInfo(self, users):
+    """ Generate information dict about user tokens
+
+        :return: dict
+    """
+    tokensInfo = []
+    credDict = self.getRemoteCredentials()
+    result = Registry.getDNForUsername(credDict['username'])
+    if not result['OK']:
+      return result
+    for dn in result['Value']:
+      result = Registry.getIDFromDN(dn)
+      if result['OK']:
+        result = self.__tokenDB.getTokensByUserID(result['Value'])
+        if not result['OK']:
+          gLogger.error(result['Message'])
+        tokensInfo += result['Value']
+    return tokensInfo
+
   def __generateUserTokensInfo(self):
     """ Generate information dict about user tokens
 
@@ -74,6 +93,30 @@ class TokenManagerHandler(TornadoService):
         :return: S_OK(dict)
     """
     return S_OK(self.__generateUserTokensInfo())
+  
+  auth_getUsersTokensInfo = [Properties.PROXY_MANAGEMENT]
+
+  def export_getUsersTokensInfo(self, users):
+    """ Get the info about the user tokens in the system
+
+        :param list users: user names
+
+        :return: S_OK(dict)
+    """
+    tokensInfo = []
+    for user in users:
+      result = Registry.getDNForUsername(user)
+      if not result['OK']:
+        return result
+      uid = Registry.getIDFromDN(result['Value']).get('Value')
+      if uid:
+        result = self.__tokenDB.getTokensByUserID(uid)
+        if not result['OK']:
+          gLogger.error(result['Message'])
+        else:
+          result['Value']['username'] = user
+          tokensInfo += result['Value']
+    return S_OK(tokensInfo)
 
   auth_uploadToken = ['authenticated']
 

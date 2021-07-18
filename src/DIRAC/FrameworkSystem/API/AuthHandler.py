@@ -162,6 +162,7 @@ class AuthHandler(TornadoREST):
       resDict = dict(setups=gConfig.getSections('DIRAC/Setups').get('Value', []),
                      configuration_server=gConfig.getValue("/DIRAC/Configuration/MasterServer", ""))
       resDict.update(self.server.metadata)
+      resDict.pop('Clients', None)
       return resDict
 
   def web_jwk(self):
