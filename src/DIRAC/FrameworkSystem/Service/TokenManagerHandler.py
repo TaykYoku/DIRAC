@@ -108,14 +108,15 @@ class TokenManagerHandler(TornadoService):
       result = Registry.getDNForUsername(user)
       if not result['OK']:
         return result
-      uid = Registry.getIDFromDN(result['Value']).get('Value')
-      if uid:
-        result = self.__tokenDB.getTokensByUserID(uid)
-        if not result['OK']:
-          gLogger.error(result['Message'])
-        else:
-          result['Value']['username'] = user
-          tokensInfo += result['Value']
+      for dn in result['Value']:
+        uid = Registry.getIDFromDN(dn).get('Value')
+        if uid:
+          result = self.__tokenDB.getTokensByUserID(uid)
+          if not result['OK']:
+            gLogger.error(result['Message'])
+          else:
+            result['Value']['username'] = user
+            tokensInfo += result['Value']
     return S_OK(tokensInfo)
 
   auth_uploadToken = ['authenticated']
