@@ -115,8 +115,10 @@ class TokenManagerHandler(TornadoService):
           if not result['OK']:
             gLogger.error(result['Message'])
           else:
-            result['Value']['username'] = user
-            tokensInfo += result['Value']
+            for tokenDict in result['Value']:
+              if tokenDict not in tokensInfo:
+                tokenDict['username'] = user
+                tokensInfo.append(tokenDict)
     return S_OK(tokensInfo)
 
   auth_uploadToken = ['authenticated']
@@ -129,7 +131,7 @@ class TokenManagerHandler(TornadoService):
         :param str provider: provider name
         :param int rt_expired_in: refresh token expires time
 
-        :return: S_OK(dict)/S_ERROR() -- dict contain uploaded tokens info
+        :return: S_OK(list)/S_ERROR() -- list contain uploaded tokens info as dictionaries
     """
     self.log.verbose('Update %s user token for %s:\n' % (userID, provider), pprint.pformat(token))
     result = self.idps.getIdProvider(provider)
@@ -151,7 +153,7 @@ class TokenManagerHandler(TornadoService):
         :param str requestedUserDN: user DN
         :param str requestedUserGroup: DIRAC group
 
-        :return: S_OK(boolean)/S_ERROR()
+        :return: S_OK(bool)/S_ERROR()
     """
     credDict = self.getRemoteCredentials()
     if Properties.FULL_DELEGATION in credDict['properties']:
