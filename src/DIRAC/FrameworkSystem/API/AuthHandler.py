@@ -111,10 +111,9 @@ class AuthHandler(TornadoREST):
     if isinstance(self.result, dict) and self.result.get('OK') is False and 'Message' in self.result:
       # S_ERROR is interpreted in the OAuth2 error format.
       self.set_status(400)
-      self.write({'error': 'server_error', 'description': retVal['Message']})
       self.clear_cookie('auth_session')
       self.log.error('%s\n' % retVal['Message'], ''.join(retVal['CallStack']))
-      self.finish()
+      self.finish({'error': 'server_error', 'description': retVal['Message']})
     else:
       super(AuthHandler, self)._finishFuture(retVal)
 
